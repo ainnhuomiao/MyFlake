@@ -41,6 +41,7 @@
           thunderbird-bin
           v2rayn
           vscode
+          wl-screenrec
           wechat
           wemeet
           wpsoffice-cn

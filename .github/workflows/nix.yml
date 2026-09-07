@@ -72,6 +72,7 @@ jobs:
             .#v2rayn \
             .#vscode \
             .#wechat \
+            .#wl-screenrec \
             .#wemeet \
             .#wpsoffice-cn \
             .#zen-browser)

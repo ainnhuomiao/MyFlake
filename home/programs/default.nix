@@ -38,6 +38,7 @@
     ./ssh
     ./v2rayn
     ./video_editor
+    ./wl-screenrec
     ./wps
     ./yazi
     ./yt-dlp
