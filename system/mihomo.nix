@@ -1,6 +1,7 @@
 {
   pkgs,
   me,
+  lib,
   ...
 }:
 
@@ -442,6 +443,9 @@ in
 
   users.groups.${configGroup} = { };
   users.users.${userName}.extraGroups = [ configGroup ];
+
+  # 默认不开机自启：不 want 任何 target。需启动时用 dae-toggle 手动开启。
+  systemd.services.mihomo.wantedBy = lib.mkForce [ ];
 
   systemd.services.mihomo.serviceConfig = {
     SupplementaryGroups = [ configGroup ];

@@ -1,5 +1,6 @@
 {
   me,
+  lib,
   ...
 }:
 {
@@ -17,6 +18,8 @@
     requires = [ "mihomo.service" ];
     wants = [ "network-online.target" ];
     restartTriggers = [ ./dae.dae ];
+    # 默认不开机自启：不 want 任何 target。需启动时用 dae-toggle 手动开启。
+    wantedBy = lib.mkForce [ ];
   };
 
   # dae 透明代理(TUN)需要放宽反向路径过滤;mihomo TUN 同理,统一在此设置
