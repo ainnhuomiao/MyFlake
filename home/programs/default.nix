@@ -3,6 +3,7 @@
     ./bili_live
     ./bilibili
     ./chrome
+    ./dae-toggle
     ./dbclient
     ./discord
     ./edge
