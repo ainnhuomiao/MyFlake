@@ -56,9 +56,19 @@ let
       }
 
       stop_transparent_proxy() {
-        # 先 dae 后 mihomo，避免 Requires 传播顺序产生竞态
-        systemctl is-active --quiet dae.service 2>/dev/null && systemctl stop dae.service || true
-        systemctl is-active --quiet mihomo.service 2>/dev/null && systemctl stop mihomo.service || true
+        # 先 dae 后 mihomo，避免 Requires 传播顺序产生竞态。
+        # 记录启动前状态：v2rayN 只是临时接管，退出时只恢复到"原本在跑"的服务，
+        # 而不是无条件拉起(尊重用户 dae-toggle off 的手动关闭状态)。
+        HAD_DAE=0
+        HAD_MIHOMO=0
+        if systemctl is-active --quiet dae.service 2>/dev/null; then
+          HAD_DAE=1
+          systemctl stop dae.service || true
+        fi
+        if systemctl is-active --quiet mihomo.service 2>/dev/null; then
+          HAD_MIHOMO=1
+          systemctl stop mihomo.service || true
+        fi
         touch "$FLAG"
         echo "v2rayN: 已停止 dae + mihomo（透明代理旁路，由 v2rayN 接管）"
       }
@@ -80,14 +90,23 @@ let
         fi
         if [ -f "$FLAG" ]; then
           rm -f "$FLAG"
-          systemctl start mihomo.service || true
-          systemctl start dae.service || true
+          # 恢复到启动前状态：只在原本在跑的服务上 start(先 mihomo 后 dae)
+          [ "''${HAD_MIHOMO:-0}" = "1" ] && systemctl start mihomo.service || true
+          [ "''${HAD_DAE:-0}" = "1" ] && systemctl start dae.service || true
           sleep 0.3
-          systemctl is-active --quiet mihomo.service || \
-            echo "v2rayN: 警告 mihomo.service 未运行, 请检查 systemctl status mihomo" >&2
-          systemctl is-active --quiet dae.service || \
-            echo "v2rayN: 警告 dae.service 未运行, 请检查 systemctl status dae" >&2
-          echo "v2rayN: 已退出, 恢复 dae + mihomo（透明代理）"
+          if [ "''${HAD_MIHOMO:-0}" = "1" ]; then
+            systemctl is-active --quiet mihomo.service || \
+              echo "v2rayN: 警告 mihomo.service 未运行, 请检查 systemctl status mihomo" >&2
+          fi
+          if [ "''${HAD_DAE:-0}" = "1" ]; then
+            systemctl is-active --quiet dae.service || \
+              echo "v2rayN: 警告 dae.service 未运行, 请检查 systemctl status dae" >&2
+          fi
+          if [ "''${HAD_DAE:-0}" = "1" ] || [ "''${HAD_MIHOMO:-0}" = "1" ]; then
+            echo "v2rayN: 已退出, 恢复先前运行的 dae + mihomo（透明代理）"
+          else
+            echo "v2rayN: 已退出, dae + mihomo 原本未运行, 保持关闭"
+          fi
         fi
       }
 
