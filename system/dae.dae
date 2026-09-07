@@ -55,6 +55,10 @@ routing {
     geosite:category-ads-all
   ) -> block
 
+  # 自家 attic 缓存：.asia 私有域名不在 geosite:cn，IP 43.153.x 不命中 geoip:cn
+  # → 会被 fallback 路由进境外代理节点，导致 TLS 握手间歇 unexpected eof。钉直连。
+  domain(full: ainnhuomiao.qianyuanqing.asia) -> direct
+  dip(43.153.152.12) -> direct
   domain(geosite:cn) -> direct
   dip(geoip:cn) -> direct
 
