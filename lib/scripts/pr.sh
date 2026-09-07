@@ -59,6 +59,11 @@ git fetch origin --quiet
 
 echo "=== [2/5] 基于 origin/main 建分支 $branch (带走本地改动) ==="
 # stash 未提交改动 → 切到新分支(基于最新 main) → pop 回来
+# intent-to-add (git add -N) 的新文件会让 `git stash push -u` 报
+# "Entry '...' not uptodate. Cannot merge." —— -N 条目在 index 里只占空 blob。
+# 先用 `git add -u` 把它们提升为完整暂存条目(它们已在 index 中, 属已跟踪文件),
+# stash 才能处理; 后续 commit 本就是 git add -A, 提前 stage 无副作用。
+git add -u
 git stash push -u -m "pr-script-wip" >/dev/null
 git switch -c "$branch" origin/main
 if ! git stash pop; then
