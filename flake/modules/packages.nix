@@ -43,6 +43,7 @@
           vscode
           wechat
           wemeet
+          wpsoffice-cn
           ;
         # zen-browser 来自 flake input，nixpkgs 没有，需一并缓存
         zen-browser = inputs.zen-browser.packages.${system}.default;

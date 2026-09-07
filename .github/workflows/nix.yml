@@ -73,6 +73,7 @@ jobs:
             .#vscode \
             .#wechat \
             .#wemeet \
+            .#wpsoffice-cn \
             .#zen-browser)
           echo "paths=${paths//$'\n'/ }" >> "$GITHUB_OUTPUT"
 

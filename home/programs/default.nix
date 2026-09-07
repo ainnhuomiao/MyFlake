@@ -37,6 +37,7 @@
     ./ssh
     ./v2rayn
     ./video_editor
+    ./wps
     ./yazi
     ./yt-dlp
     ./zathura
