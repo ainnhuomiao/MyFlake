@@ -80,7 +80,7 @@ branch="pr/$slug-$(date +%s)"
 
 echo "=== 基于 origin/main 建分支 $branch(带走已暂存改动与未暂存 WIP) ==="
 git fetch origin --quiet
-git switch -c "$branch" origin/main
+git switch --no-track -c "$branch" origin/main
 git commit -m "$MSG"
 git push -u origin "$branch" 2>&1 | tail -2
 
@@ -93,13 +93,18 @@ if [[ $MERGE == 1 ]]; then
   echo "=== 合并 PR 并同步本地 main ==="
   gh pr merge "${pr_url##*/}" --repo ainnhuomiao/mynixos-config --merge --delete-branch
   git fetch origin main:main
-  git switch "$ORIG" >/dev/null 2>&1 || true
-  echo
-  echo "✅ 已合并并删除远端分支;本地 $ORIG 已同步到含该提交的 origin/main"
+  if git switch "$ORIG" >/dev/null 2>&1; then
+    echo
+    echo "✅ 已合并并删除远端分支;本地 $ORIG 已同步到含该提交的 origin/main"
+  else
+    echo
+    echo "⚠️ 已合并并删除远端分支,但切回 $ORIG 失败(工作区有冲突改动?)"
+    echo "   当前仍在 $branch;改动已包含在 origin/main: git fetch origin main:main 后手动处理"
+  fi
 else
-  git switch "$ORIG" >/dev/null 2>&1 || true
   echo
   echo "✅ PR 已创建: $pr_url"
-  echo "   本地已切回 $ORIG。合并后同步本地 main: git fetch origin main:main"
-  echo "   不再需要该分支时: git branch -D $branch"
+  echo "   改动已提交在分支 $branch 上,本地停留在此分支(你的文件内容是含本次改动的版本)。"
+  echo "   合并后回到 main:  git fetch origin main:main && git switch main"
+  echo "   关闭本 PR 并放弃: gh pr close ${pr_url##*/} --delete-branch && git switch main && git branch -D $branch"
 fi
