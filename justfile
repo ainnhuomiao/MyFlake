@@ -64,8 +64,12 @@ install:
     bash ./lib/scripts/install.sh
 
 # 提交已暂存的改动并直推当前分支(通常 main;未暂存的 WIP 不会被提交)
-push msg:
-    bash ./lib/scripts/push.sh "{{msg}}"
+push msg *paths:
+    bash ./lib/scripts/push.sh "{{msg}}" {{paths}}
+
+# 一键:git add -A(含未跟踪文件)后提交并直推 —— 会带上当时工作区的全部改动
+push-all msg:
+    bash ./lib/scripts/push.sh --all "{{msg}}"
 
 # 可选 PR 流程:基于 origin/main 建分支、提交并创建 PR(需 gh)
 pr msg:

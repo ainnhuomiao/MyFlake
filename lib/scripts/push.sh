@@ -1,18 +1,15 @@
 #!/usr/bin/env bash
 # 提交并推送配置改动。
 #
-# 核心约定:只提交**已暂存(git add / git apply --cached)的改动**,工作区里未暂存的
-# 内容(常见:用户正在改的 WIP)一律不动、不提交 —— 不再有 git add -A 扫全树的隐患。
-# 所以:先 git add 你要提交的文件,再运行本脚本。
-#
-# 用法:
-#   ./lib/scripts/push.sh "commit message"     # 提交已暂存改动并直推当前分支(通常 main)
-#   ./lib/scripts/push.sh --pr "msg"           # 基于 origin/main 建分支、提交、开 PR(不合并)
-#   ./lib/scripts/push.sh --pr --merge "msg"   # 开 PR 并立即合并(留一条 PR 记录)
+# 三种用法(默认最安全:只提交**已暂存**内容,不会顺手带走工作区的 WIP):
+#   ./lib/scripts/push.sh "msg"                 # 提交已暂存(git add)的内容并直推当前分支
+#   ./lib/scripts/push.sh "msg" <路径...>        # 直接指定要提交的文件/目录(内部替你 git add)
+#   ./lib/scripts/push.sh --all "msg"           # 一键:git add -A(含未跟踪文件)后提交直推
+#   ./lib/scripts/push.sh --pr [--merge] "msg"  # 可选 PR 流程(建分支开 PR;--merge 立即合并)
 #
 # 说明:
-#   - main 自 2026-09-12 起允许直推(ruleset 仅保留 deletion + non_fast_forward),
-#     默认路径不再需要 PR;--pr 只在想要评审/记录时使用。
+#   - main 自 2026-09-12 起允许直推(ruleset 仅保留 deletion + non_fast_forward),默认不需要 PR。
+#   - --all 会把当时工作区里**所有**改动一起提交(包括你还没写完的 WIP),按需使用。
 #   - 无 required status checks 后 `gh pr merge --auto` 会立即合并,故这里用显式 --merge。
 
 set -euo pipefail
@@ -21,21 +18,34 @@ cd "$(dirname "$0")/../.."
 # ---- 参数 ----
 PR=0
 MERGE=0
+ALL=0
 MSG=""
+PATHS=()
 for arg in "$@"; do
   case "$arg" in
   --pr) PR=1 ;;
   --merge) MERGE=1 ;;
-  -*) echo "❌ 未知参数: $arg (可用: --pr --merge)" && exit 1 ;;
-  *) MSG="$arg" ;;
+  --all) ALL=1 ;;
+  -*) echo "❌ 未知参数: $arg (可用: --pr --merge --all)" && exit 1 ;;
+  *)
+    if [[ -z $MSG ]]; then
+      MSG="$arg"
+    else
+      PATHS+=("$arg")
+    fi
+    ;;
   esac
 done
 [[ -n $MSG ]] || {
-  echo '用法: push.sh [--pr] [--merge] "commit message"'
+  echo '用法: push.sh [--pr] [--merge] [--all] "commit message" [路径...]'
   exit 1
 }
 [[ $MERGE == 0 || $PR == 1 ]] || {
   echo "❌ --merge 需要与 --pr 一起使用"
+  exit 1
+}
+[[ ${#PATHS[@]} == 0 || $ALL == 0 ]] || {
+  echo "❌ --all 与显式路径不能同时使用"
   exit 1
 }
 
@@ -44,16 +54,34 @@ git rev-parse --git-dir >/dev/null 2>&1 || {
   exit 1
 }
 
-# ---- 只认已暂存内容 ----
+# ---- 决定暂存哪些内容 ----
+if [[ ${#PATHS[@]} -gt 0 ]]; then
+  echo "=== 暂存指定路径 ==="
+  git add -- "${PATHS[@]}"
+elif [[ $ALL == 1 ]]; then
+  echo "=== 暂存工作区全部改动(git add -A,含未跟踪文件) ==="
+  git add -A
+fi
+
 if git diff --cached --quiet; then
-  echo "❌ 没有已暂存的改动 —— 本脚本只提交已暂存内容,不会 git add -A 扫走工作区 WIP。"
-  echo "   先 git add <文件>(或 git apply --cached <patch>),再运行。"
+  echo "❌ 没有可提交的改动。"
+  echo '   push.sh "msg"            # 提交已 git add 的内容'
+  echo '   push.sh "msg" <路径...>   # 直接指定文件(替你 git add)'
+  echo '   push.sh --all "msg"      # 一键提交工作区全部改动'
   exit 1
 fi
 
 ORIG="$(git branch --show-current)"
-echo "=== 待提交(已暂存) ==="
+echo "=== 待提交 ==="
 git diff --cached --stat
+
+if [[ $ALL == 0 ]]; then
+  rest_tracked="$(git diff --name-only | wc -l | tr -d ' ')"
+  rest_untracked="$(git ls-files --others --exclude-standard | wc -l | tr -d ' ')"
+  if [[ $rest_tracked != 0 || $rest_untracked != 0 ]]; then
+    echo "ℹ️ 未包含在本次提交: 未暂存改动 $rest_tracked 个文件, 未跟踪文件 $rest_untracked 个"
+  fi
+fi
 
 if [[ $PR == 0 ]]; then
   echo "=== 提交并直推 origin/$ORIG ==="
