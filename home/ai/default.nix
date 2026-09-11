@@ -28,6 +28,7 @@ in
 {
   imports = [
     ./agy-hud.nix
+    ./agy-permissions.nix
     ./mcp.nix
   ];
 
