@@ -145,10 +145,10 @@ in
       for_window [app_id="(?i)^vesktop$"] focus
       for_window [class="(?i)^vesktop$"] move --no-auto-back-and-forth container to workspace VT
       for_window [class="(?i)^vesktop$"] focus
-      for_window [app_id="(?i)^splayer$"] move --no-auto-back-and-forth container to workspace SPlayer
-      for_window [app_id="(?i)^splayer$"] focus
-      for_window [class="(?i)^splayer$"] move --no-auto-back-and-forth container to workspace SPlayer
-      for_window [class="(?i)^splayer$"] focus
+      for_window [app_id="(?i)^top\.imsyy\.splayer_next$"] move --no-auto-back-and-forth container to workspace SPlayer
+      for_window [app_id="(?i)^top\.imsyy\.splayer_next$"] focus
+      for_window [class="(?i)^top\.imsyy\.splayer_next$"] move --no-auto-back-and-forth container to workspace SPlayer
+      for_window [class="(?i)^top\.imsyy\.splayer_next$"] focus
       for_window [app_id="md.Obsidian"] move --no-auto-back-and-forth container to workspace Obsidian
       for_window [app_id="md.Obsidian"] focus
       for_window [class="(?i)^v2rayn$"] move --no-auto-back-and-forth container to workspace V2rayN
@@ -264,7 +264,7 @@ in
 
       # quick start some applications
       # bindsym $mod+m exec --no-startup-id              kitty --class="musicfox" --hold sh -c "musicfox"
-      bindsym Alt+Shift+s exec --no-startup-id         splayer
+      bindsym Alt+Shift+s exec --no-startup-id         SPlayer-Next
       bindsym $mod+Shift+b exec --no-startup-id        firefox
       bindsym $mod+Shift+y exec --no-startup-id        qutebrowser
       bindsym $mod+Shift+x exec --no-startup-id        $ipc session lock

@@ -80,7 +80,7 @@ flake.nix
 - Kitty、Firefox、Zen Browser、Google Chrome、Microsoft Edge
 - 聊天：Telegram、QQ、Vesktop、WeChat、Discord、Feishu、腾讯会议、Element
 - Flameshot、Grimshot、Satty、wf-recorder、Kooha、OBS Studio、Kdenlive
-- MPV、SPlayer、Go Musicfox、Bilibili 工具、Motrix Next、Blender、scrcpy
+- MPV、SPlayer-Next、Go Musicfox、Bilibili 工具、Motrix Next、Blender、scrcpy
 - Nemo、Yazi、Zathura、Obsidian、Emanote、imv/swayimg
 - Thunderbird、DBeaver
 - Fcitx5 + Rime + 中文扩展词库，左 `Ctrl` + 左 `Shift` 切换输入法
@@ -419,7 +419,7 @@ just rebuild-switch  # 检查、格式化、构建并切换
 | `Mod + Shift + t`      | Telegram                      |
 | `Mod + Shift + q`      | QQ                            |
 | `Mod + Shift + v`      | Vesktop                       |
-| `Alt + Shift + s`      | SPlayer                       |
+| `Alt + Shift + s`      | SPlayer-Next                  |
 | `Alt + Shift + q`      | 切换到 QQ 工作区              |
 | `Alt + Shift + t`      | 切换到 Telegram 工作区        |
 | `Alt + Shift + w`      | 切换到 WeChat 工作区          |
