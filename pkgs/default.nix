@@ -9,7 +9,7 @@
     nordic = final.callPackage ./nordic { };
     # swayfx 0.6(窗口开合动画),nixpkgs 仍钉 0.5.3;复用 nixpkgs 的 sway wrapper
     swayfx = prev.sway.override {
-      sway-unwrapped = inputs.swayfx.packages.${final.system}.swayfx-unwrapped-git;
+      sway-unwrapped = inputs.swayfx.packages.${final.stdenv.hostPlatform.system}.swayfx-unwrapped-git;
     };
   };
 }
