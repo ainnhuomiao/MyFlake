@@ -1,4 +1,4 @@
 { pkgs, ... }:
 {
-  home.packages = [ pkgs.splayer ];
+  home.packages = [ pkgs.splayer-next ];
 }
