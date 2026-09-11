@@ -396,7 +396,7 @@ just rebuild-switch  # 检查、格式化、构建并切换
 # 本地验证无误后推 main，CI 自动构建 30 个包进 Attic
 ```
 
-`main` 允许直接推送（无需开 PR）；CI 在推送后运行 `nix.yml`，构建 30 个包并推送到 Attic。`just pr` 保留为可选的 PR 流程。
+`main` 允许直接推送（无需开 PR）：`just push "msg"` 提交**已暂存**的改动并直推（未暂存的 WIP 不会被带上），CI 在推送后运行 `nix.yml` 构建 30 个包并推送到 Attic。`just pr` / `just pr-merge` 为可选 PR 流程（基于 `origin/main` 建分支、开 PR；后者立即合并）。
 
 ### 关于自动更新
 
