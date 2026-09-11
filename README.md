@@ -139,9 +139,9 @@ nix develop .#secret
 
 `home/ai/` 当前安装：
 
+- Antigravity CLI（`agy`，nixpkgs 已用其取代 gemini-cli）
 - Claude Code
 - Codex
-- Gemini CLI
 - GitHub Copilot CLI
 - OpenCode
 - `cc-switch`

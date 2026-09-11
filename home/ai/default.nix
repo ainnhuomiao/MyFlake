@@ -38,7 +38,6 @@ in
       github-copilot-cli
       claude-code
       codex
-      gemini-cli
       opencode
       cc-switch
       inputs.herdr.packages.${system}.default

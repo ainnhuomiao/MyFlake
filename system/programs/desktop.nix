@@ -67,7 +67,7 @@
       gparted
       brightnessctl
       # XWayland 高清渲染 (Xft.dpi 加载工具)
-      xorg.xrdb
+      xrdb
     ];
     variables.NIXOS_OZONE_WL = "1";
   };

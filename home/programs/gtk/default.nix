@@ -1,4 +1,5 @@
 {
+  config,
   pkgs,
   appearance,
   ...
@@ -10,6 +11,7 @@
     QT_QPA_PLATFORMTHEME = "gtk3";
   };
   home.pointerCursor = {
+    enable = true;
     package = pkgs.bibata-cursors;
     name = "Bibata-Modern-Ice";
     size = 16;
@@ -17,6 +19,8 @@
   home.pointerCursor.gtk.enable = true;
   gtk = {
     enable = true;
+    # home.stateVersion < 26.05:显式保留旧默认(gtk4 跟随 gtk.theme),消除迁移告警
+    gtk4.theme = config.gtk.theme;
     theme = {
       name = "Nordic";
       package = pkgs.nordic;
