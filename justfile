@@ -63,10 +63,14 @@ disko:
 install:
     bash ./lib/scripts/install.sh
 
-# Push local config changes to main via a PR; auto-merges after CI passes
-pr msg:
-    bash ./lib/scripts/pr.sh "{{msg}}"
+# 提交已暂存的改动并直推当前分支(通常 main;未暂存的 WIP 不会被提交)
+push msg:
+    bash ./lib/scripts/push.sh "{{msg}}"
 
-# Same, but only open the PR (no auto-merge; merge manually)
-pr-noauto msg:
-    bash ./lib/scripts/pr.sh --no-auto "{{msg}}"
+# 可选 PR 流程:基于 origin/main 建分支、提交并创建 PR(需 gh)
+pr msg:
+    bash ./lib/scripts/push.sh --pr "{{msg}}"
+
+# 同上并立即合并(留一条 PR 记录)
+pr-merge msg:
+    bash ./lib/scripts/push.sh --pr --merge "{{msg}}"
