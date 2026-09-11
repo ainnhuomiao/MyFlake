@@ -396,6 +396,8 @@ just rebuild-switch  # 检查、格式化、构建并切换
 # 本地验证无误后推 main，CI 自动构建 30 个包进 Attic
 ```
 
+`main` 允许直接推送（无需开 PR）；CI 在推送后运行 `nix.yml`，构建 30 个包并推送到 Attic。`just pr` 保留为可选的 PR 流程。
+
 ### 关于自动更新
 
 不配置定时 `nix flake update` 工作流：`nixos-unstable` 的滚动升级可能夹带破坏性变更，无人值守时容易把半坏的 `flake.lock` 推上 `main`。依赖更新一律走上面的本地流程（`just update` → `just check`），确认通过后再推送。（原 `.github/workflows/flake-update.yml` 已移除。）
