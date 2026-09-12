@@ -18,9 +18,9 @@ let
 in
 {
   home.packages = [
-    # mpvpaper 由插件在 PATH 中查找并拉起; socat 用于插件的 slideshow 静态帧同步
+    # mpvpaper 由插件在 PATH 中查找并拉起; socat(插件 slideshow 静态帧同步用)
+    # 由 systemPackages 提供,不在此重复声明
     pkgs.mpvpaper
-    pkgs.socat
   ]
   ++ (with sharedScripts; [
     wallpaper_random

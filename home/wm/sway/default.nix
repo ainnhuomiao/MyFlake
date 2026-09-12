@@ -21,7 +21,6 @@
   ++ (with pkgs; [
     sway-contrib.grimshot
     pamixer
-    swayidle
     (pkgs.writeShellScriptBin "tt" ''
       STATUS=$(swaymsg -t get_inputs | jq -r '.[] | select(.type=="touchpad").libinput.send_events')
       if [[ "$STATUS" == "enabled" ]]; then

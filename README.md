@@ -71,15 +71,15 @@ flake.nix
 
 当前主机使用 [`xddxdd/nix-cachyos-kernel`](https://github.com/xddxdd/nix-cachyos-kernel) `release` 分支提供的 CachyOS 内核。`hosts/default.nix` 注入 `overlays.pinned`，`hosts/nixos/default.nix` 选择 `linuxPackages-cachyos-latest-x86_64-v3`；这与上游 Hydra 的构建环境保持一致，可命中 `https://attic.xuyh0120.win/lantian` 二进制缓存，避免本机编译内核。
 
-当前 `flake.lock` 对应的运行内核为 `7.1.6-cachyos`。更新 input 后版本会随 `release` 分支变化；不要让 `nix-cachyos-kernel.inputs.nixpkgs` 跟随本仓库的 `nixpkgs`，否则可能造成补丁版本不匹配或缓存未命中。切换内核配置后必须重启，运行中的版本可用 `uname -r` 检查。
+当前 `flake.lock` 对应的运行内核为 `7.2.4-cachyos`。更新 input 后版本会随 `release` 分支变化；不要让 `nix-cachyos-kernel.inputs.nixpkgs` 跟随本仓库的 `nixpkgs`，否则可能造成补丁版本不匹配或缓存未命中。切换内核配置后必须重启，运行中的版本可用 `uname -r` 检查。
 
 ### 桌面与日常应用
 
-唯一 WM 为 **swayfx**（wlroots，支持毛玻璃模糊与窗口动画，`Mod` 为 `Super`）：Waybar、Rofi、Mako 通知。开机经 getty 自动登录直接进入 sway（fish 登录 shell 在 tty1 上自动 `exec sway`），无需显示管理器。
+唯一 WM 为 **swayfx**（wlroots，支持毛玻璃模糊与窗口动画，`Mod` 为 `Super`）：状态栏、启动器、通知、锁屏、剪贴板与电源菜单全部由 **Noctalia** 提供（替代了此前的 Waybar/Rofi/Mako/swaylock 组合）。开机经 getty 自动登录直接进入 sway（fish 登录 shell 在 tty1 上自动 `exec sway`），无需显示管理器。
 
 - Kitty、Firefox、Zen Browser、Google Chrome、Microsoft Edge
 - 聊天：Telegram、QQ、Vesktop、WeChat、Discord、Feishu、腾讯会议、Element
-- Flameshot、Grimshot、Satty、wf-recorder、Kooha、OBS Studio、Kdenlive
+- Flameshot、Grimshot、Satty、wf-recorder、wl-screenrec、Kooha、OBS Studio、Kdenlive
 - MPV、SPlayer-Next、Go Musicfox、Bilibili 工具、Motrix Next、Blender、scrcpy
 - Nemo、Yazi、Zathura、Obsidian、Emanote、imv/swayimg
 - Thunderbird、DBeaver
@@ -111,7 +111,7 @@ nvidia-egpu-off              # 卸载驱动，提示“可安全关闭坞电源�
 - `services.hardware.bolt` 负责雷电授权，坞已 `enroll --policy auto`，开电即自动授权
 - 全局 EGL 锁定 Mesa + `WLR_DRM_DEVICES=/dev/dri/card0`（wlroots 只探测 iGPU），保证合成器不占用 nvidia 模块，驱动可在游戏结束后干净卸载，`nvidia-egpu-off` 卸载成功后再断电即安全
 - `nvidia-egpu` wrapper 同时覆盖 GL/GLX（PRIME 变量）与 Vulkan（`MESA_VK_DEVICE_SELECT=10de:2584` 强制选卡；595.84 的 `VK_LAYER_NV_optimus` 已不再过滤设备），启动前自动检查/加载驱动；GPU 楔死时（`nvidia-smi -L` 仍 exit 0 但打印 “No devices found.”）不会放行坏 GPU
-- 驱动 595.84 + open 内核模块；坞通电时请勿合盖挂起
+- 驱动 595.84 + **closed** 内核模块（`open = false`；open + GSP 固件在本机有已实证的 TLB/GSP RPC 崩溃）；坞通电时请勿合盖挂起
 
 配置位置：`system/hardware/egpu.nix`（驱动、授权与 wrapper）、`home/wm/sway/default.nix`（`WLR_DRM_DEVICES`）。
 
@@ -271,21 +271,21 @@ just rebuild-switch
 
 `pkgs/` 中的本地包：
 
+- `agy-hud`
 - `bili_tui`
 - `fcitx5-pinyin-moegirl`
 - `fcitx5-pinyin-zhwiki`
 - `flake-stats-mcp`
 - `nordic`
-- `omp`、`pi`（来自 `llm-agents`）
 
 `overlays/` 当前包含：
 
 - `firefox`：固定 firefox-bin 154.0 与 zh-CN 语言包（nixpkgs 升级不再带动 Firefox 版本）
-- `motrix-next`：固定为 `3.9.6`，并修复其 sidecar 在 NixOS 上的动态链接
+- `motrix-next`：跟随 nixpkgs 版本，只叠加 `autoPatchelfHook` 修复其 sidecar 在 NixOS 上的动态链接
 - `mcp-nixos`：禁用一个会误判普通源码内容的上游测试
 - `v2rayn`：修复 Linux TUN 门禁（rebuild 后节点延迟 -1 的根因）
 
-Flake 对外提供 30 个包（`packages.x86_64-linux.*`）：
+Flake 对外提供 34 个包（`packages.x86_64-linux.*`）：
 
 ```text
 agy-hud              antigravity-cli     bili_tui
@@ -293,15 +293,16 @@ bilibili             claude-code         discord
 element-desktop      fcitx5-pinyin-moegirl fcitx5-pinyin-zhwiki
 feishu               flake-stats-mcp     github-copilot-cli
 google-chrome        hmcl                mcp-nixos
-microsoft-edge       motrix-next         nordic
-obsidian             omp                 pi
-qq                   reasonix            swayfx
-steam                thunderbird-bin     v2rayn
-vscode               wechat              wemeet
+microsoft-edge       motrix-next         noctalia
+nordic               obsidian            omp
+pi                   qq                  reasonix
+steam                swayfx              thunderbird-bin
+v2rayn               vscode              wechat
+wemeet               wl-screenrec        wpsoffice-cn
 zen-browser
 ```
 
-其中 `zen-browser` 来自 `zen-browser-flake`，`reasonix`/`antigravity-cli`/`omp`/`pi` 来自 `llm-agents`，其余为 nixpkgs 包。这 30 个包全部由 GitHub Actions 构建并推送到自建 Attic 缓存（见下文“CI 与更新流程”）。
+其中 `noctalia` 来自 `noctalia` input，`zen-browser` 来自 `zen-browser-flake`，`reasonix`/`antigravity-cli`/`omp`/`pi` 来自 `llm-agents`，`agy-hud`/`bili_tui`/`fcitx5-pinyin-*`/`flake-stats-mcp`/`nordic` 为 `pkgs/` 本地包，其余为 nixpkgs 包。CI（`nix.yml`）构建其中 33 个并推送到自建 Attic 缓存（`agy-hud` 未列入 CI 列表，由本机构建）。
 
 例如：
 
@@ -387,17 +388,17 @@ just build
 
 ## CI 缓存与更新流程
 
-推送到 `main` 后，GitHub Actions（`.github/workflows/nix.yml`）会构建上述 30 个 flake 包并推送到自建 Attic 缓存（`ainnhuomiao.qianyuanqing.asia`），工作站重建时优先命中缓存。因此**更新依赖后必须推送 `flake.lock`**，CI 才会为新路径重新构建。
+推送到 `main` 后，GitHub Actions（`.github/workflows/nix.yml`）会构建上述 33 个 flake 包并推送到自建 Attic 缓存（`ainnhuomiao.qianyuanqing.asia`），工作站重建时优先命中缓存。因此**更新依赖后必须推送 `flake.lock`**，CI 才会为新路径重新构建。
 
 ### 日常更新（配置 / nixpkgs）
 
 ```bash
 just update          # 升级所有 flake inputs（含 nixpkgs）
 just rebuild-switch  # 检查、格式化、构建并切换
-# 本地验证无误后推 main，CI 自动构建 30 个包进 Attic
+# 本地验证无误后推 main，CI 自动构建 33 个包进 Attic
 ```
 
-`main` 允许直接推送（无需开 PR）：`just push "msg"` 提交**已暂存**的改动并直推（可写 `just push "msg" 路径…` 直接指定文件；未暂存的 WIP 不会被带上），`just push-all "msg"` 则是一键 `git add -A` 后提交直推。CI 在推送后运行 `nix.yml` 构建 30 个包并推送到 Attic。`just pr` / `just pr-merge` 为可选 PR 流程（基于 `origin/main` 建分支、开 PR；后者立即合并）。
+`main` 允许直接推送（无需开 PR）：`just push "msg"` 提交**已暂存**的改动并直推（可写 `just push "msg" 路径…` 直接指定文件；未暂存的 WIP 不会被带上），`just push-all "msg"` 则是一键 `git add -A` 后提交直推。CI 在推送后运行 `nix.yml` 构建 33 个包并推送到 Attic。`just pr` / `just pr-merge` 为可选 PR 流程（基于 `origin/main` 建分支、开 PR；后者立即合并）。
 
 ### 关于自动更新
 
@@ -409,28 +410,28 @@ just rebuild-switch  # 检查、格式化、构建并切换
 
 ### 启动与系统
 
-| 按键                   | 功能                          |
-| ---------------------- | ----------------------------- |
-| `Mod + Return`         | 打开 Kitty                    |
-| `Mod + Shift + Return` | 打开浮动 Kitty                |
-| `Mod + z`              | Rofi 应用启动器               |
-| `Mod + v`              | 剪贴板历史                    |
-| `Mod + Shift + p`      | 电源菜单                      |
-| `Mod + Shift + b`      | Firefox                       |
-| `Mod + Shift + t`      | Telegram                      |
-| `Mod + Shift + q`      | QQ                            |
-| `Mod + Shift + v`      | Vesktop                       |
-| `Alt + Shift + s`      | SPlayer-Next                  |
-| `Alt + Shift + q`      | 切换到 QQ 工作区              |
-| `Alt + Shift + t`      | 切换到 Telegram 工作区        |
-| `Alt + Shift + w`      | 切换到 WeChat 工作区          |
-| `Alt + Shift + b`      | 切换到 Firefox 工作区         |
-| `Alt + Shift + v`      | 切换到 Vesktop 工作区         |
-| `Mod + Shift + d`      | 在浮动终端中启动 Bilibili TUI |
-| `Mod + Shift + x`      | 锁屏                          |
-| `Mod + Shift + c`      | 重载 Sway                     |
-| `Mod + Shift + e`      | 退出 Sway                     |
-| `Mod + o`              | 显示或隐藏 Waybar             |
+| 按键                   | 功能                      |
+| ---------------------- | ------------------------- |
+| `Mod + Return`         | 打开 Kitty                |
+| `Mod + Shift + Return` | 打开浮动 Kitty            |
+| `Mod + z`              | Noctalia 应用启动器       |
+| `Mod + v`              | 剪贴板历史                |
+| `Mod + Shift + p`      | 电源菜单                  |
+| `Mod + Shift + b`      | Firefox                   |
+| `Mod + Shift + t`      | Telegram                  |
+| `Mod + Shift + q`      | QQ                        |
+| `Mod + Shift + v`      | Vesktop                   |
+| `Alt + Shift + s`      | SPlayer-Next              |
+| `Alt + Shift + q`      | 切换到 QQ 工作区          |
+| `Alt + Shift + t`      | 切换到 Telegram 工作区    |
+| `Alt + Shift + w`      | 切换到 WeChat 工作区      |
+| `Alt + Shift + b`      | 切换到 Firefox 工作区     |
+| `Alt + Shift + v`      | 切换到 Vesktop 工作区     |
+| `Alt + Shift + y`      | 切换到 Qutebrowser 工作区 |
+| `Mod + Shift + x`      | 锁屏                      |
+| `Mod + Shift + c`      | 重载 Sway                 |
+| `Mod + Shift + e`      | 退出 Sway                 |
+| `Mod + o`              | 显示或隐藏 Noctalia 顶栏  |
 
 ### 窗口与工作区
 
@@ -449,17 +450,16 @@ just rebuild-switch  # 检查、格式化、构建并切换
 | `Mod + .` / `Mod + ,`            | 下一个/上一个工作区      |
 | `Mod + -` / `Mod + =`            | 放入/取出 scratchpad     |
 | `Mod + r`                        | 进入窗口大小调整模式     |
+| `Mod + g` / `Mod + Shift + g`    | 关闭/恢复窗口间隙        |
 
 ### 截图与录制
 
-| 按键/位置           | 功能                                         |
-| ------------------- | -------------------------------------------- |
-| `Print`             | Flameshot GUI                                |
-| `Mod + [`           | Grimshot 交互截图，复制并保存到 `~/Pictures` |
-| `Mod + ]`           | Grimshot 交互截图，仅复制                    |
-| `Mod + a`           | Grimshot 交互截图，复制并保存到 `~/Pictures` |
-| Waybar 录制按钮左键 | 开始区域 GIF 录制；录制中再次点击停止        |
-| Waybar 录制按钮右键 | Flameshot GUI                                |
+| 按键/位置 | 功能                                         |
+| --------- | -------------------------------------------- |
+| `Print`   | Flameshot GUI                                |
+| `Mod + [` | Grimshot 交互截图，复制并保存到 `~/Pictures` |
+| `Mod + ]` | Grimshot 交互截图，仅复制                    |
+| `Mod + a` | Grimshot 交互截图，复制并保存到 `~/Pictures` |
 
 直接使用 `wf-recorder`：
 

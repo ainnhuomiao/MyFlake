@@ -61,7 +61,6 @@
       linux-wifi-hotspot
       scrcpy
       gource
-      vscode
       blender
       s-search
       gparted
@@ -73,7 +72,9 @@
   };
 
   services = {
-    dbus.packages = [ pkgs.gcr ];
+    # nixpkgs 2026-09-03 移除了无 ABI 后缀的 `gcr`,需显式指定 ABI;
+    # gcr_3 = 原 gcr 3.x(GTK3) 线,与旧 `pkgs.gcr` 行为一致(上游 nm-applet 模块同样用它)
+    dbus.packages = [ pkgs.gcr_3 ];
     gvfs.enable = true;
     pipewire = {
       enable = true;

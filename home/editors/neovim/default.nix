@@ -1,5 +1,4 @@
 {
-  pkgs,
   ...
 }:
 let
@@ -123,10 +122,6 @@ let
   '';
 in
 {
-  home.packages = [
-    pkgs.neovim
-  ];
-
   xdg.configFile = {
     "nvim/init.lua".text = nvim-init;
     "nvim/lua/lazy_setup.lua".text = lazy-setup;

@@ -73,7 +73,6 @@
       atool
       clang
       eza
-      fastfetch
       ffmpeg
       gcc
       gdb

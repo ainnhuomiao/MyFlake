@@ -12,9 +12,6 @@ let
   configFile = "${configDirectory}/config.yaml";
   subscriptionsFile = "${configDirectory}/subscriptions.yaml";
   providerDirectory = "${configDirectory}/proxy-providers";
-  ruleProviderDirectory = "${configDirectory}/rule-providers";
-  legacySubscriptionFile = "${configDirectory}/subscription.url";
-  legacyClashTuiProfiles = "/home/${userName}/.config/clashtui/profiles";
 
   zashboard = pkgs.fetchzip {
     url = "https://github.com/Zephyruso/zashboard/releases/download/v3.16.0/dist.zip";
@@ -147,57 +144,6 @@ let
             chmod 0640 "$tmp_file"
             mv -f "$tmp_file" "${configFile}"
             trap - EXIT
-    '';
-  };
-
-  migrateSubscriptions = pkgs.writeShellApplication {
-    name = "mihomo-migrate-subscriptions";
-    runtimeInputs = with pkgs; [
-      coreutils
-      gnused
-      yq-go
-    ];
-    text = ''
-      if [[ -e "${subscriptionsFile}" ]]; then
-        exit 0
-      fi
-
-      tmp_file="$(mktemp "${configDirectory}/.subscriptions.yaml.XXXXXX")"
-      trap 'rm -f "$tmp_file"' EXIT
-      printf 'subscriptions: {}\n' > "$tmp_file"
-
-      add_subscription() {
-        local name="$1"
-        local url="$2"
-
-        [[ -n "$url" ]] || return 0
-        SUBSCRIPTION_NAME="$name" SUBSCRIPTION_URL="$url" \
-          yq eval -i \
-            '.subscriptions[strenv(SUBSCRIPTION_NAME)].url = strenv(SUBSCRIPTION_URL)' \
-            "$tmp_file"
-      }
-
-      if [[ -d "${legacyClashTuiProfiles}" ]]; then
-        shopt -s nullglob
-        for profile in "${legacyClashTuiProfiles}"/*; do
-          [[ -f "$profile" ]] || continue
-          name="$(basename "$profile" | tr -cs 'A-Za-z0-9._-' '-' | sed 's/^-\+//; s/-\+$//')"
-          [[ -n "$name" ]] || continue
-          url="$(tr -d '\r\n' < "$profile")"
-          add_subscription "$name" "$url"
-        done
-      fi
-
-      if [[ -s "${legacySubscriptionFile}" ]]; then
-        url="$(tr -d '\r\n' < "${legacySubscriptionFile}")"
-        if [[ "$(yq eval '.subscriptions.default == null' "$tmp_file")" == true ]]; then
-          add_subscription default "$url"
-        fi
-      fi
-
-      chmod 0600 "$tmp_file"
-      mv "$tmp_file" "${subscriptionsFile}"
-      trap - EXIT
     '';
   };
 
@@ -470,7 +416,6 @@ in
   systemd.tmpfiles.rules = [
     "d ${configDirectory} 2770 ${userName} ${configGroup} -"
     "d ${providerDirectory} 2770 ${userName} ${configGroup} -"
-    "d ${ruleProviderDirectory} 2770 ${userName} ${configGroup} -"
   ];
 
   systemd.services.mihomo-config-regenerate = {
@@ -499,10 +444,8 @@ in
     text = ''
       install -d -o ${userName} -g ${configGroup} -m 2770 \
         "${configDirectory}" \
-        "${providerDirectory}" \
-        "${ruleProviderDirectory}"
+        "${providerDirectory}"
 
-      ${migrateSubscriptions}/bin/mihomo-migrate-subscriptions
       chown ${userName}:${configGroup} "${subscriptionsFile}"
       chmod 0600 "${subscriptionsFile}"
 

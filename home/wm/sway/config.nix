@@ -66,11 +66,6 @@ in
 
       # Activate smart borders (always)
       smart_borders on
-      #smart_gaps on
-
-      # auto tiling (not smart)
-      # for_window [tiling] splitt
-      # default_orientation vertical
 
       #------------------------------#
       # Always float certain windows #
@@ -131,8 +126,6 @@ in
       for_window [app_id="(?i)^wechat$"] focus
       for_window [class="(?i)^wechat$"] move --no-auto-back-and-forth container to workspace WC
       for_window [class="(?i)^wechat$"] focus
-      # for_window [app_id="musicfox"] move --no-auto-back-and-forth container to workspace Music
-      # for_window [app_id="musicfox"] focus
       for_window [app_id="com.github.th_ch.youtube_music"] move --no-auto-back-and-forth container to workspace Music
       for_window [app_id="com.github.th_ch.youtube_music"] focus
       for_window [app_id="firefox"] move --no-auto-back-and-forth container to workspace Ff
@@ -209,23 +202,13 @@ in
       #-------------------------------------#
       # Note: pass the final command to swaymsg so that the resulting window can be opened
       # on the original workspace that the command was run on.
-      # set $menu dmenu_path | dmenu | xargs swaymsg exec --
+      # 启动器由 Noctalia 提供($mod+z -> panel-toggle launcher)
 
       #-----------#
       # WallPaper #
       #-----------#
-      ### Output configuration
-      #
-      # Default wallpaper (more resolutions are available in /usr/share/backgrounds/sway/)
-      #output * bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
-      #
-      # Example configuration:
-      #
-      #   output HDMI-A-1 resolution 1920x1080 position 1920,0
-      #
-      # You can get the names of your outputs by running: swaymsg -t get_outputs
-      # exec_always --no-startup-id swaybg -i ~/.config/sway/wallpaper/02.png
-      # Automatically change wallpapers at intervals
+      # 静态壁纸与视频壁纸均由 Noctalia(壁纸管理器 + 官方 noctalia/mpvpaper 插件)托管,
+      # 切换脚本见 home/wall/share_scripts.nix,不再使用 swaybg/output bg。
 
       #-------------------------------------------------#
       # Control volume,monitor brightness,media players #
@@ -263,7 +246,6 @@ in
       bindsym $mod+Shift+Return exec kitty --class="termfloat"
 
       # quick start some applications
-      # bindsym $mod+m exec --no-startup-id              kitty --class="musicfox" --hold sh -c "musicfox"
       bindsym Alt+Shift+s exec --no-startup-id         SPlayer-Next
       bindsym $mod+Shift+b exec --no-startup-id        firefox
       bindsym $mod+Shift+y exec --no-startup-id        qutebrowser
