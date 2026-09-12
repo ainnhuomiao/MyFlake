@@ -285,24 +285,27 @@ just rebuild-switch
 - `mcp-nixos`：禁用一个会误判普通源码内容的上游测试
 - `v2rayn`：修复 Linux TUN 门禁（rebuild 后节点延迟 -1 的根因）
 
-Flake 对外提供 34 个包（`packages.x86_64-linux.*`）：
+Flake 对外提供 37 个包（`packages.x86_64-linux.*`）：
 
 ```text
 agy-hud              antigravity-cli     bili_tui
 bilibili             claude-code         discord
 element-desktop      fcitx5-pinyin-moegirl fcitx5-pinyin-zhwiki
 feishu               flake-stats-mcp     github-copilot-cli
-google-chrome        hmcl                mcp-nixos
-microsoft-edge       motrix-next         noctalia
-nordic               obsidian            omp
-pi                   qq                  reasonix
+google-chrome        herdr               hmcl
+hyprpicker           mcp-nixos           microsoft-edge
+motrix-next          noctalia            nordic
+obsidian             omp                 pi
+qq                   reasonix            selector4nix
 steam                swayfx              thunderbird-bin
 v2rayn               vscode              wechat
 wemeet               wl-screenrec        wpsoffice-cn
 zen-browser
 ```
 
-其中 `noctalia` 来自 `noctalia` input，`zen-browser` 来自 `zen-browser-flake`，`reasonix`/`antigravity-cli`/`omp`/`pi` 来自 `llm-agents`，`agy-hud`/`bili_tui`/`fcitx5-pinyin-*`/`flake-stats-mcp`/`nordic` 为 `pkgs/` 本地包，其余为 nixpkgs 包。CI（`nix.yml`）构建其中 33 个并推送到自建 Attic 缓存（`agy-hud` 未列入 CI 列表，由本机构建）。
+来源：`noctalia`/`zen-browser` 来自各自 flake input，`herdr`/`hyprpicker`/`selector4nix` 来自对应 input，`reasonix`/`antigravity-cli`/`omp`/`pi` 来自 `llm-agents`，`agy-hud`/`bili_tui`/`fcitx5-pinyin-*`/`flake-stats-mcp`/`nordic` 为 `pkgs/` 本地包，其余为 nixpkgs 包。
+
+CI **只构建「上游任何二进制缓存里都没有、必须从源码编译」的 9 个包**（`bili_tui`、`flake-stats-mcp`、`herdr`、`hyprpicker`、`mcp-nixos`、`motrix-next`、`selector4nix`、`swayfx`、`v2rayn`）并推送到自建 Attic 缓存。其余包都能直接替换（nixpkgs 自由软件走 cache.nixos.org，unfree 应用走厂商预编译包，`llm-agents` 走 cache.numtide.com，`noctalia` 走 noctalia.cachix.org），列进 CI 只会重复下载+上传，lock 更新后还要全部重来。
 
 例如：
 
@@ -388,17 +391,17 @@ just build
 
 ## CI 缓存与更新流程
 
-推送到 `main` 后，GitHub Actions（`.github/workflows/nix.yml`）会构建上述 33 个 flake 包并推送到自建 Attic 缓存（`ainnhuomiao.qianyuanqing.asia`），工作站重建时优先命中缓存。因此**更新依赖后必须推送 `flake.lock`**，CI 才会为新路径重新构建。
+推送到 `main` 后，GitHub Actions（`.github/workflows/nix.yml`）只会构建**上游无二进制缓存、必须从源码编译的 9 个包**并推送到自建 Attic 缓存（`ainnhuomiao.qianyuanqing.asia`）；其余包本就是预编译产物或已在上游缓存里，重建时直接替换即可，不必经 CI 搬运。因此**更新依赖后必须推送 `flake.lock`**，CI 才会为新路径重新构建那 9 个包。
 
 ### 日常更新（配置 / nixpkgs）
 
 ```bash
 just update          # 升级所有 flake inputs（含 nixpkgs）
 just rebuild-switch  # 检查、格式化、构建并切换
-# 本地验证无误后推 main，CI 自动构建 33 个包进 Attic
+# 本地验证无误后推 main，CI 自动构建需源码编译的包进 Attic
 ```
 
-`main` 允许直接推送（无需开 PR）：`just push "msg"` 提交**已暂存**的改动并直推（可写 `just push "msg" 路径…` 直接指定文件；未暂存的 WIP 不会被带上），`just push-all "msg"` 则是一键 `git add -A` 后提交直推。CI 在推送后运行 `nix.yml` 构建 33 个包并推送到 Attic。`just pr` / `just pr-merge` 为可选 PR 流程（基于 `origin/main` 建分支、开 PR；后者立即合并）。
+`main` 允许直接推送（无需开 PR）：`just push "msg"` 提交**已暂存**的改动并直推（可写 `just push "msg" 路径…` 直接指定文件；未暂存的 WIP 不会被带上），`just push-all "msg"` 则是一键 `git add -A` 后提交直推。CI 在推送后运行 `nix.yml` 构建那 9 个源码包并推送到 Attic。`just pr` / `just pr-merge` 为可选 PR 流程（基于 `origin/main` 建分支、开 PR；后者立即合并）。
 
 ### 关于自动更新
 

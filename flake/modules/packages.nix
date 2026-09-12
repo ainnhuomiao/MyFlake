@@ -55,6 +55,11 @@
         antigravity-cli = inputs.llm-agents.packages.${system}.antigravity-cli;
         omp = inputs.llm-agents.packages.${system}.omp;
         pi = inputs.llm-agents.packages.${system}.pi;
+        # 以下三个来自 flake input 且上游无二进制缓存(必须本机源码编译),
+        # 导出后 CI 才能构建它们进 attic(见 .github/workflows/nix.yml)
+        herdr = inputs.herdr.packages.${system}.default;
+        hyprpicker = inputs.hyprpicker.packages.${system}.hyprpicker;
+        selector4nix = inputs.selector4nix.packages.${system}.default;
       };
     };
 }

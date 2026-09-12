@@ -35,6 +35,15 @@ jobs:
           name: ainnhuomiao
           skipPush: true
 
+      # 只构建「上游任何二进制缓存里都没有、必须从源码编译」的包。
+      # 其余包都能直接替换,列进来只会重复下载 + 上传(lock 更新后全部重来):
+      #   - nixpkgs 自由软件      → cache.nixos.org (selector4nix 上游里也有 USTC 镜像)
+      #   - nixpkgs unfree 应用   → 厂商 CDN 的预编译包(discord/vscode/chrome/qq/...)
+      #   - llm-agents            → cache.numtide.com (omp/pi/reasonix/antigravity-cli)
+      #   - noctalia / steam      → noctalia.cachix.org / nix-community.cachix.org
+      #   - firefox-bin/zen-browser → 自行下载的厂商预编译包(仅重打包,无编译)
+      # 复核某包是否该在这里:取 nix eval .#<pkg>.outPath 的 hash,查
+      # https://<cache>/<hash>.narinfo;全 404 且属于「编译」类才留下。
       - name: Build cached packages
         id: cached-packages
         run: |
@@ -43,39 +52,15 @@ jobs:
             --print-build-logs \
             --print-out-paths \
             --accept-flake-config \
-            .#bilibili \
             .#bili_tui \
-            .#claude-code \
-            .#discord \
-            .#element-desktop \
-            .#fcitx5-pinyin-moegirl \
-            .#fcitx5-pinyin-zhwiki \
-            .#feishu \
             .#flake-stats-mcp \
-            .#github-copilot-cli \
-            .#google-chrome \
-            .#hmcl \
+            .#herdr \
+            .#hyprpicker \
             .#mcp-nixos \
-            .#microsoft-edge \
             .#motrix-next \
-            .#nordic \
-            .#noctalia \
-            .#obsidian \
-            .#omp \
-            .#pi \
-            .#qq \
-            .#antigravity-cli \
-            .#reasonix \
+            .#selector4nix \
             .#swayfx \
-            .#steam \
-            .#thunderbird-bin \
-            .#v2rayn \
-            .#vscode \
-            .#wechat \
-            .#wl-screenrec \
-            .#wemeet \
-            .#wpsoffice-cn \
-            .#zen-browser)
+            .#v2rayn)
           echo "paths=${paths//$'\n'/ }" >> "$GITHUB_OUTPUT"
 
       - name: Push cached packages
