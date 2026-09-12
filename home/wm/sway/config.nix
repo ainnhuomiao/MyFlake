@@ -284,8 +284,10 @@ in
       bindsym $mod+Shift+w exec --no-startup-id        wallpaper_random
       bindsym $mod+Ctrl+w exec --no-startup-id         dynamic_wallpaper
       bindsym $mod+Ctrl+Shift+w exec --no-startup-id   default_wall
+      # 视频壁纸选择器(官方 noctalia/mpvpaper 插件面板:选片/暂停/清除)
       bindsym $mod+Ctrl+v exec --no-startup-id         video_wallpaper
-      bindsym $mod+Ctrl+Shift+v exec --no-startup-id   video_wallpaper_next
+      # 清除视频壁纸,回到静态壁纸
+      bindsym $mod+Ctrl+Shift+v exec --no-startup-id   video_wallpaper_clear
 
 
       # Kill focused window

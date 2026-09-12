@@ -37,6 +37,10 @@ in
   # settings.toml,而 nix store 路径每次重建都会变,持久化后必然失效。
   wallpapersDir = "Pictures/wallpapers";
 
+  # 视频壁纸目录(同上): Noctalia 官方 mpvpaper 插件把分配的视频路径持久化到
+  # 自己的 state(assignments.json),同样不能是 store 路径。
+  videosDir = "Videos/wallpapers";
+
   font = {
     name = "Maple Mono NF CN";
     size = 12;

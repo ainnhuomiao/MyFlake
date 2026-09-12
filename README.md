@@ -245,14 +245,15 @@ assets/wallpapers/   # 静态壁纸（.png/.jpg/.jpeg/.webp）
 assets/videos/       # 视频壁纸（.mp4/.webm/.mkv/.mov）
 ```
 
-默认壁纸为视频（`assets/videos/`，mpvpaper 随会话自动播放，跑在 bottom layer）。静态壁纸由 **Noctalia 自带壁纸管理器** 渲染（background layer，视频模式下被 mpvpaper 盖住，停掉 mpvpaper 即显形）；浏览目录是 `~/Pictures/wallpapers`（软链到仓库的 `assets/wallpapers`，避免把每次重建都会变的 nix store 路径写进 Noctalia 状态），点状态栏的壁纸按钮可打开选择器面板：
+静态壁纸由 **Noctalia 自带壁纸管理器** 渲染（background layer），视频壁纸由 **官方 `noctalia/mpvpaper` 插件** 托管（插件按 output 拉起 mpvpaper，并让 Noctalia 在该 output 上收起自己的壁纸层）。浏览目录都用稳定软链，避免把每次重建都会变的 nix store 路径写进 Noctalia 状态：`~/Pictures/wallpapers` → `assets/wallpapers`，`~/Videos/wallpapers` → `assets/videos`。
 
-- `Mod + Shift + w`：随机切换一次
-- `Mod + Ctrl + w`：每 120 秒随机切换
+- `Mod + Shift + w`：随机切换一次（静态）
+- `Mod + Ctrl + w`：每 120 秒随机切换（静态）
 - `Mod + Ctrl + Shift + w`：停止轮换并恢复默认壁纸
-- `Mod + Ctrl + v`：视频/静态壁纸切换（mpvpaper 随机播放 `assets/videos/` 中的视频，单个视频循环不自动切换；`Mod + Ctrl + Shift + v` 手动切下一个，到末尾后绕回第一个；视频模式下自动关闭 swayfx blur 保证画面清晰，退出恢复）
+- `Mod + Ctrl + v`：打开视频壁纸选择器（选片/暂停/清除；分配会持久化，登录后自动恢复）
+- `Mod + Ctrl + Shift + v`：清除视频壁纸，回到静态壁纸
 
-恢复休眠后，用户服务会重新应用壁纸（视频壁纸先暂停再恢复播放）。
+状态栏的壁纸按钮打开静态壁纸选择器。休眠时用户服务会冻结视频壁纸，唤醒后解冻。
 
 新增或替换仓库内壁纸后需要重建系统，使资源进入新的 Nix store 路径：
 

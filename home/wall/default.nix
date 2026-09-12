@@ -6,18 +6,19 @@
   ...
 }:
 let
-  # 静态壁纸 = Noctalia 自带壁纸管理器(background layer,配置见 home/programs/noctalia);
-  # 视频壁纸 = mpvpaper,独立 unit 跑在 bottom layer 盖住静态层。
-  # 壁纸资源在 assets/ 下,经 nix store 分发;Noctalia 会把选中的壁纸绝对路径
-  # 持久化到 settings.toml,所以额外给一份稳定的 home symlink 访问路径。
+  # 静态壁纸 = Noctalia 自带壁纸管理器;视频壁纸 = 官方 noctalia/mpvpaper 插件
+  # (插件按 output 托管 mpvpaper 进程,配置见 home/programs/noctalia)。
+  # 本模块提供: 稳定的壁纸/视频访问路径、切换脚本、休眠冻结视频的 unit。
   wallpaperDir = "${config.home.homeDirectory}/${appearance.wallpapersDir}";
   noctalia = lib.getExe config.programs.noctalia.package;
+  pluginService = "noctalia/mpvpaper:service";
   sharedScripts = import ./share_scripts.nix {
     inherit pkgs noctalia wallpaperDir;
   };
 in
 {
   home.packages = [
+    # mpvpaper 由插件在 PATH 中查找并拉起; socat 用于插件的 slideshow 静态帧同步
     pkgs.mpvpaper
     pkgs.socat
   ]
@@ -26,33 +27,19 @@ in
     dynamic_wallpaper
     default_wall
     video_wallpaper
-    video_wallpaper_next
+    video_wallpaper_clear
   ]);
 
-  # 稳定访问路径: ~/Pictures/wallpapers -> assets/wallpapers (nix store)
+  # 稳定访问路径: ~/Pictures/wallpapers -> assets/wallpapers、~/Videos/wallpapers -> assets/videos
+  # (两个 nix store 路径每次重建都会变,而 Noctalia/插件会持久化选中项的绝对路径)
   home.file."${appearance.wallpapersDir}".source = ../../assets/wallpapers;
+  home.file."${appearance.videosDir}".source = ../../assets/videos;
 
   systemd.user.services = {
-    # mpvpaper 视频壁纸:默认壁纸,随 sway 会话自动启动;
-    # 切静态由 video_wallpaper 脚本 stop,切回视频再 start。
-    video-wall = {
-      Unit = {
-        Description = "mpvpaper video wallpaper";
-        PartOf = lib.mkForce [ "sway-session.target" ];
-        After = [ "graphical-session.target" ];
-      };
-      Install.WantedBy = lib.mkForce [ "sway-session.target" ];
-      Service = {
-        Type = "simple";
-        ExecStart = "${sharedScripts.video_wallpaper_play}/bin/video_wallpaper_play";
-        Restart = "no";
-      };
-    };
-
-    # 休眠时暂停视频壁纸,唤醒后恢复(通过 mpvpaper 的 IPC socket)
+    # 休眠时冻结 mpvpaper,唤醒解冻(经插件 service 的 IPC;无视频分配时为空操作)
     video-wall-resume = {
       Unit = {
-        Description = "Pause/resume mpvpaper around suspend";
+        Description = "Freeze/resume mpvpaper video wallpaper around suspend";
         PartOf = lib.mkForce [ "sway-session.target" ];
         After = [ "graphical-session.target" ];
       };
@@ -63,9 +50,9 @@ in
           ${pkgs.dbus}/bin/dbus-monitor --system "type='signal',interface='org.freedesktop.login1.Manager',member='PrepareForSleep'" | \
           while read -r line; do
               if [[ "$line" == *"boolean true"* ]]; then
-                  echo 'set pause yes' | ${pkgs.socat}/bin/socat - /tmp/mpvpaper.sock || true
+                  ${noctalia} msg plugin ${pluginService} all freeze || true
               elif [[ "$line" == *"boolean false"* ]]; then
-                  echo 'set pause no' | ${pkgs.socat}/bin/socat - /tmp/mpvpaper.sock || true
+                  ${noctalia} msg plugin ${pluginService} all thaw || true
               fi
           done
         '';
