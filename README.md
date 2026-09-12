@@ -245,14 +245,14 @@ assets/wallpapers/   # 静态壁纸（.png/.jpg/.jpeg/.webp）
 assets/videos/       # 视频壁纸（.mp4/.webm/.mkv/.mov）
 ```
 
-默认壁纸为视频（`assets/videos/`，mpvpaper 随会话自动播放）。静态壁纸由 `awww-daemon` 按需管理（切换时启动，不随登录驻留），随机选择会递归识别 `assets/wallpapers/` 下的图片：
+默认壁纸为视频（`assets/videos/`，mpvpaper 随会话自动播放，跑在 bottom layer）。静态壁纸由 **Noctalia 自带壁纸管理器** 渲染（background layer，视频模式下被 mpvpaper 盖住，停掉 mpvpaper 即显形）；浏览目录是 `~/Pictures/wallpapers`（软链到仓库的 `assets/wallpapers`，避免把每次重建都会变的 nix store 路径写进 Noctalia 状态），点状态栏的壁纸按钮可打开选择器面板：
 
 - `Mod + Shift + w`：随机切换一次
 - `Mod + Ctrl + w`：每 120 秒随机切换
 - `Mod + Ctrl + Shift + w`：停止轮换并恢复默认壁纸
 - `Mod + Ctrl + v`：视频/静态壁纸切换（mpvpaper 随机播放 `assets/videos/` 中的视频，单个视频循环不自动切换；`Mod + Ctrl + Shift + v` 手动切下一个，到末尾后绕回第一个；视频模式下自动关闭 swayfx blur 保证画面清晰，退出恢复）
 
-Waybar 壁纸按钮：左键随机、右键视频/静态切换、中键恢复默认壁纸。恢复休眠后，用户服务会重新应用默认壁纸（视频壁纸先暂停再恢复播放）。
+恢复休眠后，用户服务会重新应用壁纸（视频壁纸先暂停再恢复播放）。
 
 新增或替换仓库内壁纸后需要重建系统，使资源进入新的 Nix store 路径：
 
@@ -323,7 +323,7 @@ nix build .#pi
 │   ├── programs/            # 桌面和命令行应用
 │   ├── shell/               # Fish、Starship 与 Shell 工具
 │   ├── terminals/           # 终端配置
-│   ├── wall/                # awww/mpvpaper 壁纸服务
+│   ├── wall/                # 壁纸:Noctalia 静态 + mpvpaper 视频
 │   └── wm/                  # swayfx WM 配置
 ├── hosts/                   # NixOS 主机定义
 │   └── nixos/               # 当前物理机配置

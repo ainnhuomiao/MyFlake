@@ -1,35 +1,38 @@
-{ pkgs, lib, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  appearance,
+  ...
+}:
 let
-  wallpaperDirectory = ../../assets/wallpapers;
-  sharedScripts = import ./share_scripts.nix { inherit pkgs; };
+  # 静态壁纸 = Noctalia 自带壁纸管理器(background layer,配置见 home/programs/noctalia);
+  # 视频壁纸 = mpvpaper,独立 unit 跑在 bottom layer 盖住静态层。
+  # 壁纸资源在 assets/ 下,经 nix store 分发;Noctalia 会把选中的壁纸绝对路径
+  # 持久化到 settings.toml,所以额外给一份稳定的 home symlink 访问路径。
+  wallpaperDir = "${config.home.homeDirectory}/${appearance.wallpapersDir}";
+  noctalia = lib.getExe config.programs.noctalia.package;
+  sharedScripts = import ./share_scripts.nix {
+    inherit pkgs noctalia wallpaperDir;
+  };
 in
 {
   home.packages = [
     pkgs.mpvpaper
     pkgs.socat
-  ];
+  ]
+  ++ (with sharedScripts; [
+    wallpaper_random
+    dynamic_wallpaper
+    default_wall
+    video_wallpaper
+    video_wallpaper_next
+  ]);
+
+  # 稳定访问路径: ~/Pictures/wallpapers -> assets/wallpapers (nix store)
+  home.file."${appearance.wallpapersDir}".source = ../../assets/wallpapers;
 
   systemd.user.services = {
-    awww = {
-      Unit = {
-        Description = "Efficient animated wallpaper daemon for wayland";
-        # 壁纸服务只属于 sway 会话: graphical-session.target 常驻不停止,
-        # 模式同 waybar/swayidle (会话结束不风暴重启)。
-        PartOf = lib.mkForce [ "sway-session.target" ];
-        After = [ "graphical-session.target" ];
-      };
-      # 默认壁纸是视频(video-wall 随会话启动),awww 只在切换到静态时
-      # 由 wallpaper_* / video_wallpaper 脚本按需 start,不再随登录自启。
-      Service = {
-        Type = "simple";
-        ExecStart = "${pkgs.awww}/bin/awww-daemon";
-        ExecStop = "${pkgs.awww}/bin/awww kill";
-        # 同 swayidle: awww 是 wayland 客户端, 会话结束时随断连退出,
-        # Restart=always 会风暴重启。
-        Restart = "no";
-      };
-    };
-
     # mpvpaper 视频壁纸:默认壁纸,随 sway 会话自动启动;
     # 切静态由 video_wallpaper 脚本 stop,切回视频再 start。
     video-wall = {
@@ -63,47 +66,6 @@ in
                   echo 'set pause yes' | ${pkgs.socat}/bin/socat - /tmp/mpvpaper.sock || true
               elif [[ "$line" == *"boolean false"* ]]; then
                   echo 'set pause no' | ${pkgs.socat}/bin/socat - /tmp/mpvpaper.sock || true
-              fi
-          done
-        '';
-        Restart = "always";
-        RestartSec = 5;
-      };
-    };
-
-    default_wall = {
-      Unit = {
-        Description = "default wallpaper";
-        BindsTo = [ "awww.service" ];
-        After = [ "awww.service" ];
-      };
-      Install.WantedBy = [ "awww.service" ];
-      Service = {
-        ExecStartPre = "${pkgs.coreutils}/bin/sleep 1";
-        ExecStart = ''${pkgs.awww}/bin/awww img "${wallpaperDirectory}/default.png" --transition-type random'';
-        Type = "oneshot";
-        RemainAfterExit = true;
-      };
-    };
-
-    awww-resume-fix = {
-      Unit = {
-        Description = "Fix awww wallpaper after resume";
-        PartOf = lib.mkForce [ "sway-session.target" ];
-        After = [ "graphical-session.target" ];
-      };
-      Install.WantedBy = lib.mkForce [ "sway-session.target" ];
-      Service = {
-        Type = "simple";
-        ExecStart = pkgs.writeShellScript "awww-resume-fix" ''
-          ${pkgs.dbus}/bin/dbus-monitor --system "type='signal',interface='org.freedesktop.login1.Manager',member='PrepareForSleep'" | \
-          while read -r line; do
-              if [[ "$line" == *"boolean false"* ]]; then
-                  echo "Detected system resume, waiting for GPU and Wayland to settle..."
-                  ${pkgs.coreutils}/bin/sleep 0.5
-                  # 默认视频壁纸时 awww 不运行,只有静态模式才需要重刷壁纸
-                  ${pkgs.systemd}/bin/systemctl --user is-active --quiet awww.service && \
-                    ${pkgs.systemd}/bin/systemctl --user restart default_wall
               fi
           done
         '';

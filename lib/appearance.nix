@@ -32,6 +32,11 @@ let
     s: (hexDigit (builtins.substring 0 1 s)) * 16 + (hexDigit (builtins.substring 1 1 s));
 in
 {
+  # 壁纸目录(home 相对路径): home/wall 在此建 symlink 指向 assets/wallpapers,
+  # Noctalia 壁纸管理器浏览该稳定路径 —— 它会把选中的壁纸绝对路径持久化到
+  # settings.toml,而 nix store 路径每次重建都会变,持久化后必然失效。
+  wallpapersDir = "Pictures/wallpapers";
+
   font = {
     name = "Maple Mono NF CN";
     size = 12;

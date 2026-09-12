@@ -1,52 +1,45 @@
-{ pkgs, ... }:
+{
+  pkgs,
+  noctalia,
+  wallpaperDir,
+}:
 let
-  wallpaperDirectory = ../../assets/wallpapers;
   videoDirectory = ../../assets/videos;
-  selectWallpaper = ''
-    wallpaper=$(${pkgs.findutils}/bin/find "${wallpaperDirectory}" -type f \
-      \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) \
-      -print0 | ${pkgs.coreutils}/bin/shuf -z -n 1 | ${pkgs.findutils}/bin/xargs -0 -r printf '%s')
-    if [[ -z "$wallpaper" ]]; then
-      ${pkgs.libnotify}/bin/notify-send "Wallpaper" "No images found in assets/wallpapers"
-      exit 1
-    fi
-  '';
-  # 切回静态壁纸模式:停视频壁纸、停轮换、拉起 awww-daemon、恢复 swayfx blur
+  # 切回静态壁纸模式:停 mpvpaper(它跑在 bottom layer,会盖住 Noctalia 的
+  # background 壁纸层)、停轮换、恢复 swayfx blur。静态壁纸本体由 Noctalia
+  # 自己渲染(见 home/programs/noctalia),不再需要任何壁纸守护进程。
   ensureStatic = ''
     ${pkgs.procps}/bin/pkill -f '/bin/dynamic_wallpaper' || true
     ${pkgs.systemd}/bin/systemctl --user stop video-wall
-    ${pkgs.systemd}/bin/systemctl --user start awww.service
     ${pkgs.sway}/bin/swaymsg blur enable >/dev/null 2>&1 || true
   '';
 in
 {
   wallpaper_random = pkgs.writeShellScriptBin "wallpaper_random" ''
     ${ensureStatic}
-    ${selectWallpaper}
-    ${pkgs.awww}/bin/awww img "$wallpaper" --transition-type random
+    resp=$(${noctalia} msg wallpaper-random 2>&1) || true
+    [[ "$resp" == error:* ]] && ${pkgs.libnotify}/bin/notify-send "Wallpaper" "$resp"
   '';
   dynamic_wallpaper = pkgs.writeShellScriptBin "dynamic_wallpaper" ''
     # 注意:这里不能复用 ensureStatic——它的 pkill 会匹配到本脚本自身的 bash 进程
     # (cmdline 为 bash .../bin/dynamic_wallpaper),导致启动即自杀
     ${pkgs.systemd}/bin/systemctl --user stop video-wall || true
-    ${pkgs.systemd}/bin/systemctl --user start awww.service
     ${pkgs.sway}/bin/swaymsg blur enable >/dev/null 2>&1 || true
     while true; do
-      ${selectWallpaper}
-      ${pkgs.awww}/bin/awww img "$wallpaper" --transition-type random
+      ${noctalia} msg wallpaper-random >/dev/null 2>&1 || true
       ${pkgs.coreutils}/bin/sleep 120
     done
   '';
   default_wall = pkgs.writeShellScriptBin "default_wall" ''
     ${ensureStatic}
-    ${pkgs.awww}/bin/awww img "${wallpaperDirectory}/default.png" --transition-type random
+    resp=$(${noctalia} msg wallpaper-set "${wallpaperDir}/default.png" 2>&1) || true
+    [[ "$resp" == error:* ]] && ${pkgs.libnotify}/bin/notify-send "Wallpaper" "$resp"
   '';
-  # 视频/静态壁纸切换(waybar 右键、Mod+Ctrl+v)
+  # 视频/静态壁纸切换(Mod+Ctrl+v)
   video_wallpaper = pkgs.writeShellScriptBin "video_wallpaper" ''
     if ${pkgs.systemd}/bin/systemctl --user is-active --quiet video-wall; then
-      # 视频模式 → 恢复静态
+      # 视频模式 → 恢复静态:Noctalia 壁纸层一直在画,停掉 mpvpaper 即显形
       ${pkgs.systemd}/bin/systemctl --user stop video-wall
-      ${pkgs.systemd}/bin/systemctl --user start awww.service
       ${pkgs.sway}/bin/swaymsg blur enable >/dev/null 2>&1 || true
       ${pkgs.libnotify}/bin/notify-send "Wallpaper" "已切换为静态壁纸"
     else
@@ -54,7 +47,6 @@ in
       ${pkgs.procps}/bin/pkill -f '/bin/dynamic_wallpaper' || true
       # sway 在无 bg 配置时兜底拉起的裸 swaybg,与 mpvpaper 抢 background layer
       ${pkgs.procps}/bin/pkill -f '/bin/swaybg' || true
-      ${pkgs.systemd}/bin/systemctl --user stop awww.service
       ${pkgs.sway}/bin/swaymsg blur disable >/dev/null 2>&1 || true
       ${pkgs.systemd}/bin/systemctl --user start video-wall
       ${pkgs.libnotify}/bin/notify-send "Wallpaper" "已切换为视频壁纸"
@@ -65,6 +57,8 @@ in
   # 注意:mpvpaper 1.8 只接受一个文件参数(main.c: video_path=argv[optind+1]),
   # 多视频必须走 --playlist=;且 main.c 会截掉 -o 里 --playlist= 到行尾的内容,
   # 所以 --playlist= 必须放在 -o 的最后
+  # -l bottom:Noctalia 自带壁纸管理器占用 background layer,视频放在 bottom layer
+  # 才能稳定盖住它(同层两张 surface 谁在上取决于 map 顺序,不可靠)
   video_wallpaper_play = pkgs.writeShellScriptBin "video_wallpaper_play" ''
     mapfile -t videos < <(${pkgs.findutils}/bin/find "${videoDirectory}" -type f \
       \( -iname '*.mp4' -o -iname '*.webm' -o -iname '*.mkv' -o -iname '*.mov' \) \
@@ -77,9 +71,9 @@ in
     # no-config:用户 mpv 配置的 vo=gpu + profile=gpu-hq 与 mpvpaper 的 libmpv 渲染冲突,
     # 实测 4K60 视频丢帧 400+/播放速度 ~0.1x;no-config 后接近实时、丢帧个位数
     # loop-file=inf:当前视频无限循环不自动切;loop=inf:playlist-next 到尾后绕回第一个
-    # 登录自动启动时也会撞上 sway 兜底拉起的裸 swaybg,先清掉再占 background layer
+    # 登录自动启动时也会撞上 sway 兜底拉起的裸 swaybg,先清掉再占位
     ${pkgs.procps}/bin/pkill -f '/bin/swaybg' || true
-    exec ${pkgs.mpvpaper}/bin/mpvpaper \
+    exec ${pkgs.mpvpaper}/bin/mpvpaper -l bottom \
       -o "no-config no-audio --shuffle --loop=inf --loop-file=inf --hwdec=vaapi --input-ipc-server=/tmp/mpvpaper.sock --playlist=/tmp/mpvpaper-playlist.m3u" \
       ALL
   '';

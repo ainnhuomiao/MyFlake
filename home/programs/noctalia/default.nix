@@ -1,4 +1,9 @@
-{ ... }:
+{ config, appearance, ... }:
+let
+  # 稳定路径: Noctalia 会把选中的壁纸路径写进 settings.toml,
+  # 用 home symlink (见 home/wall) 而非 store 路径,重建后才不失效
+  wallpaperDir = "${config.home.homeDirectory}/${appearance.wallpapersDir}";
+in
 {
   programs.noctalia = {
     enable = true;
@@ -8,9 +13,15 @@
         source = "builtin";
         builtin = "Catppuccin";
       };
-      # 视觉壁纸由 mpvpaper 渲染, Noctalia 不画壁纸层
+      # 静态壁纸由 Noctalia 自带壁纸管理器渲染(background layer、
+      # 选择器面板 panel-toggle wallpaper、IPC wallpaper-random/set)。
+      # 视频壁纸 mpvpaper 独立跑在 bottom layer 盖住这层,见 home/wall
       wallpaper = {
-        enabled = false;
+        enabled = true;
+        directory = wallpaperDir;
+        default = {
+          path = "${wallpaperDir}/default.png";
+        };
       };
       # 锁屏背景: 捕捉当前桌面(含 mpvpaper 视频壁纸那一帧)做模糊+着色,
       # 复刻旧 swaylock-blur 的模糊壁纸效果

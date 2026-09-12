@@ -4,9 +4,6 @@
   lib,
   ...
 }:
-let
-  sharedScripts = import ../../wall/share_scripts.nix { inherit pkgs; };
-in
 {
   imports = [ ./config.nix ];
 
@@ -20,11 +17,6 @@ in
   };
   home.packages = [
     inputs.hyprpicker.packages.${pkgs.stdenv.hostPlatform.system}.hyprpicker
-    sharedScripts.wallpaper_random
-    sharedScripts.dynamic_wallpaper
-    sharedScripts.default_wall
-    sharedScripts.video_wallpaper
-    sharedScripts.video_wallpaper_next
   ]
   ++ (with pkgs; [
     sway-contrib.grimshot
