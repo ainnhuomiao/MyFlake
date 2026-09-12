@@ -1,5 +1,5 @@
 {
-  description = "huomiao's NixOS Configuration";
+  description = "MyFlake — huomiao's NixOS configuration";
 
   outputs =
     inputs@{ self, ... }:

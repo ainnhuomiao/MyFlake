@@ -1,7 +1,7 @@
 <h1 align="center">
-    <img src="assets/cirno.png" alt="mynixos-config" width="360px" />
+    <img src="assets/cirno.png" alt="MyFlake" width="360px" />
     <br>
-    mynixos-config
+    MyFlake
     <br>
     <a href="https://github.com/catppuccin/catppuccin">
         <img src="assets/palette-frappe.png" alt="Catppuccin Frappé" width="600px" />
@@ -13,8 +13,8 @@
 </p>
 
 <div align="center">
-    <a href="https://github.com/ainnhuomiao/mynixos-config/actions/workflows/nix.yml">
-        <img src="https://img.shields.io/github/actions/workflow/status/ainnhuomiao/mynixos-config/nix.yml?style=for-the-badge&logo=githubactions&logoColor=white&label=CI&labelColor=303446" alt="CI" />
+    <a href="https://github.com/ainnhuomiao/MyFlake/actions/workflows/nix.yml">
+        <img src="https://img.shields.io/github/actions/workflow/status/ainnhuomiao/MyFlake/nix.yml?style=for-the-badge&logo=githubactions&logoColor=white&label=CI&labelColor=303446" alt="CI" />
     </a>
     <a href="https://nixos.org">
         <img src="https://img.shields.io/badge/NixOS-26.05-8caaee?style=for-the-badge&logo=nixos&logoColor=eff1f5&labelColor=303446" alt="NixOS 26.05" />
@@ -25,8 +25,8 @@
     <a href="https://flake.parts">
         <img src="https://img.shields.io/badge/Built%20with-flake--parts-ef9f76?style=for-the-badge&logoColor=eff1f5&labelColor=303446" alt="flake-parts" />
     </a>
-    <a href="https://github.com/ainnhuomiao/mynixos-config">
-        <img src="https://img.shields.io/github/repo-size/ainnhuomiao/mynixos-config?style=for-the-badge&logo=github&logoColor=babbf1&labelColor=303446&color=babbf1" alt="Repo Size" />
+    <a href="https://github.com/ainnhuomiao/MyFlake">
+        <img src="https://img.shields.io/github/repo-size/ainnhuomiao/MyFlake?style=for-the-badge&logo=github&logoColor=babbf1&labelColor=303446&color=babbf1" alt="Repo Size" />
     </a>
 </div>
 
@@ -476,8 +476,8 @@ wf-recorder -g "$(slurp)" --audio -f recording.mkv
 从 NixOS Minimal ISO 启动，联网后克隆仓库：
 
 ```bash
-git clone <仓库地址> mynixos-config
-cd mynixos-config
+git clone <仓库地址> MyFlake
+cd MyFlake
 nix develop --extra-experimental-features 'nix-command flakes'
 ```
 

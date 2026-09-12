@@ -113,13 +113,13 @@ git commit -m "$MSG"
 git push -u origin "$branch" 2>&1 | tail -2
 
 echo "=== 创建 PR ==="
-pr_url="$(gh pr create --repo ainnhuomiao/mynixos-config --base main --head "$branch" \
+pr_url="$(gh pr create --repo ainnhuomiao/MyFlake --base main --head "$branch" \
   --title "$MSG" --body "由 \`lib/scripts/push.sh --pr\` 创建;分支 \`$branch\`。")"
 echo "   $pr_url"
 
 if [[ $MERGE == 1 ]]; then
   echo "=== 合并 PR 并同步本地 main ==="
-  gh pr merge "${pr_url##*/}" --repo ainnhuomiao/mynixos-config --merge --delete-branch
+  gh pr merge "${pr_url##*/}" --repo ainnhuomiao/MyFlake --merge --delete-branch
   git fetch origin main:main
   if git switch "$ORIG" >/dev/null 2>&1; then
     echo

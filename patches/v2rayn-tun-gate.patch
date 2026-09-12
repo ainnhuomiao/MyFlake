@@ -20,7 +20,7 @@ index ef675b0..54d4319 100644
          else if (Utils.IsLinux())
          {
 -            return AppManager.Instance.LinuxSudoPwd.IsNotEmpty();
-+            // mynixos-config: sudo NOPASSWD 免密, LinuxSudoPwd 仅内存态且从不持久化,
++            // MyFlake: sudo NOPASSWD 免密, LinuxSudoPwd 仅内存态且从不持久化,
 +            // 每次 v2rayN 重启后门禁判空, 构造器把 EnableTun 强制置回 off
 +            // (rebuild 后重启 v2rayN 即全节点 -1)。门禁对免密机无意义, 直接放行。
 +            return true;

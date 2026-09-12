@@ -7,7 +7,7 @@
     };
     nh = {
       enable = true;
-      flake = "/home/huomiao/mynixos-config";
+      flake = "/home/huomiao/MyFlake";
     };
   };
 }

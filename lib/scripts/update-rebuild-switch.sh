@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Complete system update: flake update → check → format → build+switch TWICE
 # (registry snapshot needs two rebuilds to consume the new nixpkgs) → verify.
-# Follows the verified mynixos-config update workflow (2026-08-20).
+# Follows the verified MyFlake update workflow (2026-08-20).
 # Manual extras from the full workflow:
 #   - 清理旧代际: just clean
 #
