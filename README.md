@@ -169,6 +169,7 @@ Home Manager 激活时会将声明的 MCP 项合并到各工具配置中，不�
 | OpenCode           | `~/.config/opencode/opencode.json` |
 | GitHub Copilot CLI | `~/.copilot/mcp-config.json`       |
 | cc-switch          | `~/.cc-switch/cc-switch.db`        |
+| Kimi Code          | `~/.kimi-code/mcp.json`            |
 
 Context7 地址为 `https://mcp.context7.com/mcp`。如果 cc-switch 数据库存在，激活脚本还会同步其中的 Context7 记录和 Codex Live backup。
 

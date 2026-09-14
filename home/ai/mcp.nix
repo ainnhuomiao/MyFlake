@@ -205,6 +205,51 @@ in
         "$antigravity_config" > "$antigravity_tmp"
       ${pkgs.coreutils}/bin/chmod --reference="$antigravity_config" "$antigravity_tmp"
       ${pkgs.coreutils}/bin/mv "$antigravity_tmp" "$antigravity_config"
+
+      # Kimi Code CLI:用户级 MCP 文件 ~/.kimi-code/mcp.json
+      # (运行时先看 env KIMI_CODE_HOME,未设才回落 ~/.kimi-code;仓库不设置后者)。
+      # 形状 { "mcpServers": { <name>: {command,args} | {url,headers} } },
+      # transport 由 command / url 自动推断,勿手写。
+      # 另有 <项目根>/.mcp.json 与 <cwd>/.kimi-code/mcp.json,项目级覆盖用户级。
+      kimi_config_dir="$HOME/.kimi-code"
+      kimi_config="$kimi_config_dir/mcp.json"
+      ${pkgs.coreutils}/bin/mkdir -p "$kimi_config_dir"
+      if [[ ! -f "$kimi_config" ]]; then
+        ${pkgs.coreutils}/bin/printf '{}\n' > "$kimi_config"
+        ${pkgs.coreutils}/bin/chmod 600 "$kimi_config"
+      fi
+      kimi_tmp="$(${pkgs.coreutils}/bin/mktemp "$kimi_config_dir/mcp.json.XXXXXX")"
+      ${pkgs.jq}/bin/jq \
+        --arg context7_url "${context7Url}" \
+        --arg mcp_nixos "${pkgs.mcp-nixos}/bin/mcp-nixos" \
+        --arg flake_stats_mcp "${pkgs.flake-stats-mcp}/bin/flake-stats-mcp" \
+        --arg obsidian_url "${obsidianMcpUrl}" \
+        --arg obsidian_key "$obsidian_key" \
+        '.mcpServers = ((.mcpServers // {})
+          | .context7 = { url: $context7_url }
+          | .["mcp-nixos"] = {
+              command: $mcp_nixos,
+              args: []
+            }
+          | .["flake-stats-mcp"] = {
+              command: $flake_stats_mcp,
+              args: []
+            }
+          | .obsidian = ({ url: $obsidian_url }
+              + (if $obsidian_key != "" then
+                   {
+                     headers: {
+                       Authorization: "Bearer " + $obsidian_key
+                     }
+                   }
+                 else {} end)))' \
+        "$kimi_config" > "$kimi_tmp"
+      if ${pkgs.diffutils}/bin/cmp -s "$kimi_config" "$kimi_tmp"; then
+        ${pkgs.coreutils}/bin/rm "$kimi_tmp"
+      else
+        ${pkgs.coreutils}/bin/chmod --reference="$kimi_config" "$kimi_tmp"
+        ${pkgs.coreutils}/bin/mv "$kimi_tmp" "$kimi_config"
+      fi
     fi
   '';
 }
