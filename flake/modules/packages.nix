@@ -50,11 +50,12 @@
         zen-browser = inputs.zen-browser.packages.${system}.default;
         # noctalia 来自 flake input，nixpkgs 没有，需一并缓存
         noctalia = inputs.noctalia.packages.${system}.default;
-        # reasonix/antigravity-cli 来自 numtide/llm-agents.nix input
+        # reasonix/antigravity-cli/kimi-code 来自 numtide/llm-agents.nix input
         reasonix = inputs.llm-agents.packages.${system}.reasonix;
         antigravity-cli = inputs.llm-agents.packages.${system}.antigravity-cli;
         omp = inputs.llm-agents.packages.${system}.omp;
         pi = inputs.llm-agents.packages.${system}.pi;
+        kimi-code = inputs.llm-agents.packages.${system}.kimi-code;
         # 以下三个来自 flake input 且上游无二进制缓存(必须本机源码编译),
         # 导出后 CI 才能构建它们进 attic(见 .github/workflows/nix.yml)
         herdr = inputs.herdr.packages.${system}.default;

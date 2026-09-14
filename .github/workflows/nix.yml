@@ -39,7 +39,7 @@ jobs:
       # 其余包都能直接替换,列进来只会重复下载 + 上传(lock 更新后全部重来):
       #   - nixpkgs 自由软件      → cache.nixos.org (selector4nix 上游里也有 USTC 镜像)
       #   - nixpkgs unfree 应用   → 厂商 CDN 的预编译包(discord/vscode/chrome/qq/...)
-      #   - llm-agents            → cache.numtide.com (omp/pi/reasonix/antigravity-cli)
+      #   - llm-agents            → cache.numtide.com (omp/pi/reasonix/antigravity-cli/kimi-code)
       #   - noctalia / steam      → noctalia.cachix.org / nix-community.cachix.org
       #   - firefox-bin/zen-browser → 自行下载的厂商预编译包(仅重打包,无编译)
       # 复核某包是否该在这里:取 nix eval .#<pkg>.outPath 的 hash,查

@@ -45,6 +45,7 @@ in
       inputs.llm-agents.packages.${system}.antigravity-cli
       inputs.llm-agents.packages.${system}.omp
       inputs.llm-agents.packages.${system}.pi
+      inputs.llm-agents.packages.${system}.kimi-code
       omp-provider
     ]
     ++ mcps;
