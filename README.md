@@ -271,6 +271,7 @@ just rebuild-switch
 
 - `agy-hud`
 - `bili_tui`
+- `dingtalk`
 - `fcitx5-pinyin-moegirl`
 - `fcitx5-pinyin-zhwiki`
 - `flake-stats-mcp`
@@ -283,26 +284,26 @@ just rebuild-switch
 - `mcp-nixos`：禁用一个会误判普通源码内容的上游测试
 - `v2rayn`：修复 Linux TUN 门禁（rebuild 后节点延迟 -1 的根因）
 
-Flake 对外提供 35 个包（`packages.x86_64-linux.*`）：
+Flake 对外提供 36 个包（`packages.x86_64-linux.*`）：
 
 ```text
-agy-hud          antigravity-cli        bili_tui
-bilibili         discord                element-desktop
-fcitx5-pinyin-moegirl  fcitx5-pinyin-zhwiki  feishu
-flake-stats-mcp  google-chrome          herdr
-hmcl             hyprpicker             kimi-code
-mcp-nixos        microsoft-edge         motrix-next
-noctalia         nordic                 obsidian
-omp              pi                     qq
-selector4nix     steam                  swayfx
-thunderbird-bin  v2rayn                 vscode
-wechat           wemeet                 wl-screenrec
-wpsoffice-cn     zen-browser
+agy-hud                herdr           qq
+antigravity-cli        hmcl            selector4nix
+bili_tui               hyprpicker      steam
+bilibili               kimi-code       swayfx
+dingtalk               mcp-nixos       thunderbird-bin
+discord                microsoft-edge  v2rayn
+element-desktop        motrix-next     vscode
+fcitx5-pinyin-moegirl  noctalia        wechat
+fcitx5-pinyin-zhwiki   nordic          wemeet
+feishu                 obsidian        wl-screenrec
+flake-stats-mcp        omp             wpsoffice-cn
+google-chrome          pi              zen-browser
 ```
 
-来源：`noctalia`/`zen-browser` 来自各自 flake input，`herdr`/`hyprpicker`/`selector4nix` 来自对应 input，`antigravity-cli`/`omp`/`pi`/`kimi-code` 来自 `llm-agents`，`agy-hud`/`bili_tui`/`fcitx5-pinyin-*`/`flake-stats-mcp`/`nordic` 为 `pkgs/` 本地包，其余为 nixpkgs 包。
+来源：`noctalia`/`zen-browser` 来自各自 flake input，`herdr`/`hyprpicker`/`selector4nix` 来自对应 input，`antigravity-cli`/`omp`/`pi`/`kimi-code` 来自 `llm-agents`，`agy-hud`/`bili_tui`/`dingtalk`/`fcitx5-pinyin-*`/`flake-stats-mcp`/`nordic` 为 `pkgs/` 本地包，其余为 nixpkgs 包。
 
-CI **只构建「上游任何二进制缓存里都没有、必须从源码编译」的 9 个包**（`bili_tui`、`flake-stats-mcp`、`herdr`、`hyprpicker`、`mcp-nixos`、`motrix-next`、`selector4nix`、`swayfx`、`v2rayn`）并推送到自建 Attic 缓存。其余包都能直接替换（nixpkgs 自由软件走 cache.nixos.org，unfree 应用走厂商预编译包，`llm-agents` 走 cache.numtide.com，`noctalia` 走 noctalia.cachix.org），列进 CI 只会重复下载+上传，lock 更新后还要全部重来。
+CI **只构建「上游任何二进制缓存里都没有、必须从源码编译」的 10 个包**（`bili_tui`、`dingtalk`、`flake-stats-mcp`、`herdr`、`hyprpicker`、`mcp-nixos`、`motrix-next`、`selector4nix`、`swayfx`、`v2rayn`）并推送到自建 Attic 缓存。其余包都能直接替换（nixpkgs 自由软件走 cache.nixos.org，unfree 应用走厂商预编译包，`llm-agents` 走 cache.numtide.com，`noctalia` 走 noctalia.cachix.org），列进 CI 只会重复下载+上传，lock 更新后还要全部重来。
 
 例如：
 

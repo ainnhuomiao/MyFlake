@@ -53,6 +53,7 @@ jobs:
             --print-out-paths \
             --accept-flake-config \
             .#bili_tui \
+            .#dingtalk \
             .#flake-stats-mcp \
             .#herdr \
             .#hyprpicker \

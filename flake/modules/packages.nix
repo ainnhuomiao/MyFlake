@@ -11,6 +11,8 @@
           allowUnfree = true;
           allowBroken = true;
           allowUnsupportedSystem = true;
+          # 钉钉自带 OpenSSL 1.1（EOL），与 system/nix/nixpkgs.nix 保持一致
+          permittedInsecurePackages = [ "dingtalk-8.2.8.260818002" ];
         };
       };
     in
@@ -20,6 +22,7 @@
           agy-hud
           bilibili
           bili_tui
+          dingtalk
           discord
           element-desktop
           fcitx5-pinyin-moegirl

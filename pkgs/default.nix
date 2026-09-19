@@ -3,6 +3,7 @@
   overlay = final: prev: {
     agy-hud = final.callPackage ./agy-hud { };
     bili_tui = final.callPackage ./bili_tui { };
+    dingtalk = final.callPackage ./dingtalk { };
     fcitx5-pinyin-moegirl = final.callPackage ./fcitx5-pinyin-moegirl { };
     fcitx5-pinyin-zhwiki = final.callPackage ./fcitx5-pinyin-zhwiki { };
     flake-stats-mcp = final.callPackage ./flake-stats-mcp { };

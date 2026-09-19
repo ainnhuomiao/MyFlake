@@ -1,0 +1,299 @@
+# 钉钉 Linux 客户端（官方 .deb 重新打包，nixpkgs 未收录）。
+#
+# nixpkgs PR #354928 / #431371 都因客户端硬依赖已 EOL 的 OpenSSL 1.1 而关闭，
+# 因此这里保留 deb 自带的 OpenSSL 1.1，并用 meta.knownVulnerabilities 显式标注：
+# 需要 permittedInsecurePackages = [ "dingtalk-8.2.8.260818002" ]
+# （见 system/nix/nixpkgs.nix 与 flake/modules/packages.nix）。
+#
+# 配方移植自 NUR（github.com/Yakkhini/nur-packages，MIT）与 AUR dingtalk-bin。
+{
+  fetchurl,
+  stdenv,
+  callPackage,
+  autoPatchelfHook,
+  makeWrapper,
+  lib,
+  makeDesktopItem,
+  copyDesktopItems,
+  dpkg,
+  # DingTalk dependencies
+  alsa-lib,
+  apr,
+  aprutil,
+  at-spi2-atk,
+  at-spi2-core,
+  cairo,
+  cups,
+  curl,
+  dbus,
+  e2fsprogs,
+  fontconfig,
+  freetype,
+  fribidi,
+  gdk-pixbuf,
+  glib,
+  gtkglext,
+  gnutls,
+  graphite2,
+  gtk3,
+  harfbuzz,
+  icu63,
+  krb5,
+  libdrm,
+  libgcrypt,
+  libGLU,
+  libglvnd,
+  libidn2,
+  libinput,
+  libjpeg,
+  libpng,
+  libpsl,
+  libpulseaudio,
+  libssh2,
+  libthai,
+  libxcrypt-legacy,
+  libxkbcommon,
+  mesa,
+  mtdev,
+  nghttp2,
+  nspr,
+  nss,
+  opencv,
+  openldap,
+  pango,
+  pcre2,
+  pipewire,
+  prelink,
+  qt5,
+  rtmpdump,
+  udev,
+  util-linux,
+  libICE,
+  libSM,
+  libX11,
+  libxcb,
+  libXcomposite,
+  libXcursor,
+  libXdamage,
+  libXext,
+  libXfixes,
+  libXi,
+  libXinerama,
+  libXmu,
+  libXrandr,
+  libXrender,
+  libXScrnSaver,
+  libXt,
+  libXtst,
+  xcbutilimage,
+  xcbutilkeysyms,
+  xcbutilrenderutil,
+  xcbutilwm,
+}:
+
+let
+  pname = "dingtalk";
+  version = "8.2.8.260818002";
+
+  src = fetchurl {
+    # 版本对齐端点（官方，可直接 jq 取当前版本/URL）:
+    # https://dtapp-pub.dingtalk.com/dingtalk-desktop/xc_dingtalk_update/linux_deb/Update/other/amd64/linux_dingtalk_update_package_release.json
+    url = "https://dtapp-pub.dingtalk.com/dingtalk-desktop/xc_dingtalk_update/linux_deb/Release/com.alibabainc.dingtalk_${version}_amd64.deb";
+    hash = "sha256-iNrWB7u3pykYOZORydU67fz6Om2rAffQZZ5iwcoyZ48=";
+  };
+
+  dingtalk-wayland-screenshare = callPackage ./wayland-screenshare.nix { };
+
+  libraries = [
+    alsa-lib
+    apr
+    aprutil
+    at-spi2-atk
+    at-spi2-core
+    cairo
+    cups
+    curl
+    dbus
+    e2fsprogs
+    fontconfig
+    freetype
+    fribidi
+    gdk-pixbuf
+    glib
+    gtkglext
+    gnutls
+    graphite2
+    gtk3
+    harfbuzz
+    icu63
+    krb5
+    libdrm
+    libgcrypt
+    libGLU
+    libglvnd
+    libidn2
+    libinput
+    libjpeg
+    libpng
+    libpsl
+    libpulseaudio
+    libssh2
+    libthai
+    libxcrypt-legacy
+    libxkbcommon
+    mesa
+    mtdev
+    nghttp2
+    nspr
+    nss
+    opencv
+    openldap
+    pango
+    pcre2
+    pipewire
+    qt5.qtbase
+    qt5.qtmultimedia
+    qt5.qtsvg
+    qt5.qtx11extras
+    rtmpdump
+    udev
+    util-linux
+    libICE
+    libSM
+    libX11
+    libxcb
+    libXcomposite
+    libXcursor
+    libXdamage
+    libXext
+    libXfixes
+    libXi
+    libXinerama
+    libXmu
+    libXrandr
+    libXrender
+    libXScrnSaver
+    libXt
+    libXtst
+    xcbutilimage
+    xcbutilkeysyms
+    xcbutilrenderutil
+    xcbutilwm
+  ];
+in
+stdenv.mkDerivation (finalAttrs: {
+  inherit pname version src;
+
+  nativeBuildInputs = [
+    autoPatchelfHook
+    makeWrapper
+    prelink
+    qt5.wrapQtAppsHook
+    copyDesktopItems
+    dpkg
+  ];
+  buildInputs = libraries;
+
+  # We will append QT wrapper args to our own wrapper
+  dontWrapQtApps = true;
+
+  unpackPhase = ''
+    runHook preUnpack
+
+    dpkg -x $src .
+
+    mv opt/apps/com.alibabainc.dingtalk/files/version version
+    mv opt/apps/com.alibabainc.dingtalk/files/*-Release.* release
+
+    # Cleanup
+    # Keep the bundled OpenSSL 1.1 libraries: DingTalk still requires their ABI,
+    # which is no longer provided by nixpkgs.
+    rm -f release/{*.a,*.la,*.prl,dingtalk_crash_report,dingtalk_updater,libapr*,libcurl.so.*}
+    rm -f release/{libdouble-conversion.so.*,libEGL*,libfontconfig*,libfreetype*,libfribidi*,libgbm.*,libgdk*,libGLES*}
+    rm -f release/{libgtk*,libgtk-x11-2.0.so.*,libharfbuzz*,libicu*,libidn2*,libjpeg*,libm.so.*,libnghttp2*}
+    rm -f release/{libpango-1.0.*,libpangocairo-1.0.*,libpangoft2-1.0.*,libpcre2*,libpng*,libpsl*,libQt5*,libssh2*}
+    rm -f release/{libstdc++.so.6,libstdc++*,libunistring*,libvk*,libvulkan*,libxcb*,libz*}
+    rm -rf release/{engines-1_1,imageformats,platform*,swiftshader,xcbglintegrations}
+    rm -rf release/Resources/{i18n/tool/*.exe,qss/mac}
+
+    runHook postUnpack
+  '';
+
+  installPhase = ''
+    runHook preInstall
+
+    install -Dm644 version $out/version
+
+    # Move libraries
+    # DingTalk relies on (some of) the exact libraries it ships with
+    mv release $out/lib
+
+    # Entrypoint
+    mkdir -p $out/bin
+    cat > $out/bin/dingtalk <<EOF
+    #!/usr/bin/env bash
+    if [[ \''${XMODIFIERS} =~ fcitx ]]; then
+      export QT_IM_MODULE=fcitx
+      export GTK_IM_MODULE=fcitx
+    elif [[ \''${XMODIFIERS} =~ ibus ]]; then
+      export QT_IM_MODULE=ibus
+      export GTK_IM_MODULE=ibus
+      export IBUS_USE_PORTAL=1
+    fi
+
+    exec $out/lib/com.alibabainc.dingtalk
+    EOF
+    chmod +x $out/bin/dingtalk
+
+    wrapProgram $out/bin/dingtalk \
+      "''${qtWrapperArgs[@]}" \
+      --chdir $out/lib \
+      --unset WAYLAND_DISPLAY \
+      --set QT_QPA_PLATFORM "xcb" \
+      --set QT_AUTO_SCREEN_SCALE_FACTOR 1 \
+      --prefix LD_PRELOAD : "${dingtalk-wayland-screenshare}/lib/libdingtalkhook.so" \
+      --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath libraries}"
+
+    # App Menu
+    install -Dm644 $out/lib/Resources/image/common/about/logo.png $out/share/pixmaps/dingtalk.png
+
+    runHook postInstall
+  '';
+
+  postFixup = ''
+    execstack -c $out/lib/dingtalk_dll.so
+    execstack -c $out/lib/libconference_new.so
+  '';
+
+  desktopItems = [
+    (makeDesktopItem {
+      name = "dingtalk";
+      desktopName = "Dingtalk";
+      genericName = "dingtalk";
+      categories = [ "Chat" ];
+      exec = "dingtalk %u";
+      icon = "dingtalk";
+      keywords = [ "dingtalk" ];
+      mimeTypes = [ "x-scheme-handler/dingtalk" ];
+      extraConfig = {
+        "Name[zh_CN]" = "钉钉";
+        "Name[zh_TW]" = "釘釘";
+      };
+    })
+  ];
+
+  passthru = { inherit dingtalk-wayland-screenshare; };
+
+  meta = {
+    maintainers = [ ];
+    description = "Enterprise communication and collaboration platform developed by Alibaba Group";
+    homepage = "https://www.dingtalk.com/";
+    platforms = [ "x86_64-linux" ];
+    license = lib.licenses.unfreeRedistributable;
+    knownVulnerabilities = [
+      "Bundles OpenSSL 1.1, which reached end of life on 2023-09-11 and no longer receives security updates."
+    ];
+    sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
+    mainProgram = "dingtalk";
+  };
+})
