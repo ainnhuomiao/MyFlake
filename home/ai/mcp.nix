@@ -106,25 +106,6 @@ in
            WHERE app_type = 'codex';"
       fi
 
-      claude_config="$HOME/.claude.json"
-      ${pkgs.coreutils}/bin/mkdir -p "$HOME"
-      if [[ ! -f "$claude_config" ]]; then
-        ${pkgs.coreutils}/bin/printf '{}\n' > "$claude_config"
-        ${pkgs.coreutils}/bin/chmod 600 "$claude_config"
-      fi
-      if ! ${pkgs.jq}/bin/jq -e \
-        --arg url "${context7Url}" \
-        '.mcpServers.context7.type == "http" and .mcpServers.context7.url == $url' \
-        "$claude_config" >/dev/null 2>&1; then
-        claude_tmp="$(${pkgs.coreutils}/bin/mktemp "$HOME/.claude.json.XXXXXX")"
-        ${pkgs.jq}/bin/jq \
-          --arg url "${context7Url}" \
-          '.mcpServers.context7 = { type: "http", url: $url }' \
-          "$claude_config" > "$claude_tmp"
-        ${pkgs.coreutils}/bin/chmod --reference="$claude_config" "$claude_tmp"
-        ${pkgs.coreutils}/bin/mv "$claude_tmp" "$claude_config"
-      fi
-
       opencode_config_dir="$HOME/.config/opencode"
       opencode_config="$opencode_config_dir/opencode.json"
       ${pkgs.coreutils}/bin/mkdir -p "$opencode_config_dir"
@@ -144,30 +125,6 @@ in
           "$opencode_config" > "$opencode_tmp"
         ${pkgs.coreutils}/bin/chmod --reference="$opencode_config" "$opencode_tmp"
         ${pkgs.coreutils}/bin/mv "$opencode_tmp" "$opencode_config"
-      fi
-
-      copilot_config_dir="$HOME/.copilot"
-      copilot_config="$copilot_config_dir/mcp-config.json"
-      ${pkgs.coreutils}/bin/mkdir -p "$copilot_config_dir"
-      if [[ ! -f "$copilot_config" ]]; then
-        ${pkgs.coreutils}/bin/printf '{}\n' > "$copilot_config"
-      fi
-      if ! ${pkgs.jq}/bin/jq -e \
-        --arg url "${context7Url}" \
-        '.mcpServers.context7.type == "http" and .mcpServers.context7.url == $url' \
-        "$copilot_config" >/dev/null 2>&1; then
-        copilot_tmp="$(${pkgs.coreutils}/bin/mktemp \
-          "$copilot_config_dir/mcp-config.json.XXXXXX")"
-        ${pkgs.jq}/bin/jq \
-          --arg url "${context7Url}" \
-          '.mcpServers.context7 = {
-            type: "http",
-            url: $url,
-            tools: [ "*" ]
-          }' \
-          "$copilot_config" > "$copilot_tmp"
-        ${pkgs.coreutils}/bin/chmod --reference="$copilot_config" "$copilot_tmp"
-        ${pkgs.coreutils}/bin/mv "$copilot_tmp" "$copilot_config"
       fi
 
       antigravity_config_dir="$HOME/.gemini/config"

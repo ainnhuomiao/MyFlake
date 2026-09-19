@@ -43,7 +43,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     llm-agents = {
-      # numtide/llm-agents.nix: AI coding agent 包集 (reasonix/antigravity-cli/...)
+      # numtide/llm-agents.nix: AI coding agent 包集 (antigravity-cli/omp/pi/kimi-code)
       # 不 follows nixpkgs: 其包只对其钉的 nixpkgs-unstable 构建测试,
       # 跟随会丢 cache.numtide.com 缓存命中且随上游 nixpkgs 更新漂移
       url = "github:numtide/llm-agents.nix";

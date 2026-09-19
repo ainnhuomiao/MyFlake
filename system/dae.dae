@@ -13,7 +13,9 @@ dns {
 
   upstream {
     ali: "quic://223.5.5.5:853"
-    google: "tcp://8.8.8.8:53"
+    # 别用 tcp://8.8.8.8:53：53 端口经节点转发经常被机场重置（unexpected EOF），
+    # 非 CN 域名会间歇性解析失败，表现为 Google 等站点时好时坏
+    google: "https://8.8.8.8/dns-query"
   }
 
   routing {

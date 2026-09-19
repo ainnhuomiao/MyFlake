@@ -20,14 +20,12 @@
           agy-hud
           bilibili
           bili_tui
-          claude-code
           discord
           element-desktop
           fcitx5-pinyin-moegirl
           fcitx5-pinyin-zhwiki
           feishu
           flake-stats-mcp
-          github-copilot-cli
           google-chrome
           hmcl
           mcp-nixos
@@ -50,8 +48,7 @@
         zen-browser = inputs.zen-browser.packages.${system}.default;
         # noctalia 来自 flake input，nixpkgs 没有，需一并缓存
         noctalia = inputs.noctalia.packages.${system}.default;
-        # reasonix/antigravity-cli/kimi-code 来自 numtide/llm-agents.nix input
-        reasonix = inputs.llm-agents.packages.${system}.reasonix;
+        # antigravity-cli/kimi-code 来自 numtide/llm-agents.nix input
         antigravity-cli = inputs.llm-agents.packages.${system}.antigravity-cli;
         omp = inputs.llm-agents.packages.${system}.omp;
         pi = inputs.llm-agents.packages.${system}.pi;

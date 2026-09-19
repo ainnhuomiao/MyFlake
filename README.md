@@ -119,7 +119,7 @@ nvidia-egpu-off              # 卸载驱动，提示“可安全关闭坞电源�
 
 Home Manager 配置包含：
 
-- 编辑器：Neovim、Helix、VSCode（Catppuccin Frappé 主题；Nix IDE、Nix Env Selector、Direnv、Claude Code 扩展）
+- 编辑器：Neovim、Helix、VSCode（Catppuccin Frappé 主题；Nix IDE、Nix Env Selector、Direnv）
 - 版本控制：Git、GitHub CLI、Lazygit
 - C/C++：GCC、Clang、GDB、CMake、Meson、Ninja、Bear
 - Rust：`rust-overlay`
@@ -140,9 +140,7 @@ nix develop .#secret
 `home/ai/` 当前安装：
 
 - Antigravity CLI（`agy`，nixpkgs 已用其取代 gemini-cli）
-- Claude Code
 - Codex
-- GitHub Copilot CLI
 - OpenCode
 - `cc-switch`
 - Herdr
@@ -161,15 +159,13 @@ omp-provider --doctor
 
 Home Manager 激活时会将声明的 MCP 项合并到各工具配置中，不接管各工具的完整配置：
 
-| 工具               | 配置位置                           |
-| ------------------ | ---------------------------------- |
-| Codex              | `~/.codex/config.toml`             |
-| Claude Code        | `~/.claude.json`                   |
-| Antigravity CLI    | `~/.gemini/config/mcp_config.json` |
-| OpenCode           | `~/.config/opencode/opencode.json` |
-| GitHub Copilot CLI | `~/.copilot/mcp-config.json`       |
-| cc-switch          | `~/.cc-switch/cc-switch.db`        |
-| Kimi Code          | `~/.kimi-code/mcp.json`            |
+| 工具            | 配置位置                           |
+| --------------- | ---------------------------------- |
+| Codex           | `~/.codex/config.toml`             |
+| Antigravity CLI | `~/.gemini/config/mcp_config.json` |
+| OpenCode        | `~/.config/opencode/opencode.json` |
+| cc-switch       | `~/.cc-switch/cc-switch.db`        |
+| Kimi Code       | `~/.kimi-code/mcp.json`            |
 
 Context7 地址为 `https://mcp.context7.com/mcp`。如果 cc-switch 数据库存在，激活脚本还会同步其中的 Context7 记录和 Codex Live backup。
 
@@ -287,25 +283,24 @@ just rebuild-switch
 - `mcp-nixos`：禁用一个会误判普通源码内容的上游测试
 - `v2rayn`：修复 Linux TUN 门禁（rebuild 后节点延迟 -1 的根因）
 
-Flake 对外提供 38 个包（`packages.x86_64-linux.*`）：
+Flake 对外提供 35 个包（`packages.x86_64-linux.*`）：
 
 ```text
 agy-hud          antigravity-cli        bili_tui
-bilibili         claude-code            discord
-element-desktop  fcitx5-pinyin-moegirl  fcitx5-pinyin-zhwiki
-feishu           flake-stats-mcp        github-copilot-cli
-google-chrome    herdr                  hmcl
-hyprpicker       kimi-code              mcp-nixos
-microsoft-edge   motrix-next            noctalia
-nordic           obsidian               omp
-pi               qq                     reasonix
+bilibili         discord                element-desktop
+fcitx5-pinyin-moegirl  fcitx5-pinyin-zhwiki  feishu
+flake-stats-mcp  google-chrome          herdr
+hmcl             hyprpicker             kimi-code
+mcp-nixos        microsoft-edge         motrix-next
+noctalia         nordic                 obsidian
+omp              pi                     qq
 selector4nix     steam                  swayfx
 thunderbird-bin  v2rayn                 vscode
 wechat           wemeet                 wl-screenrec
 wpsoffice-cn     zen-browser
 ```
 
-来源：`noctalia`/`zen-browser` 来自各自 flake input，`herdr`/`hyprpicker`/`selector4nix` 来自对应 input，`reasonix`/`antigravity-cli`/`omp`/`pi`/`kimi-code` 来自 `llm-agents`，`agy-hud`/`bili_tui`/`fcitx5-pinyin-*`/`flake-stats-mcp`/`nordic` 为 `pkgs/` 本地包，其余为 nixpkgs 包。
+来源：`noctalia`/`zen-browser` 来自各自 flake input，`herdr`/`hyprpicker`/`selector4nix` 来自对应 input，`antigravity-cli`/`omp`/`pi`/`kimi-code` 来自 `llm-agents`，`agy-hud`/`bili_tui`/`fcitx5-pinyin-*`/`flake-stats-mcp`/`nordic` 为 `pkgs/` 本地包，其余为 nixpkgs 包。
 
 CI **只构建「上游任何二进制缓存里都没有、必须从源码编译」的 9 个包**（`bili_tui`、`flake-stats-mcp`、`herdr`、`hyprpicker`、`mcp-nixos`、`motrix-next`、`selector4nix`、`swayfx`、`v2rayn`）并推送到自建 Attic 缓存。其余包都能直接替换（nixpkgs 自由软件走 cache.nixos.org，unfree 应用走厂商预编译包，`llm-agents` 走 cache.numtide.com，`noctalia` 走 noctalia.cachix.org），列进 CI 只会重复下载+上传，lock 更新后还要全部重来。
 

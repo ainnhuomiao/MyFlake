@@ -35,13 +35,10 @@ in
   home.packages =
     with pkgs;
     [
-      github-copilot-cli
-      claude-code
       codex
       opencode
       cc-switch
       inputs.herdr.packages.${system}.default
-      inputs.llm-agents.packages.${system}.reasonix
       inputs.llm-agents.packages.${system}.antigravity-cli
       inputs.llm-agents.packages.${system}.omp
       inputs.llm-agents.packages.${system}.pi
