@@ -53,6 +53,21 @@ in
             nvim $argv
         end
       '';
+      # Prefer the Vibrancy Continued-patched VS Code copy when it exists
+      # (created by "Reload Vibrancy"; the store install is read-only on NixOS).
+      code = ''
+        set -l vhome "$HOME/.local/share/vscode-vibrancy"
+        set -l vcode "$vhome/current/bin/code"
+        if test -x "$vcode"
+            # The extension copies its runtime dir out of the nix store with
+            # read-only modes preserved; a later re-patch then fails with
+            # ENOTEMPTY when rmSync cannot unlink inside it. Restore u+w.
+            chmod -R u+w "$vhome" 2>/dev/null
+            "$vcode" $argv
+        else
+            command code $argv
+        end
+      '';
       f = ''
         FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git' FZF_DEFAULT_OPTS="--color=bg+:${h t.sel_bg},bg:${h t.bg},spinner:${h t.orange},hl:${h t.red}  --color=fg:${h t.fg},header:${h t.red},info:${h t.purple},pointer:${h t.orange}  --color=marker:${h t.orange},fg+:${h t.fg},prompt:${h t.purple},hl+:${h t.red} --preview 'bat --style=numbers --color=always --line-range :500 {}'" fzf --height 60% --layout reverse --info inline --border --color 'border:${h t.purple}'
       '';
