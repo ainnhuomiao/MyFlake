@@ -12,7 +12,6 @@
 
   nix = {
     channel.enable = false;
-    nixPath = [ "nixpkgs=${inputs.nixpkgs}" ];
     settings = {
       nix-path = lib.mkForce [ "nixpkgs=flake:nixpkgs" ];
       experimental-features = [

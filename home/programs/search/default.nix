@@ -1,6 +1,6 @@
 { pkgs, appearance, ... }:
 let
-  t = appearance.palettes.tokyoNight;
+  c = appearance.catppuccin;
   h = appearance.toHex;
 in
 {
@@ -14,24 +14,24 @@ in
     fzf = {
       enable = true;
       colors = {
-        "bg" = h t.bg;
-        "bg+" = h t.sel_bg;
-        "fg" = h t.fg;
-        "fg+" = h t.fg;
-        "hl" = h t.red;
-        "hl+" = h t.red;
-        "info" = h t.purple;
-        "prompt" = h t.purple;
-        "pointer" = h t.orange;
-        "marker" = h t.orange;
-        "spinner" = h t.orange;
-        "header" = h t.red;
-        "border" = h t.purple;
+        "bg" = h c.base;
+        "bg+" = h c.surface0;
+        "fg" = h c.text;
+        "fg+" = h c.text;
+        "hl" = h c.red;
+        "hl+" = h c.red;
+        "info" = h c.mauve;
+        "prompt" = h c.mauve;
+        "pointer" = h c.peach;
+        "marker" = h c.peach;
+        "spinner" = h c.peach;
+        "header" = h c.red;
+        "border" = h c.mauve;
       };
     };
     bat = {
       enable = true;
-      config.theme = "Nord";
+      config.theme = "Catppuccin ${appearance.catppuccinName}";
     };
   };
 

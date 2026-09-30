@@ -1,84 +1,29 @@
-{
-  config,
-  lib,
-  pkgs,
-  me,
-  ...
-}:
+{ config, pkgs, ... }:
 let
-  myGoModule =
-    with lib;
-    let
-      cfg = config.programs.go;
-    in
-    {
-      options.programs.go = {
-        go111Module = mkOption {
-          type = with types; nullOr str;
-          default = null;
-          example = "on";
-          description = "GO111MODULE 环境变量的值(如 \"on\" 或 \"off\")";
-        };
-
-        goModCache = mkOption {
-          type = with types; nullOr str;
-          default = null;
-          example = "go/pkg/mod";
-          description = "The Go mod cache path";
-        };
-
-        extraPackages = mkOption {
-          type = with types; listOf package;
-          default = [ ];
-          description = "Additional packages to install, such as dependencies for Go programs.";
-        };
-
-        enableFishIntegration = mkEnableOption "Fish integration";
-
-        enableBashIntegration = mkEnableOption "Bash integration";
-      };
-
-      config = {
-        home.sessionVariables = (
-          mkMerge [
-            (mkIf (cfg.go111Module != null) {
-              GO111MODULE = cfg.go111Module;
-            })
-
-            (mkIf (cfg.goModCache != null) {
-              GOMODCACHE = "${config.home.homeDirectory}/${cfg.goModCache}";
-            })
-
-          ]
-        );
-        programs.fish.interactiveShellInit = mkIf cfg.enableFishIntegration ''
-          set -gx PATH $GOPATH/bin $PATH
-        '';
-        programs.bash.initExtra = mkIf cfg.enableBashIntegration ''
-          export PATH=$GOPATH/bin:$PATH
-        '';
-        home.packages = cfg.extraPackages;
-
-      };
-    };
+  goPath = "${config.home.homeDirectory}/Codelearning/go";
 in
 {
-  imports = [ myGoModule ];
+  home.packages = with pkgs; [
+    go
+    graphviz
+    protobuf
+    protoc-gen-go
+    protoc-gen-go-grpc
+    grpcurl
+  ];
 
-  programs.go = {
-    enable = true;
-    env.GOPATH = "${config.home.homeDirectory}/Codelearning/go";
-    goModCache = "Codelearning/go/pkg/mod";
-    go111Module = "on";
-    enableFishIntegration = true;
-    enableBashIntegration = true;
-    extraPackages = with pkgs; [
-      graphviz
-      # pprof
-      protobuf
-      protoc-gen-go
-      protoc-gen-go-grpc
-      grpcurl
-    ];
+  home.sessionVariables = {
+    GOPATH = goPath;
+    GOMODCACHE = "${goPath}/pkg/mod";
+    GO111MODULE = "on";
   };
+  xdg.configFile."go/env".text = ''
+    GOPATH=${goPath}
+  '';
+  programs.fish.interactiveShellInit = ''
+    set -gx PATH $GOPATH/bin $PATH
+  '';
+  programs.bash.initExtra = ''
+    export PATH=$GOPATH/bin:$PATH
+  '';
 }

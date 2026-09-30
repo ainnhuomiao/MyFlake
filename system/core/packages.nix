@@ -75,7 +75,6 @@
       eza
       ffmpeg
       gcc
-      gdb
       gh
       glow
       gptfdisk

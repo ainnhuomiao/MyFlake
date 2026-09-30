@@ -34,8 +34,8 @@
           mcp-nixos
           microsoft-edge
           motrix-next
-          nordic
           obsidian
+          omp-provider
           qq
           swayfx
           steam

@@ -1,17 +1,17 @@
 { appearance }:
 let
-  n = appearance.palettes.nord;
+  c = appearance.catppuccin;
   h = appearance.toHex;
 in
 {
   completion = {
     border = {
-      fg = (h n.nord9);
+      fg = (h c.blue);
     };
   };
   confirm = {
     border = {
-      fg = (h n.nord9);
+      fg = (h c.blue);
     };
     btn_labels = [
       "  [Y]es  "
@@ -22,49 +22,49 @@ in
       reversed = true;
     };
     title = {
-      fg = (h n.nord9);
+      fg = (h c.blue);
     };
   };
   filetype = {
     rules = [
       {
-        fg = (h n.nord13);
+        fg = (h c.yellow);
         mime = "image/*";
       }
       {
-        fg = (h n.nord15);
+        fg = (h c.mauve);
         mime = "{audio,video}/*";
       }
       {
-        fg = (h n.nord11);
+        fg = (h c.red);
         mime = "application/{zip,rar,7z*,tar,gzip,xz,zstd,bzip*,lzma,compress,archive,cpio,arj,xar,ms-cab*}";
       }
       {
-        fg = (h n.nord9);
+        fg = (h c.blue);
         mime = "application/{pdf,doc,rtf}";
       }
       {
-        bg = (h n.nord11);
+        bg = (h c.red);
         is = "orphan";
         url = "*";
       }
       {
-        fg = (h n.nord14);
+        fg = (h c.green);
         is = "exec";
         url = "*";
       }
       {
-        bg = (h n.nord11);
+        bg = (h c.red);
         is = "dummy";
         url = "*";
       }
       {
-        bg = (h n.nord11);
+        bg = (h c.red);
         is = "dummy";
         url = "*/";
       }
       {
-        fg = (h n.nord9);
+        fg = (h c.blue);
         url = "*/";
       }
     ];
@@ -75,19 +75,19 @@ in
   };
   help = {
     footer = {
-      bg = (h n.nord6);
-      fg = (h n.nord1);
+      bg = (h c.text);
+      fg = (h c.surface0);
     };
     on = {
-      fg = (h n.nord9);
+      fg = (h c.blue);
     };
     run = {
-      fg = (h n.nord15);
+      fg = (h c.mauve);
     };
   };
   input = {
     border = {
-      fg = (h n.nord9);
+      fg = (h c.blue);
     };
     selected = {
       reversed = true;
@@ -95,54 +95,54 @@ in
   };
   mgr = {
     border_style = {
-      fg = (h n.nord3);
+      fg = (h c.overlay0);
     };
     border_symbol = "│";
     count_copied = {
-      bg = (h n.nord14);
-      fg = (h n.nord6);
+      bg = (h c.green);
+      fg = (h c.base);
     };
     count_cut = {
-      bg = (h n.nord11);
-      fg = (h n.nord6);
+      bg = (h c.red);
+      fg = (h c.base);
     };
     count_selected = {
-      bg = (h n.nord13);
-      fg = (h n.nord6);
+      bg = (h c.yellow);
+      fg = (h c.base);
     };
     cwd = {
-      fg = (h n.nord9);
+      fg = (h c.blue);
     };
     find_keyword = {
       bold = true;
-      fg = (h n.nord13);
+      fg = (h c.yellow);
       italic = true;
       underline = true;
     };
     find_position = {
       bg = "reset";
       bold = true;
-      fg = (h n.nord15);
+      fg = (h c.mauve);
       italic = true;
     };
     hovered = {
       reversed = true;
     };
     marker_copied = {
-      bg = (h n.nord14);
-      fg = (h n.nord14);
+      bg = (h c.green);
+      fg = (h c.green);
     };
     marker_cut = {
-      bg = (h n.nord11);
-      fg = (h n.nord11);
+      bg = (h c.red);
+      fg = (h c.red);
     };
     marker_marked = {
-      bg = (h n.nord9);
-      fg = (h n.nord9);
+      bg = (h c.blue);
+      fg = (h c.blue);
     };
     marker_selected = {
-      bg = (h n.nord13);
-      fg = (h n.nord13);
+      bg = (h c.yellow);
+      fg = (h c.yellow);
     };
     preview_hovered = {
       underline = true;
@@ -155,27 +155,30 @@ in
   };
   mode = {
     normal_alt = {
-      bg = (h n.nord3);
-      fg = (h n.nord9);
+      bg = (h c.surface0);
+      fg = (h c.blue);
     };
     normal_main = {
-      bg = (h n.nord9);
+      bg = (h c.blue);
+      fg = (h c.base);
       bold = true;
     };
     select_alt = {
-      bg = (h n.nord3);
-      fg = (h n.nord11);
+      bg = (h c.surface0);
+      fg = (h c.red);
     };
     select_main = {
-      bg = (h n.nord11);
+      bg = (h c.red);
+      fg = (h c.base);
       bold = true;
     };
     unset_alt = {
-      bg = (h n.nord3);
-      fg = (h n.nord11);
+      bg = (h c.surface0);
+      fg = (h c.red);
     };
     unset_main = {
-      bg = (h n.nord11);
+      bg = (h c.red);
+      fg = (h c.base);
       bold = true;
     };
   };
@@ -184,80 +187,80 @@ in
     icon_info = "";
     icon_warn = "";
     title_error = {
-      fg = (h n.nord11);
+      fg = (h c.red);
     };
     title_info = {
-      fg = (h n.nord14);
+      fg = (h c.green);
     };
     title_warn = {
-      fg = (h n.nord13);
+      fg = (h c.yellow);
     };
   };
   pick = {
     active = {
       bold = true;
-      fg = (h n.nord15);
+      fg = (h c.mauve);
     };
     border = {
-      fg = (h n.nord9);
+      fg = (h c.blue);
     };
   };
   status = {
     perm_exec = {
-      fg = (h n.nord9);
+      fg = (h c.blue);
     };
     perm_read = {
-      fg = (h n.nord13);
+      fg = (h c.yellow);
     };
     perm_sep = {
-      fg = (h n.nord1);
+      fg = (h c.surface0);
     };
     perm_type = {
-      fg = (h n.nord14);
+      fg = (h c.green);
     };
     perm_write = {
-      fg = (h n.nord11);
+      fg = (h c.red);
     };
     progress_error = {
-      bg = (h n.nord0);
-      fg = (h n.nord11);
+      bg = (h c.base);
+      fg = (h c.red);
     };
     progress_label = {
       bold = true;
     };
     progress_normal = {
-      bg = (h n.nord0);
-      fg = (h n.nord9);
+      bg = (h c.base);
+      fg = (h c.blue);
     };
     separator_close = "";
     separator_open = "";
   };
   tasks = {
     border = {
-      fg = (h n.nord9);
+      fg = (h c.blue);
     };
     hovered = {
-      fg = (h n.nord15);
+      fg = (h c.mauve);
       underline = true;
     };
   };
   which = {
     cand = {
-      fg = (h n.nord9);
+      fg = (h c.blue);
     };
     cols = 3;
     desc = {
-      fg = (h n.nord15);
+      fg = (h c.mauve);
     };
     mask = {
-      bg = (h n.nord0);
+      bg = (h c.base);
     };
     rest = {
-      fg = (h n.nord1);
+      fg = (h c.surface0);
     };
     separator = "  ";
     separator_style = {
-      fg = (h n.nord1);
+      fg = (h c.surface0);
     };
   };
 }

@@ -1,6 +1,6 @@
 { appearance, ... }:
 let
-  c = appearance.palettes.catppuccinMocha;
+  c = appearance.catppuccin;
   h = appearance.toHex;
 in
 {

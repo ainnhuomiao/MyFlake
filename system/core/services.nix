@@ -1,27 +1,27 @@
 { lib, appearance, ... }:
 
 let
-  # 跟随 lib/appearance.nix 的 catppuccinVariant（当前 mocha），与 home 侧一致
-  cp = appearance.catppuccin.${appearance.catppuccinVariant};
+  # 与桌面、终端和编辑器共享 lib/appearance.nix 的语义颜色。
+  cp = appearance.catppuccin;
   # catppuccin/tty 的 16 色映射（themes/mocha.txt，tty.tera 顺序）：
   # color0 用 base 作内核控制台默认背景，color7 用 subtext1 作默认前景。
   ttyPalette = [
-    cp.bg # 0: base
-    cp.color1 # 1: red
-    cp.color2 # 2: green
-    cp.color3 # 3: yellow
-    cp.color4 # 4: blue
-    cp.color5 # 5: pink
-    cp.color6 # 6: teal
-    cp.color7 # 7: subtext1
-    cp.color8 # 8: surface1
-    cp.color1 # 9: bright red
-    cp.color2 # 10: bright green
-    cp.color3 # 11: bright yellow
-    cp.color4 # 12: bright blue
-    cp.color5 # 13: bright pink
-    cp.color6 # 14: bright teal
-    cp.color15 # 15: subtext0
+    cp.base # 0: base
+    cp.red # 1: red
+    cp.green # 2: green
+    cp.yellow # 3: yellow
+    cp.blue # 4: blue
+    cp.pink # 5: pink
+    cp.teal # 6: teal
+    cp.subtext1 # 7: subtext1
+    cp.surface1 # 8: surface1
+    cp.red # 9: bright red
+    cp.green # 10: bright green
+    cp.yellow # 11: bright yellow
+    cp.blue # 12: bright blue
+    cp.pink # 13: bright pink
+    cp.teal # 14: bright teal
+    cp.subtext0 # 15: subtext0
   ];
   kmsconPaletteNames = [
     "palette-black"
@@ -54,8 +54,8 @@ in
         font-size = 14;
         # Catppuccin ${appearance.catppuccinVariant} 配色（kmscon.conf palette=custom + palette-* 键）
         palette = "custom";
-        palette-foreground = appearance.toRgb cp.fg;
-        palette-background = appearance.toRgb cp.bg;
+        palette-foreground = appearance.toRgb cp.text;
+        palette-background = appearance.toRgb cp.base;
       }
       // builtins.listToAttrs (
         lib.zipListsWith (name: color: {

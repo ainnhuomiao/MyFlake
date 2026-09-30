@@ -26,6 +26,8 @@
     ".config/fcitx5/config".source = ./config;
     ".config/fcitx5/conf/classicui.conf".source = ./classicui.conf;
     ".config/fcitx5/profile".text = import ./profile.nix;
-    ".local/share/fcitx5/themes/Nord/theme.conf".text = import ./theme.nix { inherit appearance; };
+    ".local/share/fcitx5/themes/Catppuccin/theme.conf".text = import ./theme.nix {
+      inherit appearance;
+    };
   };
 }

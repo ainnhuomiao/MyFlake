@@ -1,6 +1,6 @@
 { appearance, ... }:
 let
-  n = appearance.palettes.nord;
+  c = appearance.catppuccin;
   a = appearance.toAnsi;
 in
 {
@@ -21,7 +21,7 @@ in
           width = 15;
         };
         color = {
-          keys = a n.nord15;
+          keys = a c.mauve;
         };
         size = {
           binaryPrefix = "jedec";
@@ -32,9 +32,9 @@ in
         {
           type = "title";
           color = {
-            user = a n.nord13;
-            at = a n.nord15;
-            host = a n.nord14;
+            user = a c.yellow;
+            at = a c.mauve;
+            host = a c.green;
           };
         }
         {
@@ -94,7 +94,7 @@ in
         {
           type = "disk";
           key = "󰋊 Disk   ";
-          format = "{##${n.nord8}}{mountpoint} ({filesystem}){#} │ {size-used} / {size-total} ({size-percentage})";
+          format = "{##${c.sapphire}}{mountpoint} ({filesystem}){#} │ {size-used} / {size-total} ({size-percentage})";
         }
         {
           type = "localip";

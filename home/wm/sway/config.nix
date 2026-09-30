@@ -5,7 +5,7 @@
 }:
 let
   h = appearance.toHex;
-  cp = appearance.catppuccin.${appearance.catppuccinVariant};
+  cp = appearance.catppuccin;
 in
 {
   services.swayidle = {
@@ -177,12 +177,12 @@ in
       # window colours: border background text #
       #----------------------------------------#
       # catppuccin ${appearance.catppuccinVariant} 窗口色
-      client.focused          ${h cp.color4} ${h cp.color4} #ffffff
-      client.unfocused        ${h cp.bg} ${h cp.color0} #888888
-      client.focused_inactive ${h cp.bg} ${h cp.color0} #888888
-      client.placeholder      ${h cp.bg} ${h cp.color0} #888888
-      client.urgent           ${h cp.color1} ${h cp.color1} #ffffff
-      client.background       ${h cp.bg}
+      client.focused          ${h cp.blue} ${h cp.blue} ${h cp.text}
+      client.unfocused        ${h cp.base} ${h cp.surface1} ${h cp.overlay0}
+      client.focused_inactive ${h cp.base} ${h cp.surface1} ${h cp.overlay0}
+      client.placeholder      ${h cp.base} ${h cp.surface1} ${h cp.overlay0}
+      client.urgent           ${h cp.red} ${h cp.red} ${h cp.text}
+      client.background       ${h cp.base}
 
       #-----------------------------------#
       # Home row direction keys, like vim #

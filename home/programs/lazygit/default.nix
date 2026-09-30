@@ -1,6 +1,6 @@
 { appearance, ... }:
 let
-  n = appearance.palettes.nord;
+  c = appearance.catppuccin;
   h = appearance.toHex;
 in
 {
@@ -10,21 +10,21 @@ in
       gui = {
         theme = {
           activeBorderColor = [
-            (h n.nord8)
+            (h c.sapphire)
             "bold"
           ];
-          inactiveBorderColor = [ (h n.nord3) ];
+          inactiveBorderColor = [ (h c.overlay0) ];
           searchingActiveBorderColor = [
-            (h n.nord13)
+            (h c.yellow)
             "bold"
           ];
-          optionsTextColor = [ (h n.nord9) ];
-          selectedLineBgColor = [ (h n.nord1) ];
-          selectedRangeBgColor = [ (h n.nord1) ];
-          cherryPickedCommitFgColor = [ (h n.nord14) ];
-          cherryPickedCommitBgColor = [ (h n.nord10) ];
-          unstagedChangesColor = [ (h n.nord11) ];
-          defaultFgColor = [ (h n.nord4) ];
+          optionsTextColor = [ (h c.blue) ];
+          selectedLineBgColor = [ (h c.surface0) ];
+          selectedRangeBgColor = [ (h c.surface0) ];
+          cherryPickedCommitFgColor = [ (h c.green) ];
+          cherryPickedCommitBgColor = [ (h c.lavender) ];
+          unstagedChangesColor = [ (h c.red) ];
+          defaultFgColor = [ (h c.text) ];
         };
       };
     };

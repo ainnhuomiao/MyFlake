@@ -1,28 +1,28 @@
 { appearance }:
 let
-  n = appearance.palettes.nord;
+  c = appearance.catppuccin;
   h = appearance.toHex;
 in
 ''
   # vim: ft=dosini
   [Metadata]
-  Name=Nord-Light
+  Name=Catppuccin ${appearance.catppuccinName}
   Version=0.1
   Author=MiraculousMoon
-  Description=Nord Color Theme (Light)
+  Description=Catppuccin ${appearance.catppuccinName} Color Theme
   ScaleWithDPI=True
 
   [InputPanel]
   # 字体
   Font=Sans 13
   # 非选中候选字颜色
-  NormalColor=${h n.nord9}
+  NormalColor=${h c.text}
   # 选中候选字颜色
-  HighlightCandidateColor=${h n.nord10}
+  HighlightCandidateColor=${h c.base}
   # 高亮前景颜色(输入字符颜色)
-  HighlightColor=${h n.nord10}
+  HighlightColor=${h c.mauve}
   # 输入字符背景颜色
-  HighlightBackgroundColor=${h n.nord6}
+  HighlightBackgroundColor=${h c.surface1}
   #
   Spacing=3
 
@@ -37,7 +37,7 @@ in
   Bottom=6
 
   [InputPanel/Background]
-  Color=${h n.nord5}
+  Color=${h c.base}
 
   [InputPanel/Background/Margin]
   Left=2
@@ -46,7 +46,7 @@ in
   Bottom=2
 
   [InputPanel/Highlight]
-  Color=${h n.nord4}
+  Color=${h c.mauve}
 
   [InputPanel/Highlight/Margin]
   # 高亮区域左边距
@@ -60,12 +60,12 @@ in
 
   [Menu]
   Font=Sans 10
-  NormalColor=${h n.nord0}
-  #HighlightColor=${h n.nord3}
+  NormalColor=${h c.text}
+  HighlightColor=${h c.base}
   Spacing=3
 
   [Menu/Background]
-  Color=${h n.nord4}
+  Color=${h c.base}
 
   [Menu/Background/Margin]
   Left=2
@@ -80,7 +80,7 @@ in
   Bottom=2
 
   [Menu/Highlight]
-  Color=${h n.nord3}
+  Color=${h c.mauve}
 
   [Menu/Highlight/Margin]
   Left=10
@@ -89,7 +89,7 @@ in
   Bottom=5
 
   [Menu/Separator]
-  Color=${h n.nord0}
+  Color=${h c.surface1}
 
   [Menu/CheckBox]
   Image="${./radio.png}"

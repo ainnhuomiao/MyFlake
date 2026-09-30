@@ -1,52 +1,8 @@
+{ pkgs, ... }:
 {
-  config,
-  lib,
-  pkgs,
-  ...
-}:
-
-let
-  myHaskellModule =
-    with lib;
-    let
-      cfg = config.programs.haskell;
-    in
-    {
-      options.programs.haskell = {
-        enable = mkEnableOption "Haskell";
-
-        package = mkOption {
-          type = types.package;
-          default = pkgs.haskellPackages.ghc;
-          description = "The Haskell package to use.";
-        };
-
-        enableCabal = mkOption {
-          type = types.bool;
-          default = false;
-          description = "Enable the Cabal build tool.";
-        };
-      };
-
-      config = mkIf cfg.enable (mkMerge [
-        {
-          home.packages = [
-            cfg.package
-            pkgs.haskellPackages.haskell-language-server
-          ];
-        }
-        (mkIf cfg.enableCabal {
-          home.packages = [ pkgs.haskellPackages.cabal-install ];
-        })
-      ]);
-    };
-
-in
-{
-  imports = [ myHaskellModule ];
-
-  programs.haskell = {
-    enable = true;
-    enableCabal = true;
-  };
+  home.packages = with pkgs.haskellPackages; [
+    ghc
+    haskell-language-server
+    cabal-install
+  ];
 }

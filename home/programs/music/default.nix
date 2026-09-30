@@ -4,7 +4,7 @@
   ...
 }:
 let
-  n = appearance.palettes.nord;
+  c = appearance.catppuccin;
   h = appearance.toHex;
 in
 {
@@ -31,11 +31,11 @@ in
         color = {
           gradient = 1;
           gradient_count = 5;
-          gradient_color_1 = "'${h n.nord9}'";
-          gradient_color_2 = "'${h n.nord7}'";
-          gradient_color_3 = "'${h n.nord15}'";
-          gradient_color_4 = "'${h n.nord6}'";
-          gradient_color_5 = "'${h n.nord13}'";
+          gradient_color_1 = "'${h c.blue}'";
+          gradient_color_2 = "'${h c.teal}'";
+          gradient_color_3 = "'${h c.mauve}'";
+          gradient_color_4 = "'${h c.text}'";
+          gradient_color_5 = "'${h c.yellow}'";
         };
       };
     };

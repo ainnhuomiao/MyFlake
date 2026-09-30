@@ -1,13 +1,7 @@
 {
   imports = [
-    ./bili_live
-    ./bilibili
-    ./chrome
+    ./apps.nix
     ./dae-toggle
-    ./dbclient
-    ./discord
-    ./edge
-    ./emailclient
     ./emanote
     ./fastfetch
     ./fcitx5
@@ -15,35 +9,24 @@
     ./flameshot
     ./git
     ./gpg
-    ./gdu
     ./gtk
     ./helix
-    ./hmcl
     ./im
-    ./imgview
-    ./kooha
     ./lazygit
-    ./motrix
     ./mpv
     ./music
     ./nix-index
     ./noctalia
     ./nvtop
     ./obs-studio
-    ./obsidian
     ./qutebrowser
     ./resource_monitor
     ./search
-    ./splayer
     ./ssh
     ./v2rayn
-    ./video_editor
-    ./wl-screenrec
-    ./wps
     ./yazi
     ./yt-dlp
     ./zathura
-    ./zen
     ./zoxide
     ./xresources
   ];

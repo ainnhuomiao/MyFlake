@@ -5,7 +5,7 @@
   ...
 }:
 let
-  t = appearance.palettes.tokyoNight;
+  c = appearance.catppuccin;
   h = appearance.toHex;
 in
 {
@@ -41,7 +41,7 @@ in
     };
     functions = {
       nf = ''
-        set -l file (FZF_DEFAULT_COMMAND='fd' FZF_DEFAULT_OPTS="--preview 'bat --style=numbers --color=always --line-range :500 {}'" fzf --height 60% --layout reverse --info inline --border --color 'border:${h t.purple}')
+        set -l file (FZF_DEFAULT_COMMAND='fd' FZF_DEFAULT_OPTS="--preview 'bat --style=numbers --color=always --line-range :500 {}'" fzf --height 60% --layout reverse --info inline --border --color 'border:${h c.mauve}')
         and nvim $file
       '';
       nv = ''
@@ -69,7 +69,7 @@ in
         end
       '';
       f = ''
-        FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git' FZF_DEFAULT_OPTS="--color=bg+:${h t.sel_bg},bg:${h t.bg},spinner:${h t.orange},hl:${h t.red}  --color=fg:${h t.fg},header:${h t.red},info:${h t.purple},pointer:${h t.orange}  --color=marker:${h t.orange},fg+:${h t.fg},prompt:${h t.purple},hl+:${h t.red} --preview 'bat --style=numbers --color=always --line-range :500 {}'" fzf --height 60% --layout reverse --info inline --border --color 'border:${h t.purple}'
+        FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git' FZF_DEFAULT_OPTS="--color=bg+:${h c.surface0},bg:${h c.base},spinner:${h c.peach},hl:${h c.red}  --color=fg:${h c.text},header:${h c.red},info:${h c.mauve},pointer:${h c.peach}  --color=marker:${h c.peach},fg+:${h c.text},prompt:${h c.mauve},hl+:${h c.red} --preview 'bat --style=numbers --color=always --line-range :500 {}'" fzf --height 60% --layout reverse --info inline --border --color 'border:${h c.mauve}'
       '';
       "clang++strict" = ''
         clang++ -std=c++20 -Wall -Werror -Wextra -Wconversion -Wsign-conversion -pedantic-errors -ggdb $argv
@@ -77,7 +77,7 @@ in
     };
   };
   home.file = {
-    ".config/fish/conf.d/tokyo_night.fish".text = import ./tokyo_night.nix { inherit appearance; };
+    ".config/fish/conf.d/catppuccin.fish".text = import ./catppuccin.nix { inherit appearance; };
     ".config/fish/functions/xdg-get.fish".text = import ./functions/xdg-get.nix;
     ".config/fish/functions/xdg-set.fish".text = import ./functions/xdg-set.nix;
     ".config/fish/functions/owf.fish".text = import ./functions/owf.nix;

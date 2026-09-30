@@ -1,6 +1,6 @@
 { appearance, ... }:
 let
-  t = appearance.palettes.tokyoNight;
+  c = appearance.catppuccin;
   a = appearance.toAnsi;
   mkEzaColors =
     mapping:
@@ -11,30 +11,30 @@ in
 {
   home.sessionVariables.EZA_COLORS = mkEzaColors {
     # file types
-    di = t.blue; # directory
-    ex = t.teal; # executable
-    ln = t.cyan; # symlink
-    or = t.red; # broken symlink
+    di = c.blue; # directory
+    ex = c.teal; # executable
+    ln = c.sky; # symlink
+    or = c.red; # broken symlink
 
     # permissions
-    ur = t.yellow;
-    uw = t.red;
-    ux = t.teal;
-    ue = t.teal;
-    gr = t.yellow;
-    gw = t.red;
-    gx = t.teal;
-    tr = t.yellow;
-    tw = t.red;
-    tx = t.teal;
+    ur = c.yellow;
+    uw = c.red;
+    ux = c.teal;
+    ue = c.teal;
+    gr = c.yellow;
+    gw = c.red;
+    gx = c.teal;
+    tr = c.yellow;
+    tw = c.red;
+    tx = c.teal;
 
     # metadata
-    sn = t.blue; # size number
-    sb = t.comment; # size unit
-    da = t.comment; # date
-    uu = t.blue; # current user
-    un = t.comment; # other user
-    gu = t.purple; # current group
-    gn = t.comment; # other group
+    sn = c.blue; # size number
+    sb = c.overlay0; # size unit
+    da = c.overlay0; # date
+    uu = c.blue; # current user
+    un = c.overlay0; # other user
+    gu = c.mauve; # current group
+    gn = c.overlay0; # other group
   };
 }

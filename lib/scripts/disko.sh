@@ -77,12 +77,14 @@ read -p "Choice (number): " host_idx
 [[ ! $host_idx =~ ^[0-9]+$ ]] || [ "$host_idx" -lt 1 ] || [ "$host_idx" -gt "${#hosts[@]}" ] && error "Invalid host choice."
 selected_host="${hosts[$((host_idx - 1))]}"
 
-# 2. Layout Discovery
-info "Scanning for disk layouts in $LAYOUT_DIR..."
-layouts=()
-while IFS= read -r -d $'\0' file; do
-  layouts+=("$file")
-done < <(find "$LAYOUT_DIR" -maxdepth 1 -name "*.nix" -print0)
+# 2. Layout Selection (shared with flake checks)
+info "Loading registered disk layouts from $LAYOUT_DIR..."
+if ! layouts_json=$(nix --extra-experimental-features "nix-command flakes" eval --json \
+  --file "$LAYOUT_DIR/default.nix" \
+  --apply 'layouts: builtins.map builtins.toString (builtins.attrValues layouts)'); then
+  error "Failed to evaluate the disk layout registry."
+fi
+mapfile -t layouts < <(jq -r '.[]' <<<"$layouts_json")
 
 if [ ${#layouts[@]} -eq 0 ]; then
   error "No layout files found in $LAYOUT_DIR."

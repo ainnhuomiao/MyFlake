@@ -6,7 +6,7 @@
   ...
 }:
 let
-  n = appearance.palettes.nord;
+  c = appearance.catppuccin;
   h = appearance.toHex;
 in
 let
@@ -68,7 +68,7 @@ in
         downloadDir = "${config.home.homeDirectory}/Music";
       };
       theme = {
-        primaryColor = h n.nord5;
+        primaryColor = h c.text;
       };
     };
   };

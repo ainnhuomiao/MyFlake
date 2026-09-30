@@ -2,10 +2,6 @@
     <img src="assets/cirno.png" alt="MyFlake" width="360px" />
     <br>
     MyFlake
-    <br>
-    <a href="https://github.com/catppuccin/catppuccin">
-        <img src="assets/palette-frappe.png" alt="Catppuccin Frappé" width="600px" />
-    </a>
 </h1>
 
 <p align="center">
@@ -119,7 +115,7 @@ nvidia-egpu-off              # 卸载驱动，提示“可安全关闭坞电源�
 
 Home Manager 配置包含：
 
-- 编辑器：Neovim、Helix、VSCode（Catppuccin Frappé 主题；Nix IDE、Nix Env Selector、Direnv）
+- 编辑器：Neovim、Helix、VSCode（统一 Catppuccin Mocha 主题；Nix IDE、Nix Env Selector、Direnv）
 - 版本控制：Git、GitHub CLI、Lazygit
 - C/C++：GCC、Clang、GDB、CMake、Meson、Ninja、Bear
 - Rust：`rust-overlay`
@@ -127,6 +123,8 @@ Home Manager 配置包含：
 - Protobuf、gRPC、Direnv
 - Nix：`nixd`、`nixfmt`、`treefmt-nix`、`nix-output-monitor`
 - 外部二进制兼容：`nix-ld`
+
+C/C++、Rust、Go、TypeScript 与 Haskell 模块直接声明工具包，不再维护单用户配置中未使用的 enable/package 开关。GDB 仅在 Home 的 C++ 工具链中安装。
 
 默认开发 Shell 提供 `git`、`jq`、`just`、`neovim`、`nom`。另有 `secret` Shell，提供 `age`、`sops` 和 `ssh-to-age`：
 
@@ -146,11 +144,11 @@ nix develop .#secret
 - Herdr
 - Kimi Code（`kimi`，来自 `llm-agents` 的 `kimi-code`）
 - Oh My Pi 与 Pi（来自 `llm-agents` 的 `omp`、`pi`）
-- `omp-provider` 中文交互式配置工具
+- `omp-provider` 中文交互式配置工具（独立包 `pkgs/omp-provider`）
 - `mcp-nixos`
 - `flake-stats-mcp`
 
-`omp-provider` 用于管理 Oh My Pi 的中转站、模型目录、模型策略、角色、备份与迁移：
+`omp-provider` 用于管理 Oh My Pi 的中转站、模型目录、模型策略、角色、备份与迁移。实现位于 `pkgs/omp-provider/`，Home 只负责安装；可用 `nix build .#omp-provider` 单独构建：
 
 ```bash
 omp-provider
@@ -198,7 +196,7 @@ Mihomo 关闭 TUN，只负责订阅、节点健康检查和两个本地 SOCKS5 �
 | `12346`  | `DAE-PROXY`  | dae 的普通境外流量出口 |
 | `12347`  | `DAE-MINING` | dae 的专用流量出口     |
 
-订阅 URL 仅保存在 `/var/lib/mihomo-config/subscriptions.yaml`，不会写入 Nix store。订阅变化会触发配置重新生成、`mihomo -t` 校验和服务重启；生成失败时保留原配置。使用以下命令管理订阅：
+订阅 URL 仅保存在 `/var/lib/mihomo-config/subscriptions.yaml`，不会写入 Nix store。首次激活仅在文件不存在时创建权限为 `0600` 的空订阅，不覆盖已有内容。订阅变化会触发配置重新生成、`mihomo -t` 校验和服务重启；生成失败时保留原配置。使用以下命令管理订阅：
 
 ```bash
 mihomo-sub
@@ -216,7 +214,10 @@ http://127.0.0.1:9090/ui/
 
 - `system/dae.nix`：dae 服务、Mihomo 启动依赖和反向路径检查
 - `system/dae.dae`：DNS、双 SOCKS 上游、分组与透明路由规则
-- `system/mihomo.nix`：订阅存储、配置生成器、两个 SOCKS listeners、Zashboard 和 `mihomo-sub`
+- `system/mihomo.nix`：订阅存储、systemd、Zashboard 与脚本接线
+- `lib/proxy-tools.nix`、`lib/scripts/mihomo-*.sh`：独立配置生成器与订阅管理 CLI
+- `system/proxy.nix`：两项服务的手动启动策略与集中 polkit 授权
+- `lib/scripts/proxy-stack.sh`：`dae-toggle` 与 v2rayN 共用的停止顺序、原状态恢复和互斥逻辑；v2rayN 接管期间拒绝开启透明代理
 
 ### 二进制缓存代理
 
@@ -261,9 +262,9 @@ just rebuild-switch
 
 ### 主题（Catppuccin）
 
-桌面配色固定为 Catppuccin **Mocha**，统一作用于 Kitty 终端、Sway 窗口边框与 Noctalia 外壳，不随壁纸变化、无运行时切换。锁屏亦为 Noctalia 内置 Catppuccin 主题。
+桌面、Shell、GTK、终端工具与编辑器统一使用 Catppuccin **Mocha**，不随壁纸变化、无运行时切换。锁屏亦为 Noctalia 内置 Catppuccin 主题。
 
-配色定义在 `lib/appearance.nix`（`catppuccin` 四套 16 色 + `catppuccinVariant` 一行切换，改完重新 `just rebuild-switch` 生效）。
+`lib/appearance.nix` 只保留当前 Mocha 语义色表；各工具复用此入口或对应的上游 Catppuccin Mocha 主题，不再并行维护 Tokyo Night、Nord 和四套备用终端色表。
 
 ## 自定义包与 Flake 输出
 
@@ -275,7 +276,7 @@ just rebuild-switch
 - `fcitx5-pinyin-moegirl`
 - `fcitx5-pinyin-zhwiki`
 - `flake-stats-mcp`
-- `nordic`
+- `omp-provider`
 
 `overlays/` 当前包含：
 
@@ -295,13 +296,13 @@ dingtalk               mcp-nixos       thunderbird-bin
 discord                microsoft-edge  v2rayn
 element-desktop        motrix-next     vscode
 fcitx5-pinyin-moegirl  noctalia        wechat
-fcitx5-pinyin-zhwiki   nordic          wemeet
+fcitx5-pinyin-zhwiki   omp-provider    wemeet
 feishu                 obsidian        wl-screenrec
 flake-stats-mcp        omp             wpsoffice-cn
 google-chrome          pi              zen-browser
 ```
 
-来源：`noctalia`/`zen-browser` 来自各自 flake input，`herdr`/`hyprpicker`/`selector4nix` 来自对应 input，`antigravity-cli`/`omp`/`pi`/`kimi-code` 来自 `llm-agents`，`agy-hud`/`bili_tui`/`dingtalk`/`fcitx5-pinyin-*`/`flake-stats-mcp`/`nordic` 为 `pkgs/` 本地包，其余为 nixpkgs 包。
+来源：`noctalia`/`zen-browser` 来自各自 flake input，`herdr`/`hyprpicker`/`selector4nix` 来自对应 input，`antigravity-cli`/`omp`/`pi`/`kimi-code` 来自 `llm-agents`，`agy-hud`/`bili_tui`/`dingtalk`/`fcitx5-pinyin-*`/`flake-stats-mcp`/`omp-provider` 为 `pkgs/` 本地包，其余为 nixpkgs 包。
 
 CI **只构建「上游任何二进制缓存里都没有、必须从源码编译」的 10 个包**（`bili_tui`、`dingtalk`、`flake-stats-mcp`、`herdr`、`hyprpicker`、`mcp-nixos`、`motrix-next`、`selector4nix`、`swayfx`、`v2rayn`）并推送到自建 Attic 缓存。其余包都能直接替换（nixpkgs 自由软件走 cache.nixos.org，unfree 应用走厂商预编译包，`llm-agents` 走 cache.numtide.com，`noctalia` 走 noctalia.cachix.org），列进 CI 只会重复下载+上传，lock 更新后还要全部重来。
 
@@ -319,11 +320,11 @@ nix build .#pi
 ├── assets/wallpapers/       # 壁纸资源
 ├── flake/modules/           # packages、overlays、devShell、formatter 输出
 ├── home/                    # Home Manager 模块
-│   ├── ai/                  # AI CLI、MCP 与 omp-provider
-│   ├── dev/                 # 开发工具链
+│   ├── ai/                  # AI CLI、MCP 与 omp-provider 安装接线
+│   ├── dev/                 # 直接声明开发工具链
 │   ├── editors/             # 编辑器
 │   ├── profiles/            # 用户@主机配置组合
-│   ├── programs/            # 桌面和命令行应用
+│   ├── programs/            # 配置模块；apps.nix 聚合纯安装应用
 │   ├── shell/               # Fish、Starship 与 Shell 工具
 │   ├── terminals/           # 终端配置
 │   ├── wall/                # 壁纸:Noctalia 静态 + mpvpaper 视频
@@ -331,8 +332,9 @@ nix build .#pi
 ├── hosts/                   # NixOS 主机定义
 │   └── nixos/               # 当前物理机配置
 ├── lib/
-│   ├── disko_layout/        # 普通与 LUKS 单盘布局
-│   ├── scripts/             # 分区、安装、重建脚本
+│   ├── disko_layout/        # 普通/LUKS 布局与共享注册清单，接入 flake check
+│   ├── scripts/             # 分区、安装、重建和代理脚本
+│   ├── proxy-tools.nix      # 代理脚本 derivation 与参数接线
 │   └── appearance.nix       # 公共配色与外观数据
 ├── overlays/                # nixpkgs overlays
 ├── pkgs/                    # 仓库自有包
@@ -504,7 +506,7 @@ just disko
 脚本会：
 
 1. 从 Flake 中发现 NixOS 主机
-2. 选择普通单盘或 LUKS 单盘布局
+2. 从 `lib/disko_layout/default.nix` 注册清单选择普通单盘或 LUKS 单盘布局
 3. 允许检查和编辑布局
 4. 要求输入 `YES` 后才执行擦除、格式化和挂载
 5. 生成目标主机的 `hardware-configuration.nix`
@@ -512,6 +514,8 @@ just disko
 
 > [!WARNING]
 > 此操作会清空目标磁盘。执行前必须检查布局文件中的设备路径。
+
+`nix build .#checks.x86_64-linux.disko-layouts` 会求值并验证两种布局的本地 schema（GPT/ESP、LUKS/LVM 引用及挂载点），不执行磁盘操作；这不是上游 disko 模块的完整验证。
 
 ### 4. 安装
 
@@ -534,6 +538,7 @@ reboot
 - Home Manager 使用 `useGlobalPkgs = true` 和 `useUserPackages = true`；包变更应通过完整的 NixOS rebuild 应用
 - `NIX_AUTO_RUN=1` 已启用，缺失命令可能由 nix-index/comma 临时运行；常用工具仍应显式声明
 - Nix 每周自动执行 GC，并删除两天前的旧引用
+- `nix.settings.nix-path` 指向 `flake:nixpkgs`，由锁定的 `registry.nixpkgs` 提供；不再使用弃用的 `nix.nixPath`。
 - Flake 配置允许 unfree、broken 和 unsupported 包，并临时允许指定的不安全 Electron 版本；更新前应运行 `just check`
 - CachyOS 内核更新并执行 `just rebuild-switch` 后仍需重启；若新内核无法启动，可从 GRUB 选择旧 NixOS generation 回退
 - 当前硬件配置含本机 Btrfs、EFI 和 Swap UUID，不应复制到其他机器

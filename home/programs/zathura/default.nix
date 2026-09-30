@@ -1,6 +1,6 @@
 { appearance, ... }:
 let
-  n = appearance.palettes.nord;
+  c = appearance.catppuccin;
   h = appearance.toHex;
   r = hex: alpha: appearance.toRgba hex alpha;
 in
@@ -20,44 +20,44 @@ in
       set selection-clipboard clipboard
     ''
     + ''
-      set default-fg                ${h n.nord6}
-      set default-bg                ${h n.nord0}
+      set default-fg                ${h c.text}
+      set default-bg                ${h c.base}
 
-      set completion-bg             ${h n.nord1}
-      set completion-fg             ${h n.nord4}
-      set completion-highlight-bg   ${h n.nord8}
-      set completion-highlight-fg   ${h n.nord0}
-      set completion-group-bg       ${h n.nord1}
-      set completion-group-fg       ${h n.nord9}
+      set completion-bg             ${h c.surface0}
+      set completion-fg             ${h c.text}
+      set completion-highlight-bg   ${h c.sapphire}
+      set completion-highlight-fg   ${h c.base}
+      set completion-group-bg       ${h c.surface0}
+      set completion-group-fg       ${h c.blue}
 
-      set statusbar-fg              ${h n.nord4}
-      set statusbar-bg              ${h n.nord1}
+      set statusbar-fg              ${h c.text}
+      set statusbar-bg              ${h c.surface0}
 
-      set notification-bg           ${h n.nord1}
-      set notification-fg           ${h n.nord4}
-      set notification-error-bg     ${h n.nord1}
-      set notification-error-fg     ${h n.nord11}
-      set notification-warning-bg   ${h n.nord1}
-      set notification-warning-fg   ${h n.nord13}
+      set notification-bg           ${h c.surface0}
+      set notification-fg           ${h c.text}
+      set notification-error-bg     ${h c.surface0}
+      set notification-error-fg     ${h c.red}
+      set notification-warning-bg   ${h c.surface0}
+      set notification-warning-fg   ${h c.yellow}
 
-      set inputbar-fg               ${h n.nord4}
-      set inputbar-bg               ${h n.nord1}
+      set inputbar-fg               ${h c.text}
+      set inputbar-bg               ${h c.surface0}
 
       set recolor                   "true"
-      set recolor-lightcolor        ${h n.nord0}
-      set recolor-darkcolor         ${h n.nord6}
+      set recolor-lightcolor        ${h c.base}
+      set recolor-darkcolor         ${h c.text}
 
-      set index-fg                  ${h n.nord4}
-      set index-bg                  ${h n.nord0}
-      set index-active-fg           ${h n.nord0}
-      set index-active-bg           ${h n.nord8}
+      set index-fg                  ${h c.text}
+      set index-bg                  ${h c.base}
+      set index-active-fg           ${h c.base}
+      set index-active-bg           ${h c.sapphire}
 
-      set render-loading-bg         ${h n.nord0}
-      set render-loading-fg         ${h n.nord4}
+      set render-loading-bg         ${h c.base}
+      set render-loading-fg         ${h c.text}
 
-      set highlight-color           ${r n.nord15 "0.5"}
-      set highlight-fg              ${r n.nord8 "0.5"}
-      set highlight-active-color    ${r n.nord8 "0.5"}
+      set highlight-color           ${r c.mauve "0.5"}
+      set highlight-fg              ${r c.sapphire "0.5"}
+      set highlight-active-color    ${r c.sapphire "0.5"}
     '';
   };
 }

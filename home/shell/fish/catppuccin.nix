@@ -1,19 +1,19 @@
 { appearance }:
 let
-  t = appearance.palettes.tokyoNight;
+  c = appearance.catppuccin;
 in
 ''
-  # Tokyo Night Storm
-  set -l fg      ${t.fg}
-  set -l comment ${t.comment}
-  set -l cyan    ${t.cyan}
-  set -l blue    ${t.blue}
-  set -l purple  ${t.purple}
-  set -l green   ${t.teal}
-  set -l red     ${t.red}
-  set -l yellow  ${t.yellow}
-  set -l fg_dim  ${t.fg_dim}
-  set -l sel_bg  ${t.sel_bg}
+  # Catppuccin ${appearance.catppuccinName}
+  set -l fg      ${c.text}
+  set -l comment ${c.overlay0}
+  set -l cyan    ${c.sky}
+  set -l blue    ${c.blue}
+  set -l purple  ${c.mauve}
+  set -l green   ${c.teal}
+  set -l red     ${c.red}
+  set -l yellow  ${c.yellow}
+  set -l fg_dim  ${c.subtext0}
+  set -l sel_bg  ${c.surface0}
 
   # Syntax Highlighting
   set -g fish_color_normal         $fg

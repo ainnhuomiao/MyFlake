@@ -22,8 +22,8 @@ in
     };
 
     settings = {
-      # 暗色变体(latte 以外)开网页暗色模式, 随 catppuccinVariant 一行切换
-      colors.webpage.darkmode.enabled = appearance.catppuccinVariant != "latte";
+      # 单一 Mocha 暗色主题，与桌面及编辑器保持一致。
+      colors.webpage.darkmode.enabled = true;
       fonts.default_family = appearance.font.name;
       fonts.default_size = "${toString appearance.font.size}pt";
       url.start_pages = "https://www.bing.com";

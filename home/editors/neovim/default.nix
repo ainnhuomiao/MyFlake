@@ -1,9 +1,10 @@
 {
+  appearance,
   ...
 }:
 let
   nvim-init = ''
-    -- AstroNvim v6 + catppuccin Frappé
+    -- AstroNvim v6 + Catppuccin ${appearance.catppuccinName}
     -- 首次启动时克隆 lazy.nvim 并安装 AstroNvim 及全部插件（与官方 README 的最小引导一致）
     local lazypath = vim.env.LAZY or vim.fn.stdpath "data" .. "/lazy/lazy.nvim"
 
@@ -103,19 +104,19 @@ let
         name = "catppuccin",
         priority = 1000, -- 先于 astroui 加载
         opts = {
-          flavour = "frappe",
+          flavour = "${appearance.catppuccinVariant}",
         },
-        -- 插件加载后立即强制应用。用 "catppuccin-frappe" 而非 "catppuccin"：
+        -- 使用变体专属名称，避免 nvim 内置同名主题抢占：
         -- nvim 0.12 内置同名 catppuccin.vim(mocha) 会抢先应用，且 nvim 对同名 colorscheme 跳过重载
         config = function(_, opts)
           require("catppuccin").setup(opts)
-          vim.cmd.colorscheme("catppuccin-frappe")
+          vim.cmd.colorscheme("catppuccin-${appearance.catppuccinVariant}")
         end,
       },
       {
         "AstroNvim/astroui",
         opts = {
-          colorscheme = "catppuccin-frappe",
+          colorscheme = "catppuccin-${appearance.catppuccinVariant}",
         },
       },
     }

@@ -1,11 +1,11 @@
-{ me, ... }:
+{ me, appearance, ... }:
 {
   programs = {
     delta = {
       enable = true;
       enableGitIntegration = true;
       options = {
-        syntax-theme = "Nord";
+        syntax-theme = "Catppuccin ${appearance.catppuccinName}";
         line-numbers = true;
       };
     };

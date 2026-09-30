@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, appearance, ... }:
 let
   # Not yet packaged in nixpkgs; built from the VS Code Marketplace.
   kimi-code = pkgs.vscode-utils.buildVscodeMarketplaceExtension {
@@ -29,7 +29,7 @@ in
         kimi-code
       ];
       userSettings = {
-        "workbench.colorTheme" = "Catppuccin Frappé";
+        "workbench.colorTheme" = "Catppuccin ${appearance.catppuccinName}";
         "catppuccin.accentColor" = "mauve";
         "catppuccin.boldKeywords" = true;
         "catppuccin.italicComments" = true;
@@ -40,7 +40,7 @@ in
         "editor.semanticHighlighting.enabled" = true;
         "terminal.integrated.minimumContrastRatio" = 1;
         # Vibrancy Continued
-        "vscode_vibrancy.theme" = "Catppuccin Mocha";
+        "vscode_vibrancy.theme" = "Catppuccin ${appearance.catppuccinName}";
         "vscode_vibrancy.opacity" = 0.8;
         # Vibrancy renders the terminal translucent only with the DOM renderer.
         "terminal.integrated.gpuAcceleration" = "off";

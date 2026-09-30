@@ -7,7 +7,7 @@
 
 {
   home.sessionVariables = {
-    GTK_THEME = "Nordic";
+    GTK_THEME = config.gtk.theme.name;
     QT_QPA_PLATFORMTHEME = "gtk3";
   };
   home.pointerCursor = {
@@ -22,8 +22,11 @@
     # home.stateVersion < 26.05:显式保留旧默认(gtk4 跟随 gtk.theme),消除迁移告警
     gtk4.theme = config.gtk.theme;
     theme = {
-      name = "Nordic";
-      package = pkgs.nordic;
+      name = "catppuccin-${appearance.catppuccinVariant}-mauve-standard";
+      package = pkgs.catppuccin-gtk.override {
+        variant = appearance.catppuccinVariant;
+        accents = [ "mauve" ];
+      };
     };
     cursorTheme = {
       name = "Bibata-Modern-Ice";

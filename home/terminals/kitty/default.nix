@@ -1,6 +1,6 @@
 { appearance, ... }:
 let
-  cp = appearance.catppuccin.${appearance.catppuccinVariant};
+  cp = appearance.catppuccin;
   h = appearance.toHex;
 in
 {
@@ -19,30 +19,30 @@ in
       dynamic_background_opacity = true;
     };
     extraConfig = ''
-      # catppuccin ${appearance.catppuccinVariant} (切换: lib/appearance.nix 的 catppuccinVariant)
-      foreground           ${h cp.fg}
-      background           ${h cp.bg}
-      selection_foreground #000000
-      selection_background ${h cp.color8}
-      url_color            ${h cp.color4}
-      cursor               ${h cp.color4}
+      # Catppuccin ${appearance.catppuccinName}，颜色来自 lib/appearance.nix
+      foreground           ${h cp.text}
+      background           ${h cp.base}
+      selection_foreground ${h cp.base}
+      selection_background ${h cp.surface2}
+      url_color            ${h cp.blue}
+      cursor               ${h cp.blue}
 
-      color0  ${h cp.color0}
-      color1  ${h cp.color1}
-      color2  ${h cp.color2}
-      color3  ${h cp.color3}
-      color4  ${h cp.color4}
-      color5  ${h cp.color5}
-      color6  ${h cp.color6}
-      color7  ${h cp.color7}
-      color8  ${h cp.color8}
-      color9  ${h cp.color9}
-      color10 ${h cp.color10}
-      color11 ${h cp.color11}
-      color12 ${h cp.color12}
-      color13 ${h cp.color13}
-      color14 ${h cp.color14}
-      color15 ${h cp.color15}
+      color0  ${h cp.surface1}
+      color1  ${h cp.red}
+      color2  ${h cp.green}
+      color3  ${h cp.yellow}
+      color4  ${h cp.blue}
+      color5  ${h cp.pink}
+      color6  ${h cp.teal}
+      color7  ${h cp.subtext1}
+      color8  ${h cp.surface2}
+      color9  ${h cp.red}
+      color10 ${h cp.green}
+      color11 ${h cp.yellow}
+      color12 ${h cp.blue}
+      color13 ${h cp.pink}
+      color14 ${h cp.teal}
+      color15 ${h cp.subtext0}
     '';
   };
 }
