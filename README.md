@@ -73,6 +73,8 @@ flake.nix
 
 唯一 WM 为 **swayfx**（wlroots，支持毛玻璃模糊与窗口动画，`Mod` 为 `Super`）：状态栏、启动器、通知、锁屏、剪贴板与电源菜单全部由 **Noctalia** 提供（替代了此前的 Waybar/Rofi/Mako/swaylock 组合）。开机经 getty 自动登录直接进入 sway（fish 登录 shell 在 tty1 上自动 `exec sway`），无需显示管理器。
 
+SwayFX 毛玻璃使用 `blur_radius 10`、`blur_passes 4`（`home/wm/sway/config.nix`），减少透明终端背景中的壁纸细节干扰。
+
 - Kitty、Firefox、Zen Browser、Google Chrome、Microsoft Edge
 - 聊天：Telegram、QQ、Vesktop、WeChat、Discord、Feishu、腾讯会议、Element
 - Flameshot、Grimshot、Satty、wf-recorder、wl-screenrec、Kooha、OBS Studio、Kdenlive
@@ -246,6 +248,8 @@ assets/videos/       # 视频壁纸（.mp4/.webm/.mkv/.mov）
 
 静态壁纸由 **Noctalia 自带壁纸管理器** 渲染（background layer），视频壁纸由 **官方 `noctalia/mpvpaper` 插件** 托管（插件按 output 拉起 mpvpaper，并让 Noctalia 在该 output 上收起自己的壁纸层）。浏览目录都用稳定软链，避免把每次重建都会变的 nix store 路径写进 Noctalia 状态：`~/Pictures/wallpapers` → `assets/wallpapers`，`~/Videos/wallpapers` → `assets/videos`。
 
+Noctalia 使用 Home Manager 内置 `programs.noctalia` 模块，`package` 显式指向 flake input 锁定的 v5.0.1；不再导入上游 `homeModules.default`，避免与 Home Manager 重复声明选项。
+
 - `Mod + Shift + w`：随机切换一次（静态）
 - `Mod + Ctrl + w`：每 120 秒随机切换（静态）
 - `Mod + Ctrl + Shift + w`：停止轮换并恢复默认壁纸
@@ -303,6 +307,8 @@ google-chrome          pi              zen-browser
 ```
 
 来源：`noctalia`/`zen-browser` 来自各自 flake input，`herdr`/`hyprpicker`/`selector4nix` 来自对应 input，`antigravity-cli`/`omp`/`pi`/`kimi-code` 来自 `llm-agents`，`agy-hud`/`bili_tui`/`dingtalk`/`fcitx5-pinyin-*`/`flake-stats-mcp`/`omp-provider` 为 `pkgs/` 本地包，其余为 nixpkgs 包。
+
+Herdr 保留上游锁定的 `nixpkgs` 和 `rust-overlay`，不跟随宿主工具链，以保持 Herdr 上游测试的工具链组合；系统安装与 CI 导出统一使用 `pkgs.herdr`。
 
 CI **只构建「上游任何二进制缓存里都没有、必须从源码编译」的 10 个包**（`bili_tui`、`dingtalk`、`flake-stats-mcp`、`herdr`、`hyprpicker`、`mcp-nixos`、`motrix-next`、`selector4nix`、`swayfx`、`v2rayn`）并推送到自建 Attic 缓存。其余包都能直接替换（nixpkgs 自由软件走 cache.nixos.org，unfree 应用走厂商预编译包，`llm-agents` 走 cache.numtide.com，`noctalia` 走 noctalia.cachix.org），列进 CI 只会重复下载+上传，lock 更新后还要全部重来。
 

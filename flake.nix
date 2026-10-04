@@ -34,12 +34,17 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     herdr = {
+      # 保留上游锁定工具链,避免宿主 nixpkgs 的 Zig 更新破坏 Ghostty 链接。
       url = "github:ogulcancelik/herdr";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.rust-overlay.follows = "rust-overlay";
     };
     hyprpicker = {
       url = "github:hyprwm/hyprpicker";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    linuxqq-wayland-fix = {
+      # 修复 Linux QQ 在 Wayland 下的屏幕共享/剪贴板/截图 (nixosModules.default)
+      # 模块用宿主 pkgs 构建, follows 只为少拉一份 nixpkgs-unstable
+      url = "github:SHORiN-KiWATA/linuxqq-wayland-fix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     llm-agents = {

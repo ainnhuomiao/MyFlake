@@ -7,6 +7,7 @@
     fcitx5-pinyin-moegirl = final.callPackage ./fcitx5-pinyin-moegirl { };
     fcitx5-pinyin-zhwiki = final.callPackage ./fcitx5-pinyin-zhwiki { };
     flake-stats-mcp = final.callPackage ./flake-stats-mcp { };
+    herdr = inputs.herdr.packages.${final.stdenv.hostPlatform.system}.default;
     omp-provider = final.callPackage ./omp-provider { };
     # swayfx 0.6(窗口开合动画),nixpkgs 仍钉 0.5.3;复用 nixpkgs 的 sway wrapper
     swayfx = prev.sway.override {

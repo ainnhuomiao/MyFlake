@@ -1,11 +1,16 @@
 {
   pkgs,
+  lib,
   appearance,
   ...
 }:
 let
   h = appearance.toHex;
   cp = appearance.catppuccin;
+  # 外接显示器总开关: 返校只用笔记本时改成 false 再重建,
+  # 下方所有外接屏相关的 output/workspace 配置会一并消失
+  hasExternalMonitor = true;
+  externalMonitor = "HDMI-A-1";
 in
 {
   services.swayidle = {
@@ -27,8 +32,8 @@ in
       # swayfx 毛玻璃效果 #
       #-------------------#
       blur enable
-      blur_radius 5
-      blur_passes 3
+      blur_radius 10
+      blur_passes 4
       blur_noise 0.01
       # 窗口打开/关闭动画(0-5000ms,swayfx 特有)
       animation_duration_ms 250
@@ -55,7 +60,23 @@ in
       #           Misc              #
       #-----------------------------#
       output * adaptive_sync on
-      output eDP-1 scale 1.25
+      # 笔记本内屏在物理左侧
+      output eDP-1 scale 1.25 pos 0 0
+      ${lib.optionalString hasExternalMonitor ''
+        # 小米显示器: 1080p@144Hz, 作为主屏放在物理正中(内屏逻辑宽 2048, 紧跟其右)
+        output ${externalMonitor} mode 1920x1080@144Hz scale 0.9 pos 2048 0
+        # 常用工作区 1-5 绑主屏, 6-10 绑笔记本屏; 屏不在时 sway 自动落到可用屏
+        workspace "1:壹" output ${externalMonitor}
+        workspace "2:贰" output ${externalMonitor}
+        workspace "3:叁" output ${externalMonitor}
+        workspace "4:肆" output ${externalMonitor}
+        workspace "5:伍" output ${externalMonitor}
+        workspace "6:陆" output eDP-1
+        workspace "7:柒" output eDP-1
+        workspace "8:捌" output eDP-1
+        workspace "9:玖" output eDP-1
+        workspace "10:拾" output eDP-1
+      ''}
 
       default_border pixel 3
       default_floating_border pixel 3
@@ -255,7 +276,8 @@ in
       bindsym $mod+bracketright exec --no-startup-id   grimshot --notify copy anything
       bindsym $mod+a exec --no-startup-id              grimshot --notify savecopy anything ~/Pictures/$(date "+%Y-%m-%d"T"%H_%M_%S").png
       bindsym Print exec --no-startup-id               flameshot gui
-      bindsym $mod+Shift+q workspace QQ, exec --no-startup-id qq
+      # linuxqq-wayland-fix: 屏幕共享/剪贴板/截图修复, 启动器自带 --ozone-platform=wayland
+      bindsym $mod+Shift+q workspace QQ, exec --no-startup-id linuxqq-wayland-fix
       bindsym Alt+Shift+q workspace QQ
       bindsym Alt+Shift+t workspace TG
       bindsym Alt+Shift+w workspace WC

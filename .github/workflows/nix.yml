@@ -57,6 +57,7 @@ jobs:
             .#flake-stats-mcp \
             .#herdr \
             .#hyprpicker \
+            .#linuxqq-wayland-fix \
             .#mcp-nixos \
             .#motrix-next \
             .#selector4nix \

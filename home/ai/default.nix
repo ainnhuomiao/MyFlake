@@ -23,7 +23,7 @@ in
       codex
       opencode
       cc-switch
-      inputs.herdr.packages.${system}.default
+      herdr
       inputs.llm-agents.packages.${system}.antigravity-cli
       inputs.llm-agents.packages.${system}.omp
       inputs.llm-agents.packages.${system}.pi
