@@ -60,6 +60,7 @@ jobs:
             .#linuxqq-wayland-fix \
             .#mcp-nixos \
             .#motrix-next \
+            .#noctalia \
             .#selector4nix \
             .#swayfx \
             .#v2rayn)

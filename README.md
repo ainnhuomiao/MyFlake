@@ -308,9 +308,9 @@ google-chrome          pi              zen-browser
 
 来源：`noctalia`/`zen-browser` 来自各自 flake input，`herdr`/`hyprpicker`/`selector4nix` 来自对应 input，`antigravity-cli`/`omp`/`pi`/`kimi-code` 来自 `llm-agents`，`agy-hud`/`bili_tui`/`dingtalk`/`fcitx5-pinyin-*`/`flake-stats-mcp`/`omp-provider` 为 `pkgs/` 本地包，其余为 nixpkgs 包。
 
-Herdr 保留上游锁定的 `nixpkgs` 和 `rust-overlay`，不跟随宿主工具链，以保持 Herdr 上游测试的工具链组合；系统安装与 CI 导出统一使用 `pkgs.herdr`。
+Herdr 保留上游锁定的 `nixpkgs` 和 `rust-overlay`，不跟随宿主工具链，以保持 Herdr 上游测试的工具链组合；系统安装与 CI 导出统一使用 `pkgs.herdr`。Noctalia 相反：必须跟随宿主 `nixpkgs`——它的 EGL vendor 运行时 dlopen 宿主 `/run/opengl-driver` 的 Mesa，独立闭包会因 glibc 版本不匹配在启动时 `eglGetDisplay failed` 崩溃。
 
-CI **只构建「上游任何二进制缓存里都没有、必须从源码编译」的 10 个包**（`bili_tui`、`dingtalk`、`flake-stats-mcp`、`herdr`、`hyprpicker`、`mcp-nixos`、`motrix-next`、`selector4nix`、`swayfx`、`v2rayn`）并推送到自建 Attic 缓存。其余包都能直接替换（nixpkgs 自由软件走 cache.nixos.org，unfree 应用走厂商预编译包，`llm-agents` 走 cache.numtide.com，`noctalia` 走 noctalia.cachix.org），列进 CI 只会重复下载+上传，lock 更新后还要全部重来。
+CI **只构建「上游任何二进制缓存里都没有、必须从源码编译」的 11 个包**（`bili_tui`、`dingtalk`、`flake-stats-mcp`、`herdr`、`hyprpicker`、`mcp-nixos`、`motrix-next`、`noctalia`、`selector4nix`、`swayfx`、`v2rayn`）并推送到自建 Attic 缓存。其余包都能直接替换（nixpkgs 自由软件走 cache.nixos.org，unfree 应用走厂商预编译包，`llm-agents` 走 cache.numtide.com），列进 CI 只会重复下载+上传，lock 更新后还要全部重来。
 
 例如：
 

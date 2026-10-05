@@ -54,9 +54,11 @@
       url = "github:numtide/llm-agents.nix";
     };
     noctalia = {
-      # 不 follows nixpkgs: 其包只对自身钉的 nixpkgs-unstable 构建测试,
-      # 跟随会丢 noctalia.cachix 命中且随上游 nixpkgs 更新漂移 (同 llm-agents 注释)
+      # 必须跟随宿主 nixpkgs: 其 EGL vendor 运行时 dlopen /run/opengl-driver 的宿主 Mesa,
+      # 自带旧 glibc 闭包会 GLIBC 版本不匹配导致 eglGetDisplay failed 启动即崩
+      # (代价: 丢 noctalia.cachix 命中, 由本仓库 CI 构建进 attic)
       url = "github:noctalia-dev/noctalia/v5.0.1";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-cachyos-kernel = {
       url = "github:xddxdd/nix-cachyos-kernel/release";
