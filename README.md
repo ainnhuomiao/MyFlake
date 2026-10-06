@@ -361,22 +361,22 @@ nix build .#pi
 
 仓库使用 `just` 管理常用命令（切换、清理与代际查看基于 [`nh`](https://github.com/nix-community/nh)，构建树可视化由 nh 内置的 nix-output-monitor 提供）：
 
-| 命令                       | 作用                                                                   |
-| -------------------------- | ---------------------------------------------------------------------- |
-| `just`                     | 列出全部 recipes                                                       |
-| `just update`              | 更新所有 Flake inputs                                                  |
-| `just check`               | 执行 `nix flake check --fallback`                                      |
-| `just format`              | 使用 Flake formatter 格式化仓库                                        |
-| `just build [host]`        | 通过 `nh os build` 构建指定 NixOS 主机，不激活；默认 `nixos`           |
-| `just show`                | 显示全部 Flake outputs                                                 |
-| `just develop`             | 通过 `nom` 进入默认开发 Shell                                          |
-| `just generations`         | 通过 `nh os info` 列出 NixOS 系统 generations                          |
-| `just rebuild-switch`      | 先检查和格式化，再交互选择主机并通过 `nh os switch` 切换               |
-| `just rebuild-switch-fast` | 快速路径：跳过检查和格式化，直接交互选择主机并通过 `nh os switch` 切换 |
-| `just verify`              | 显式执行 `just check` 和 `just format`，用于严格验证                   |
-| `just clean`               | 通过 `nh clean` 清理旧 generations 与 gcroots，保留最近 3 代和 7 天    |
-| `just disko`               | 交互选择磁盘布局并分区、格式化、挂载                                   |
-| `just install`             | 从 `/mnt/etc/nixos/flakes` 安装所选主机                                |
+| 命令                              | 作用                                                                |
+| --------------------------------- | ------------------------------------------------------------------- |
+| `just`                            | 列出全部 recipes                                                    |
+| `just update`                     | 更新所有 Flake inputs                                               |
+| `just check`                      | 执行 `nix flake check --fallback`                                   |
+| `just format`                     | 使用 Flake formatter 格式化仓库                                     |
+| `just build [host]`               | 通过 `nh os build` 构建指定 NixOS 主机，不激活；默认 `nixos`        |
+| `just show`                       | 显示全部 Flake outputs                                              |
+| `just develop`                    | 通过 `nom` 进入默认开发 Shell                                       |
+| `just generations`                | 通过 `nh os info` 列出 NixOS 系统 generations                       |
+| `just rebuild-switch [host]`      | 先检查和格式化，再通过 `nh os switch` 切换；默认 `nixos`            |
+| `just rebuild-switch-fast [host]` | 快速路径：跳过检查和格式化，直接 `nh os switch` 切换；默认 `nixos`  |
+| `just verify`                     | 显式执行 `just check` 和 `just format`，用于严格验证                |
+| `just clean`                      | 通过 `nh clean` 清理旧 generations 与 gcroots，保留最近 3 代和 7 天 |
+| `just disko`                      | 交互选择磁盘布局并分区、格式化、挂载                                |
+| `just install`                    | 从 `/mnt/etc/nixos/flakes` 安装所选主机                             |
 
 常用流程：
 

@@ -9,7 +9,7 @@ let
   cp = appearance.catppuccin;
   # 外接显示器总开关: 返校只用笔记本时改成 false 再重建,
   # 下方所有外接屏相关的 output/workspace 配置会一并消失
-  hasExternalMonitor = true;
+  hasExternalMonitor = false;
   externalMonitor = "HDMI-A-1";
 in
 {

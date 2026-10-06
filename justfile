@@ -36,14 +36,14 @@ generations:
     nh os info
 
 # Validate, format, and switch via nh (nom output built in)
-rebuild-switch: check format
-    NIX_CONFIG="experimental-features = nix-command flakes" bash ./lib/scripts/rebuild.sh
+rebuild-switch host="nixos": check format
+    NIX_CONFIG="experimental-features = nix-command flakes" bash ./lib/scripts/rebuild.sh {{host}}
 
 
 
 # Fast path: build and switch without pre-check or formatting
-rebuild-switch-fast:
-    NIX_CONFIG="experimental-features = nix-command flakes" bash ./lib/scripts/rebuild.sh
+rebuild-switch-fast host="nixos":
+    NIX_CONFIG="experimental-features = nix-command flakes" bash ./lib/scripts/rebuild.sh {{host}}
 
 # Explicit full validation before switching
 verify:
