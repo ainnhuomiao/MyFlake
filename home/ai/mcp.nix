@@ -1,36 +1,107 @@
-{ lib, pkgs, ... }:
+{
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   context7Url = "https://mcp.context7.com/mcp";
   # Obsidian Local REST API 插件自带的 MCP server(Streamable HTTP)。
   # 需要 Obsidian 打开 ai-knowledge vault 且启用该插件。
   obsidianMcpUrl = "http://127.0.0.1:27123/mcp/";
+  mcpNixosExe = lib.getExe pkgs.mcp-nixos;
+  flakeStatsMcpExe = lib.getExe pkgs.flake-stats-mcp;
 in
 {
-  home.activation.configureContext7 = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+  # 公共 MCP 总线:context7 / mcp-nixos / flake-stats-mcp。
+  # 不把 Obsidian(含 Bearer apiKey)写进 programs.mcp.servers——密钥来自本机
+  # vault 插件 JSON,不能进 Nix store;由下方 activation 注入各客户端。
+  programs.mcp = {
+    enable = true;
+    servers = {
+      context7 = {
+        url = context7Url;
+        type = "http";
+      };
+      mcp-nixos = {
+        command = mcpNixosExe;
+        args = [ ];
+      };
+      flake-stats-mcp = {
+        command = flakeStatsMcpExe;
+        args = [ ];
+      };
+    };
+  };
+
+  # 第一波客户端:通过 enableMcpIntegration 从 programs.mcp 拉总线服务器。
+  # mutableSettings=true,避免 HM 用只读 symlink 盖掉用户本地配置。
+  programs.codex = {
+    enable = true;
+    package = pkgs.codex;
+    mutableSettings = true;
+    enableMcpIntegration = true;
+  };
+
+  programs.opencode = {
+    enable = true;
+    package = pkgs.opencode;
+    mutableSettings = true;
+    enableMcpIntegration = true;
+  };
+
+  programs.antigravity-cli = {
+    enable = true;
+    package = inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.antigravity-cli;
+    mutableSettings = true;
+    enableMcpIntegration = true;
+  };
+
+  programs.claude-code = {
+    enable = true;
+    package = inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.claude-code;
+    mutableSettings = true;
+    enableMcpIntegration = true;
+  };
+
+  # activation 只处理 HM 管不了的特例:
+  # - Obsidian:apiKey 运行时从 vault 插件 data.json 读取,不能声明进 store
+  # - cc-switch:SQLite 里的 context7 / codex backup,无程序私有 DB
+  # - Kimi:尚无 programs.* MCP 集成,仍写用户级 ~/.kimi-code/mcp.json
+  # cursor-agent:HM 没有 enableMcpIntegration,读 ~/.cursor/mcp.json。
+  # 把 programs.mcp 生成的 ~/.config/mcp/mcp.json 合并进去,保留用户自己加的 server。
+  home.activation.configureCursorAgentMcp = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     if [[ -z "''${DRY_RUN:-}" ]]; then
-      codex_config="$HOME/.codex/config.toml"
-      ${pkgs.coreutils}/bin/mkdir -p "$HOME/.codex"
-      if [[ ! -f "$codex_config" ]]; then
-        ${pkgs.coreutils}/bin/touch "$codex_config"
+      bus="''${XDG_CONFIG_HOME:-$HOME/.config}/mcp/mcp.json"
+      target="$HOME/.cursor/mcp.json"
+      if [[ -f "$bus" ]]; then
+        mkdir -p "$HOME/.cursor"
+        [[ -f "$target" ]] || echo '{"mcpServers":{}}' > "$target"
+        tmp="$(mktemp)"
+        ${pkgs.jq}/bin/jq -s '.[0] * {mcpServers: ((.[0].mcpServers // {}) + .[1].mcpServers)}' \
+          "$target" "$bus" > "$tmp" && mv "$tmp" "$target"
       fi
-      codex_tmp="$(${pkgs.coreutils}/bin/mktemp "$HOME/.codex/config.toml.XXXXXX")"
+    fi
+  '';
+
+  home.activation.configureMcpSpecials = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    if [[ -z "''${DRY_RUN:-}" ]]; then
       obsidian_data="$HOME/ai-knowledge/.obsidian/plugins/obsidian-local-rest-api/data.json"
       if [[ -f "$obsidian_data" ]]; then
         obsidian_key="$(${pkgs.jq}/bin/jq -r '.apiKey // empty' "$obsidian_data" 2>/dev/null || true)"
       else
         obsidian_key=""
       fi
-      ${pkgs.gawk}/bin/awk -v url="${context7Url}" -v obsidian_url="${obsidianMcpUrl}" -v obsidian_key="$obsidian_key" '
-        function write_context7() {
-          if (!context7_written) {
-            print "[mcp_servers.context7]"
-            print "url = \"" url "\""
-            print ""
-            context7_written = 1
-          }
-        }
 
+      # Codex:仅 upsert [mcp_servers.obsidian];context7 等由 programs.codex + MCP 集成写入
+      codex_config="$HOME/.codex/config.toml"
+      ${pkgs.coreutils}/bin/mkdir -p "$HOME/.codex"
+      if [[ ! -f "$codex_config" ]]; then
+        ${pkgs.coreutils}/bin/touch "$codex_config"
+      fi
+      codex_tmp="$(${pkgs.coreutils}/bin/mktemp "$HOME/.codex/config.toml.XXXXXX")"
+      ${pkgs.gawk}/bin/awk -v obsidian_url="${obsidianMcpUrl}" -v obsidian_key="$obsidian_key" '
         function write_obsidian() {
           if (!obsidian_written) {
             print "[mcp_servers.obsidian]"
@@ -43,36 +114,23 @@ in
           }
         }
 
-        /^\[mcp_servers\.context7(\.|\])/ {
-          write_context7()
-          in_context7 = 1
-          next
-        }
-
         /^\[mcp_servers\.obsidian(\.|\])/ {
           write_obsidian()
           in_obsidian = 1
           next
         }
 
-        /^\[/ && (in_context7 || in_obsidian) {
-          in_context7 = 0
+        /^\[/ && in_obsidian {
           in_obsidian = 0
         }
 
-        !in_context7 && !in_obsidian {
+        !in_obsidian {
           print
         }
 
         END {
-          if (!context7_written) {
-            if (NR > 0) {
-              print ""
-            }
-            write_context7()
-          }
           if (!obsidian_written) {
-            if (NR > 0 || context7_written) {
+            if (NR > 0) {
               print ""
             }
             write_obsidian()
@@ -86,6 +144,7 @@ in
         ${pkgs.coreutils}/bin/mv "$codex_tmp" "$codex_config"
       fi
 
+      # cc-switch:私有 SQLite,保持与旧脚本相同的 context7 + codex backup 同步
       cc_switch_db="$HOME/.cc-switch/cc-switch.db"
       if [[ -f "$cc_switch_db" ]]; then
         ${pkgs.sqlite}/bin/sqlite3 -cmd '.timeout 5000' "$cc_switch_db" \
@@ -106,27 +165,9 @@ in
            WHERE app_type = 'codex';"
       fi
 
-      opencode_config_dir="$HOME/.config/opencode"
-      opencode_config="$opencode_config_dir/opencode.json"
-      ${pkgs.coreutils}/bin/mkdir -p "$opencode_config_dir"
-      if [[ ! -f "$opencode_config" ]]; then
-        ${pkgs.coreutils}/bin/printf '{"$schema":"https://opencode.ai/config.json"}\n' \
-          > "$opencode_config"
-      fi
-      if ! ${pkgs.jq}/bin/jq -e \
-        --arg url "${context7Url}" \
-        '.mcp.context7.type == "remote" and .mcp.context7.url == $url' \
-        "$opencode_config" >/dev/null 2>&1; then
-        opencode_tmp="$(${pkgs.coreutils}/bin/mktemp \
-          "$opencode_config_dir/opencode.json.XXXXXX")"
-        ${pkgs.jq}/bin/jq \
-          --arg url "${context7Url}" \
-          '.mcp.context7 = { type: "remote", url: $url }' \
-          "$opencode_config" > "$opencode_tmp"
-        ${pkgs.coreutils}/bin/chmod --reference="$opencode_config" "$opencode_tmp"
-        ${pkgs.coreutils}/bin/mv "$opencode_tmp" "$opencode_config"
-      fi
-
+      # Antigravity:只合并 obsidian(serverUrl + 可选 Bearer);
+      # context7 / mcp-nixos / flake-stats-mcp 由 programs.antigravity-cli MCP 集成负责。
+      # 注意:agy 远程 MCP 键是 serverUrl,勿写成 httpUrl。
       antigravity_config_dir="$HOME/.gemini/config"
       antigravity_config="$antigravity_config_dir/mcp_config.json"
       ${pkgs.coreutils}/bin/mkdir -p "$antigravity_config_dir"
@@ -135,39 +176,26 @@ in
       fi
       antigravity_tmp="$(${pkgs.coreutils}/bin/mktemp \
         "$antigravity_config_dir/mcp_config.json.XXXXXX")"
-      # 注意:antigravity-cli(agy,Go 实现)的远程 MCP 键是 serverUrl,
-      # 与 gemini-cli(TS)的 httpUrl/url 不同;实测 serverUrl 可连 Streamable HTTP 端点。
-      # 勿改成 httpUrl——agy 不识别,服务器会静默不加载。
       ${pkgs.jq}/bin/jq \
-        --arg context7_url "${context7Url}" \
-        --arg mcp_nixos "${pkgs.mcp-nixos}/bin/mcp-nixos" \
-        --arg flake_stats_mcp "${pkgs.flake-stats-mcp}/bin/flake-stats-mcp" \
         --arg obsidian_url "${obsidianMcpUrl}" \
         --arg obsidian_key "$obsidian_key" \
-        '.mcpServers.context7 = { serverUrl: $context7_url }
-         | .mcpServers["mcp-nixos"] = {
-             command: $mcp_nixos,
-             args: []
-           }
-         | .mcpServers["flake-stats-mcp"] = {
-             command: $flake_stats_mcp,
-             args: []
-           }
-         | .mcpServers.obsidian = {
-            serverUrl: $obsidian_url,
-             headers: {
-               Authorization: "Bearer " + $obsidian_key
-             }
-           }' \
+        '.mcpServers.obsidian = ({ serverUrl: $obsidian_url }
+          + (if $obsidian_key != "" then
+               {
+                 headers: {
+                   Authorization: "Bearer " + $obsidian_key
+                 }
+               }
+             else {} end))' \
         "$antigravity_config" > "$antigravity_tmp"
-      ${pkgs.coreutils}/bin/chmod --reference="$antigravity_config" "$antigravity_tmp"
-      ${pkgs.coreutils}/bin/mv "$antigravity_tmp" "$antigravity_config"
+      if ${pkgs.diffutils}/bin/cmp -s "$antigravity_config" "$antigravity_tmp"; then
+        ${pkgs.coreutils}/bin/rm "$antigravity_tmp"
+      else
+        ${pkgs.coreutils}/bin/chmod --reference="$antigravity_config" "$antigravity_tmp"
+        ${pkgs.coreutils}/bin/mv "$antigravity_tmp" "$antigravity_config"
+      fi
 
-      # Kimi Code CLI:用户级 MCP 文件 ~/.kimi-code/mcp.json
-      # (运行时先看 env KIMI_CODE_HOME,未设才回落 ~/.kimi-code;仓库不设置后者)。
-      # 形状 { "mcpServers": { <name>: {command,args} | {url,headers} } },
-      # transport 由 command / url 自动推断,勿手写。
-      # 另有 <项目根>/.mcp.json 与 <cwd>/.kimi-code/mcp.json,项目级覆盖用户级。
+      # Kimi:无 HM MCP 集成,继续写完整用户级 mcp.json(含总线 + obsidian)
       kimi_config_dir="$HOME/.kimi-code"
       kimi_config="$kimi_config_dir/mcp.json"
       ${pkgs.coreutils}/bin/mkdir -p "$kimi_config_dir"
@@ -178,8 +206,8 @@ in
       kimi_tmp="$(${pkgs.coreutils}/bin/mktemp "$kimi_config_dir/mcp.json.XXXXXX")"
       ${pkgs.jq}/bin/jq \
         --arg context7_url "${context7Url}" \
-        --arg mcp_nixos "${pkgs.mcp-nixos}/bin/mcp-nixos" \
-        --arg flake_stats_mcp "${pkgs.flake-stats-mcp}/bin/flake-stats-mcp" \
+        --arg mcp_nixos "${mcpNixosExe}" \
+        --arg flake_stats_mcp "${flakeStatsMcpExe}" \
         --arg obsidian_url "${obsidianMcpUrl}" \
         --arg obsidian_key "$obsidian_key" \
         '.mcpServers = ((.mcpServers // {})
