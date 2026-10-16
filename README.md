@@ -5,7 +5,7 @@
 </h1>
 
 <p align="center">
-    个人 NixOS Flake 配置，当前面向 <code>x86_64-linux</code> 主机 <code>nixos</code>。仓库同时管理 NixOS、Home Manager、Sway 桌面、开发环境、AI CLI、dae + Mihomo 透明代理、自定义包与 overlays。
+    个人 NixOS Flake 配置，当前面向 <code>x86_64-linux</code> 主机 <code>nixos</code>。仓库同时管理 NixOS、Home Manager、labwc 桌面、开发环境、AI CLI、dae + Mihomo 透明代理、自定义包与 overlays。
 </p>
 
 <div align="center">
@@ -39,7 +39,7 @@
 | 主机         | `nixos`                                                                       |
 | 内核         | CachyOS latest `x86_64-v3`（pinned）                                          |
 | 显卡         | 雷电显卡坞外接 RTX 3050（PRIME offload）                                      |
-| 桌面         | swayfx（getty 自动登录直接进入）                                              |
+| 桌面         | labwc（getty 自动登录直接进入）                                               |
 | 用户环境     | Home Manager，作为 NixOS 模块集成                                             |
 | Shell        | Fish + Starship                                                               |
 | 音频         | PipeWire（ALSA、PulseAudio、JACK）                                            |
@@ -71,20 +71,20 @@ flake.nix
 
 ### 桌面与日常应用
 
-唯一 WM 为 **swayfx**（wlroots，支持毛玻璃模糊与窗口动画，`Mod` 为 `Super`）：状态栏、启动器、通知、锁屏、剪贴板与电源菜单全部由 **Noctalia** 提供（替代了此前的 Waybar/Rofi/Mako/swaylock 组合）。开机经 getty 自动登录直接进入 sway（fish 登录 shell 在 tty1 上自动 `exec sway`），无需显示管理器。
+唯一 WM 为 **labwc**（wlroots，stacking 窗口管理，配置在 `home/wm/labwc/`）：状态栏、启动器、通知、锁屏、剪贴板与电源菜单全部由 **Noctalia** 提供（替代了此前的 Waybar/Rofi/Mako/swaylock 组合）。开机经 getty 自动登录直接进入 labwc（fish 登录 shell 在 tty1 上自动 `exec labwc`），无需显示管理器。
 
-SwayFX 毛玻璃使用 `blur_radius 10`、`blur_passes 4`（`home/wm/sway/config.nix`），减少透明终端背景中的壁纸细节干扰。
+窗口规则（全局去标题栏、固定尺寸、粘滞、无边框等）见 `home/wm/labwc/config.nix`；美化走 **Catppuccin Mocha Openbox 官方主题**（`home/wm/labwc/theme.nix` 钉版引入，labwc 主题引擎兼容 openbox）+ 窗口投影（`dropShadows`）。工作区精简为 5 个（`1`~`5`），按应用自动归位的规则已随之移除。组合键已按旧 sway 键位迁入（壁纸控制 5 条与大部分窗口管理键按决定未迁），见下文「常用 labwc 快捷键」；labwc 不支持旧 swayfx 的毛玻璃模糊与窗口动画。
 
 - Kitty、Firefox、Zen Browser、Google Chrome、Microsoft Edge
 - 聊天：Telegram、QQ、Vesktop、WeChat、Discord、Feishu、腾讯会议、Element
 - Flameshot、Grimshot、Satty、wf-recorder、wl-screenrec、Kooha、OBS Studio、Kdenlive
-- MPV、SPlayer-Next、Go Musicfox、Bilibili 工具、Motrix Next、Blender、scrcpy
+- MPV、SPlayer-Next、Go Musicfox、Bilibili 工具、Rayburst（原 Motrix Next）、Blender、scrcpy
 - Nemo、Yazi、Zathura、Obsidian、Emanote、imv/swayimg
 - Thunderbird、DBeaver
 - Fcitx5 + Rime + 中文扩展词库，左 `Ctrl` + 左 `Shift` 切换输入法
 - PipeWire、Blueman、NetworkManager Applet、XDG Desktop Portal、Noctalia 通知
 - btop 资源监视
-- getty 自动登录直接进入 Sway（tty1），kmscon 接管其他虚拟终端显示中文
+- getty 自动登录直接进入 labwc（tty1），kmscon 接管其他虚拟终端显示中文
 - 锁屏与待机：`swayidle` 挂起前触发 Noctalia 锁屏（桌面捕捉模糊，复刻 swaylock-blur）
 
 ### 雷电显卡坞（外接 RTX 3050）
@@ -94,7 +94,6 @@ SwayFX 毛玻璃使用 `blur_radius 10`、`blur_passes 4`（`home/wm/sway/config
 日常使用（游戏入口自动检测，无需手动敲命令）：
 
 - **Steam**：游戏属性 → 启动选项填一次 `nvidia-egpu %command%`
-- **HMCL**（Minecraft）：设置 → Java 路径填 `/run/current-system/sw/bin/nvidia-egpu`，点启动即自动走 eGPU
 - 手动：`nvidia-egpu steam` 亦可
 
 `nvidia-egpu` 自动检测：GPU 健康 → 带 PRIME offload 环境运行；GPU 不可用（未通电/楔死）→ 自动清掉 nvidia 环境变量回退核显，游戏照常能玩（会有通知提示）。
@@ -111,7 +110,7 @@ nvidia-egpu-off              # 卸载驱动，提示“可安全关闭坞电源�
 - `nvidia-egpu` wrapper 同时覆盖 GL/GLX（PRIME 变量）与 Vulkan（`MESA_VK_DEVICE_SELECT=10de:2584` 强制选卡；595.84 的 `VK_LAYER_NV_optimus` 已不再过滤设备），启动前自动检查/加载驱动；GPU 楔死时（`nvidia-smi -L` 仍 exit 0 但打印 “No devices found.”）不会放行坏 GPU
 - 驱动 595.84 + **closed** 内核模块（`open = false`；open + GSP 固件在本机有已实证的 TLB/GSP RPC 崩溃）；坞通电时请勿合盖挂起
 
-配置位置：`system/hardware/egpu.nix`（驱动、授权与 wrapper）、`home/wm/sway/default.nix`（`WLR_DRM_DEVICES`）。
+配置位置：`system/hardware/egpu.nix`（驱动、授权与 wrapper）、`home/wm/labwc/default.nix`（`WLR_DRM_DEVICES`）。
 
 ### 开发环境
 
@@ -146,6 +145,8 @@ nix develop .#secret
 - Herdr
 - Kimi Code（`kimi`，来自 `llm-agents` 的 `kimi-code`）
 - Oh My Pi 与 Pi（来自 `llm-agents` 的 `omp`、`pi`）
+- Grok Bot 桌面端（`grok-bot`，来自 `llm-agents`，unfree）
+- Cursor Agent CLI（`cursor-agent`，来自 `llm-agents`，unfree）
 - `omp-provider` 中文交互式配置工具（独立包 `pkgs/omp-provider`）
 - `mcp-nixos`
 - `flake-stats-mcp`
@@ -285,32 +286,21 @@ just rebuild-switch
 `overlays/` 当前包含：
 
 - `firefox`：固定 firefox-bin 154.0 与 zh-CN 语言包（nixpkgs 升级不再带动 Firefox 版本）
-- `motrix-next`：跟随 nixpkgs 版本，只叠加 `autoPatchelfHook` 修复其 sidecar 在 NixOS 上的动态链接
+- `rayburst`（原 motrix-next）：跟随 nixpkgs 版本，只叠加 `autoPatchelfHook` 修复其 sidecar 在 NixOS 上的动态链接
 - `mcp-nixos`：禁用一个会误判普通源码内容的上游测试
 - `v2rayn`：修复 Linux TUN 门禁（rebuild 后节点延迟 -1 的根因）
 
-Flake 对外提供 36 个包（`packages.x86_64-linux.*`）：
+Flake 对外 `packages.x86_64-linux.*` 只包含 CI 预构建的源码包（见下）、固定版本的 `firefox-bin` 与 `disko`（`lib/scripts/disko.sh` 使用）。`nix flake check` 会构建 `packages` 内全部包，因此不把 unfree 厂商包（chrome/vscode/qq/wechat/wps 等）放进来：它们每次都要从厂商 CDN 重下 1–2 GB 且不在公共缓存。这些包仍经 overlay 或模块引用进入 `nixosConfigurations`，系统构建照常包含；需要单独构建时用 `nix build nixpkgs#<name>`。清单以实际输出为准：
 
-```text
-agy-hud                herdr           qq
-antigravity-cli        hmcl            selector4nix
-bili_tui               hyprpicker      steam
-bilibili               kimi-code       swayfx
-dingtalk               mcp-nixos       thunderbird-bin
-discord                microsoft-edge  v2rayn
-element-desktop        motrix-next     vscode
-fcitx5-pinyin-moegirl  noctalia        wechat
-fcitx5-pinyin-zhwiki   omp-provider    wemeet
-feishu                 obsidian        wl-screenrec
-flake-stats-mcp        omp             wpsoffice-cn
-google-chrome          pi              zen-browser
+```bash
+nix flake show
 ```
 
-来源：`noctalia`/`zen-browser` 来自各自 flake input，`herdr`/`hyprpicker`/`selector4nix` 来自对应 input，`antigravity-cli`/`omp`/`pi`/`kimi-code` 来自 `llm-agents`，`agy-hud`/`bili_tui`/`dingtalk`/`fcitx5-pinyin-*`/`flake-stats-mcp`/`omp-provider` 为 `pkgs/` 本地包，其余为 nixpkgs 包。
+来源：`noctalia`、`hyprpicker`、`selector4nix`、`linuxqq-wayland-fix`、`disko` 来自各自 flake input；`firefox-bin` 为 `overlays/firefox.nix` 钉死版本的厂商包重打包；`herdr` 经 `pkgs/default.nix` 取自其 flake input；`bili_tui`、`dingtalk`、`flake-stats-mcp` 为 `pkgs/` 本地包；`mcp-nixos`、`rayburst`、`v2rayn` 为 nixpkgs 包，经 `overlays/` 修补。
 
 Herdr 保留上游锁定的 `nixpkgs` 和 `rust-overlay`，不跟随宿主工具链，以保持 Herdr 上游测试的工具链组合；系统安装与 CI 导出统一使用 `pkgs.herdr`。Noctalia 相反：必须跟随宿主 `nixpkgs`——它的 EGL vendor 运行时 dlopen 宿主 `/run/opengl-driver` 的 Mesa，独立闭包会因 glibc 版本不匹配在启动时 `eglGetDisplay failed` 崩溃。
 
-CI **只构建「上游任何二进制缓存里都没有、必须从源码编译」的 11 个包**（`bili_tui`、`dingtalk`、`flake-stats-mcp`、`herdr`、`hyprpicker`、`mcp-nixos`、`motrix-next`、`noctalia`、`selector4nix`、`swayfx`、`v2rayn`）并推送到自建 Attic 缓存。其余包都能直接替换（nixpkgs 自由软件走 cache.nixos.org，unfree 应用走厂商预编译包，`llm-agents` 走 cache.numtide.com），列进 CI 只会重复下载+上传，lock 更新后还要全部重来。
+CI 构建「上游任何二进制缓存里都没有、必须从源码编译」的 11 个包（`bili_tui`、`dingtalk`、`flake-stats-mcp`、`herdr`、`hyprpicker`、`linuxqq-wayland-fix`、`mcp-nixos`、`noctalia`、`rayburst`、`selector4nix`、`v2rayn`），外加版本钉死、只做重打包的 `firefox-bin`，并推送到自建 Attic 缓存。其余包都能直接替换（nixpkgs 自由软件走 cache.nixos.org，unfree 应用走厂商预编译包，`llm-agents` 走 cache.numtide.com），列进 CI 只会重复下载+上传，lock 更新后还要全部重来。
 
 例如：
 
@@ -334,7 +324,7 @@ nix build .#pi
 │   ├── shell/               # Fish、Starship 与 Shell 工具
 │   ├── terminals/           # 终端配置
 │   ├── wall/                # 壁纸:Noctalia 静态 + mpvpaper 视频
-│   └── wm/                  # swayfx WM 配置
+│   └── wm/                  # labwc WM 配置
 ├── hosts/                   # NixOS 主机定义
 │   └── nixos/               # 当前物理机配置
 ├── lib/
@@ -397,7 +387,7 @@ just build
 
 ## CI 缓存与更新流程
 
-推送到 `main` 后，GitHub Actions（`.github/workflows/nix.yml`）只会构建**上游无二进制缓存、必须从源码编译的 9 个包**并推送到自建 Attic 缓存（`ainnhuomiao.qianyuanqing.asia`）；其余包本就是预编译产物或已在上游缓存里，重建时直接替换即可，不必经 CI 搬运。因此**更新依赖后必须推送 `flake.lock`**，CI 才会为新路径重新构建那 9 个包。
+推送到 `main` 后，GitHub Actions（`.github/workflows/nix.yml`）只会构建**上游无二进制缓存、必须从源码编译的 11 个包**并推送到自建 Attic 缓存（`ainnhuomiao.qianyuanqing.asia`）；其余包本就是预编译产物或已在上游缓存里，重建时直接替换即可，不必经 CI 搬运。因此**更新依赖后必须推送 `flake.lock`**，CI 才会为新路径重新构建那 11 个包。
 
 ### 日常更新（配置 / nixpkgs）
 
@@ -407,68 +397,93 @@ just rebuild-switch  # 检查、格式化、构建并切换
 # 本地验证无误后推 main，CI 自动构建需源码编译的包进 Attic
 ```
 
-`main` 允许直接推送（无需开 PR）：`just push "msg"` 提交**已暂存**的改动并直推（可写 `just push "msg" 路径…` 直接指定文件；未暂存的 WIP 不会被带上），`just push-all "msg"` 则是一键 `git add -A` 后提交直推。CI 在推送后运行 `nix.yml` 构建那 9 个源码包并推送到 Attic。`just pr` / `just pr-merge` 为可选 PR 流程（基于 `origin/main` 建分支、开 PR；后者立即合并）。
+`main` 允许直接推送（无需开 PR）：`just push "msg"` 提交**已暂存**的改动并直推（可写 `just push "msg" 路径…` 直接指定文件；未暂存的 WIP 不会被带上），`just push-all "msg"` 则是一键 `git add -A` 后提交直推。CI 在推送后运行 `nix.yml` 构建那 11 个源码包并推送到 Attic。`just pr` / `just pr-merge` 为可选 PR 流程（基于 `origin/main` 建分支、开 PR；后者立即合并）。
 
 ### 关于自动更新
 
 不配置定时 `nix flake update` 工作流：`nixos-unstable` 的滚动升级可能夹带破坏性变更，无人值守时容易把半坏的 `flake.lock` 推上 `main`。依赖更新一律走上面的本地流程（`just update` → `just check`），确认通过后再推送。（原 `.github/workflows/flake-update.yml` 已移除。）
 
-## 常用 Sway 快捷键
+## 常用 labwc 快捷键（迁移中）
 
-`Mod` 为 `Super`。
+> [!NOTE]
+> 组合键逐项迁移中：Noctalia、截图、应用启动、媒体、工作区已迁入 `home/wm/labwc/config.nix` 的 `keyboard` 节（沿用旧 sway 键位）；壁纸控制 5 条已决定不迁；窗口管理组后续再迁。底座为 labwc 自带默认键，冲突处以自定义键为准。
 
-### 启动与系统
+| 按键                              | 功能                  |
+| --------------------------------- | --------------------- |
+| `Alt + Tab` / `Alt + Shift + Tab` | 切换下一个/上一个窗口 |
+| `Super + Return`                  | 打开终端（Kitty）     |
+| `Alt + F4`                        | 关闭窗口              |
+| `Super + a`                       | 最大化切换            |
+| `Super + d`                       | 显示桌面              |
+| `Super + 方向键`                  | 窗口贴半屏/四分屏     |
+| `Alt + Space`                     | 窗口菜单              |
+| 媒体/亮度键                       | 音量、亮度、播放控制  |
 
-| 按键                   | 功能                      |
-| ---------------------- | ------------------------- |
-| `Mod + Return`         | 打开 Kitty                |
-| `Mod + Shift + Return` | 打开浮动 Kitty            |
-| `Mod + z`              | Noctalia 应用启动器       |
-| `Mod + v`              | 剪贴板历史                |
-| `Mod + Shift + p`      | 电源菜单                  |
-| `Mod + Shift + b`      | Firefox                   |
-| `Mod + Shift + t`      | Telegram                  |
-| `Mod + Shift + q`      | QQ                        |
-| `Mod + Shift + v`      | Vesktop                   |
-| `Alt + Shift + s`      | SPlayer-Next              |
-| `Alt + Shift + q`      | 切换到 QQ 工作区          |
-| `Alt + Shift + t`      | 切换到 Telegram 工作区    |
-| `Alt + Shift + w`      | 切换到 WeChat 工作区      |
-| `Alt + Shift + b`      | 切换到 Firefox 工作区     |
-| `Alt + Shift + v`      | 切换到 Vesktop 工作区     |
-| `Alt + Shift + y`      | 切换到 Qutebrowser 工作区 |
-| `Mod + Shift + x`      | 锁屏                      |
-| `Mod + Shift + c`      | 重载 Sway                 |
-| `Mod + Shift + e`      | 退出 Sway                 |
-| `Mod + o`              | 显示或隐藏 Noctalia 顶栏  |
+### Noctalia（已迁入）
 
-### 窗口与工作区
+| 按键                | 功能                    |
+| ------------------- | ----------------------- |
+| `Super + o`         | 显示/隐藏 Noctalia 顶栏 |
+| `Super + z`         | Noctalia 应用启动器     |
+| `Super + v`         | 剪贴板历史              |
+| `Super + Shift + p` | 电源菜单                |
+| `Super + Shift + x` | 锁屏                    |
 
-| 按键                             | 功能                     |
-| -------------------------------- | ------------------------ |
-| `Mod + h/j/k/l` 或方向键         | 移动焦点                 |
-| `Mod + Shift + h/j/k/l` 或方向键 | 移动窗口                 |
-| `Mod + q`                        | 关闭窗口                 |
-| `Mod + f`                        | 全屏切换                 |
-| `Mod + Shift + Space`            | 浮动/平铺切换            |
-| `Mod + Space`                    | 在浮动区和平铺区切换焦点 |
-| `Mod + 1..0`                     | 切换工作区 1..10         |
-| `Mod + Shift + 1..0`             | 移动窗口到工作区         |
-| `Mod + Ctrl + 1..0`              | 移动窗口并跟随到工作区   |
-| `Mod + /`                        | 当前与上一个工作区切换   |
-| `Mod + .` / `Mod + ,`            | 下一个/上一个工作区      |
-| `Mod + -` / `Mod + =`            | 放入/取出 scratchpad     |
-| `Mod + r`                        | 进入窗口大小调整模式     |
-| `Mod + g` / `Mod + Shift + g`    | 关闭/恢复窗口间隙        |
+### 截图（已迁入）
+
+| 按键        | 功能                                                   |
+| ----------- | ------------------------------------------------------ |
+| `Print`     | Flameshot GUI                                          |
+| `Super + [` | 交互截图，存+复制到 `~/Pictures`                       |
+| `Super + ]` | 交互截图，仅复制                                       |
+| `Super + a` | 交互截图，存+复制到 `~/Pictures`（覆盖默认键的最大化） |
+
+### 应用启动（已迁入）
+
+| 按键                     | 功能                                       |
+| ------------------------ | ------------------------------------------ |
+| `Super + Return`         | Kitty                                      |
+| `Super + Shift + Return` | 浮动 Kitty                                 |
+| `Super + Shift + b`      | Firefox                                    |
+| `Super + Shift + y`      | Qutebrowser                                |
+| `Super + Shift + t`      | Telegram                                   |
+| `Super + Shift + q`      | QQ（旧键位含切工作区，已随专属工作区移除） |
+| `Super + Shift + v`      | Vesktop                                    |
+| `Alt + Shift + s`        | SPlayer-Next                               |
+
+### 工作区 1~5（已迁入）
+
+| 按键                      | 功能                     |
+| ------------------------- | ------------------------ |
+| `Super + 1..5`            | 切换工作区               |
+| `Super + Shift + 1..5`    | 窗口发到工作区（不跟随） |
+| `Super + Ctrl + 1..5`     | 窗口发到工作区并跟随     |
+| `Super + /`               | 当前↔上一个工作区        |
+| `Super + .` / `Super + ,` | 下一个/上一个工作区      |
+
+### 媒体（已迁入）
+
+| 按键            | 功能          |
+| --------------- | ------------- |
+| `XF86AudioPlay` | 播放/暂停 mpc |
+| `XF86AudioNext` | 下一曲        |
+| `XF86AudioPrev` | 上一曲        |
+
+（音量/亮度键由 labwc 默认绑定提供）
+
+### 窗口管理（仅迁 2 条）
+
+| 按键                | 功能                                            |
+| ------------------- | ----------------------------------------------- |
+| `Super + q`         | 关闭窗口                                        |
+| `Super + f`         | 带间隙的柔和最大化（四周留 gap + 投影，可还原） |
+| `Super + Shift + f` | 真全屏（贴边铺满，可还原）                      |
+
+（旧 sway 的移动焦点/移动窗口/resize/scratchpad/布局切换等因 labwc 是 stacking 范式无对应能力，未迁）
 
 ### 截图与录制
 
-| 按键/位置 | 功能                                         |
-| --------- | -------------------------------------------- |
-| `Print`   | Flameshot GUI                                |
-| `Mod + [` | Grimshot 交互截图，复制并保存到 `~/Pictures` |
-| `Mod + ]` | Grimshot 交互截图，仅复制                    |
-| `Mod + a` | Grimshot 交互截图，复制并保存到 `~/Pictures` |
+截图快捷键待组合键重写时接上。
 
 直接使用 `wf-recorder`：
 
@@ -521,7 +536,9 @@ just disko
 > [!WARNING]
 > 此操作会清空目标磁盘。执行前必须检查布局文件中的设备路径。
 
-`nix build .#checks.x86_64-linux.disko-layouts` 会求值并验证两种布局的本地 schema（GPT/ESP、LUKS/LVM 引用及挂载点），不执行磁盘操作；这不是上游 disko 模块的完整验证。
+两种布局都是 **btrfs 子卷**（`root`→`/`、`home`→`/home`、`nix`→`/nix`，`compress=zstd,noatime`），与现机 `hosts/nixos/hardware-configuration.nix` 的挂载语义一致；另有 vfat `/boot` 与 swap 分区。现机的 btrfs 跨两个分区（多设备），disko 单盘 btrfs 无法原样描述，布局是其单盘等价形式。
+
+`nix build .#checks.x86_64-linux.disko-layouts` 用 disko 上游 NixOS 模块真实求值两种布局，断言 `/`、`/home`、`/nix` 为带正确子卷的 btrfs、`/boot` 为 vfat、存在 swap；纯求值，不触碰磁盘。
 
 ### 4. 安装
 
@@ -540,7 +557,8 @@ reboot
 ## 注意事项
 
 - `me.nix` 当前包含个人信息和密码哈希；公开仓库前应考虑迁移到 sops-nix 等秘密管理方案
-- `sudo` 与 `doas` 均免密码提权（`sudo` 仅对 `huomiao`，`doas` 对 `wheel` 组），只适合受控的个人设备
+- `sudo` 对 `huomiao` 免密码提权（`system/core/security.nix`），只适合受控的个人设备
+- sshd 当前仍允许密码登录（服务器无 `authorized_keys`）。补上 `users.users.huomiao.openssh.authorizedKeys.keys` 后再设 `services.openssh.settings.PasswordAuthentication = false`，否则远程会被锁死
 - Home Manager 使用 `useGlobalPkgs = true` 和 `useUserPackages = true`；包变更应通过完整的 NixOS rebuild 应用
 - `NIX_AUTO_RUN=1` 已启用，缺失命令可能由 nix-index/comma 临时运行；常用工具仍应显式声明
 - Nix 每周自动执行 GC，并删除两天前的旧引用

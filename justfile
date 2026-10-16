@@ -5,13 +5,22 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 help:
     @just --list
 
-# Update all flake inputs with nix-output-monitor
+# Update all flake inputs
 update:
-    nix flake update --log-format internal-json -v 2>&1 | nom --json
+    nix flake update
+
+# 更新单个 flake input
+update-input name:
+    nix flake lock --update-input {{name}}
 
 # Check all flake outputs with nix-output-monitor
 check:
-    nix flake check --fallback --option substituters "http://127.0.0.1:5496/ https://ainnhuomiao.qianyuanqing.asia/ainnhuomiao https://ainnhuomiao.cachix.org https://nix-community.cachix.org https://attic.xuyh0120.win/lantian https://cache.numtide.com" --log-format internal-json -v 2>&1 | nom --json
+    #!/usr/bin/env bash
+    set -uo pipefail
+    # 退出码以 nix 为准: nom 只要日志里有 error 级别消息就返回 1, 而 substituter 故障
+    # (如 attic 不可达)会被 nix 的 fallback 忽略、只记一条 error 日志, 不影响检查结果
+    nix flake check --fallback --option substituters "http://127.0.0.1:5496/ https://ainnhuomiao.qianyuanqing.asia/ainnhuomiao https://ainnhuomiao.cachix.org https://nix-community.cachix.org https://attic.xuyh0120.win/lantian https://cache.numtide.com https://cache.nixos.org https://mirrors.ustc.edu.cn/nix-channels/store/" --log-format internal-json -v 2>&1 | nom --json
+    exit "${PIPESTATUS[0]}"
 
 # Format the repository
 format:

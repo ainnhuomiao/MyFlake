@@ -20,10 +20,7 @@ in
   programs = {
     ncmpcpp = {
       enable = true;
-      mpdMusicDir = null;
-      settings = {
-        mpd_music_dir = "~/Music";
-      };
+      mpdMusicDir = "~/Music";
     };
     cava = {
       enable = true;
@@ -40,21 +37,13 @@ in
       };
     };
   };
-  home.file.".config/cava/config_internal".text = ''
-    [general]
-    bars = 12
-    sleep_timer = 10
-    [output]
-    method = raw
-    data_format = ascii
-    ascii_max_range = 7
-  ''; # cava 的 raw ascii 输出配置 (Noctalia bar 无 cava 可视化,保留供终端手动 cava 使用)
   services = {
     mpd = {
       enable = true;
       musicDirectory = "~/Music";
       network = {
-        listenAddress = "0.0.0.0";
+        # 无认证, 只听回环(0.0.0.0 会把 MPD 暴露给整个 LAN)
+        listenAddress = "127.0.0.1";
         port = 6600;
       };
       extraConfig = ''

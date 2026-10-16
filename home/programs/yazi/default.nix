@@ -9,7 +9,6 @@ in
     enable = true;
     enableFishIntegration = true;
     shellWrapperName = "r";
-    flavors = { };
     settings = settings;
     theme = theme;
     keymap = keymap;

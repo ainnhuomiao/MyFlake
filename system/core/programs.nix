@@ -3,7 +3,7 @@
     fish.enable = true;
     git = {
       enable = true;
-      config.safe.directory = [ "*" ];
+      config.safe.directory = [ "/home/huomiao/MyFlake" ];
     };
     nh = {
       enable = true;

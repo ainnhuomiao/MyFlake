@@ -19,7 +19,7 @@
   xdg.portal = {
     enable = true;
     config = {
-      sway = {
+      labwc = {
         default = [ "gtk" ];
         "org.freedesktop.impl.portal.ScreenCast" = [ "wlr" ];
         "org.freedesktop.impl.portal.Screenshot" = [ "wlr" ];
@@ -29,13 +29,12 @@
       enable = true;
       settings.screencast.chooser_type = "none";
     };
-    configPackages = [ pkgs.gnome-session ];
     extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
   };
 
   # xdg-desktop-portal 在登录早期会被 fake graphical-session 拉起, 彼时
   # XDG_CURRENT_DESKTOP 尚未经 dbus-update-activation-environment 导入
-  # user manager → portal 进程缺该变量 → 匹配不到 sway-portals.conf →
+  # user manager → portal 进程缺该变量 → 匹配不到 labwc 的 portal 配置 →
   # 不导出 Screenshot/ScreenCast 接口 → flameshot 等截图应用 30s 超时无窗口。
   # 条件失败后 portal 会延后到首次被调用时(此时会话环境已就绪)再启动。
   systemd.user.services."xdg-desktop-portal".unitConfig.ConditionEnvironment = [
@@ -62,7 +61,6 @@
       scrcpy
       gource
       blender
-      s-search
       gparted
       brightnessctl
       # XWayland 高清渲染 (Xft.dpi 加载工具)

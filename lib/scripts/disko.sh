@@ -133,13 +133,11 @@ read -p "Type 'YES' to proceed: " final_confirm
 # 5. Run Disko
 info "Executing Disko..."
 
-nix --experimental-features "nix-command flakes" run github:nix-community/disko/latest -- --mode destroy,format,mount "$partition_layout"
+nix --experimental-features "nix-command flakes" run "$FLAKE_ROOT#disko" -- --mode destroy,format,mount "$partition_layout"
 
-# 6. File System Preparation (Impermanence Support)
+# 6. Mount point for the flake copy (布局为普通 btrfs 子卷, 无 impermanence/persist 目录)
 info "Preparing mount points for $selected_host..."
 mkdir -p /mnt/etc/nixos
-mkdir -p /mnt/nix/persist/etc/nixos
-mount -o bind /mnt/nix/persist/etc/nixos /mnt/etc/nixos
 
 # 7. Hardware Configuration
 host_dir="$FLAKE_ROOT/hosts/$selected_host"

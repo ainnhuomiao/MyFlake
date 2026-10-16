@@ -14,6 +14,8 @@
       "network-online.target"
     ];
     requires = [ "mihomo.service" ];
+    # mihomo 停止时 dae 跟随停止, 流量退回直连而非打进死 socks 黑洞
+    bindsTo = [ "mihomo.service" ];
     wants = [ "network-online.target" ];
     restartTriggers = [ ./dae.dae ];
   };

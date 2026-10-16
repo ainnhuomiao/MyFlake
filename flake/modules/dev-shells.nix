@@ -1,17 +1,12 @@
-{ inputs, ... }:
+{ ... }:
 {
   perSystem =
     {
       config,
       pkgs,
-      system,
       ...
     }:
     {
-      _module.args.pkgs = import inputs.nixpkgs {
-        inherit system;
-      };
-
       devShells = {
         default = pkgs.mkShell {
           nativeBuildInputs = with pkgs; [

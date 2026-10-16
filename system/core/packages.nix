@@ -2,16 +2,14 @@
 {
   programs.nix-ld = {
     enable = true;
+    # 与模块默认列表(取自 systemd/nix 依赖: zlib zstd stdenv.cc.cc curl openssl attr
+    # libssh bzip2 libxml2 acl libsodium util-linux xz systemd)重复的项不再列出
     libraries = with pkgs; [
-      acl
       alsa-lib
       at-spi2-atk
       at-spi2-core
       atk
-      attr
-      bzip2
       cairo
-      curl
       dbus
       expat
       fontconfig
@@ -27,8 +25,6 @@
       libICE
       libpng
       libSM
-      libsodium
-      libssh
       libusb1
       libX11
       libXcomposite
@@ -40,7 +36,6 @@
       libXinerama
       libxkbcommon
       libxkbfile
-      libxml2
       libXrandr
       libXrender
       libXScrnSaver
@@ -50,18 +45,11 @@
       mesa
       nspr
       nss
-      openssl
       pango
       pulseaudio
-      stdenv.cc.cc
-      systemd
       udev
-      util-linux
       vulkan-loader
       wayland
-      xz
-      zlib
-      zstd
     ];
   };
 

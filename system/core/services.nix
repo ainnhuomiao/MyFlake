@@ -44,7 +44,6 @@ let
 in
 {
   services = {
-    dbus.enable = true;
     openssh.enable = true;
     # 用户态 TTY 终端，pango+fontconfig 渲染，支持中文显示
     kmscon = {
@@ -70,8 +69,8 @@ in
   # 由 console.colors 生成 vt.default_red/grn/blu 内核参数
   console.colors = ttyPalette;
 
-  # ly 已移除; tty1 保留真实 getty 并 autologin(fish loginShellInit 守卫 exec sway),
-  # 直接启动进 sway; kmscon 仍接管 VTs 2–6 渲染中文 TTY
+  # ly 已移除; tty1 保留真实 getty 并 autologin(fish loginShellInit 守卫 exec labwc),
+  # 直接启动进 labwc; kmscon 仍接管 VTs 2–6 渲染中文 TTY
   systemd.suppressedSystemUnits = lib.mkForce [ ];
   systemd.targets.getty.wants = lib.mkForce [ "getty@tty1.service" ];
 

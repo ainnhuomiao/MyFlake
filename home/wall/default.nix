@@ -40,10 +40,10 @@ in
     video-wall-resume = {
       Unit = {
         Description = "Freeze/resume mpvpaper video wallpaper around suspend";
-        PartOf = lib.mkForce [ "sway-session.target" ];
+        PartOf = lib.mkForce [ "labwc-session.target" ];
         After = [ "graphical-session.target" ];
       };
-      Install.WantedBy = lib.mkForce [ "sway-session.target" ];
+      Install.WantedBy = lib.mkForce [ "labwc-session.target" ];
       Service = {
         Type = "simple";
         ExecStart = pkgs.writeShellScript "video-wall-resume" ''

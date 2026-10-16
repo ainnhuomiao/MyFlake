@@ -37,7 +37,7 @@ in
   boot.kernelParams = [ "thunderbolt.clx=0" ];
 
   # === 雷电显卡坞:外接 RTX 3050 (GA107),Sway 下 PRIME offload ===
-  # 用法:游戏入口直接交给 `nvidia-egpu`(Steam 启动选项 / HMCL Java 路径 / 手动),
+  # 用法:游戏入口直接交给 `nvidia-egpu`(Steam 启动选项 / 手动),
   # 自动检测:GPU 健康→offload 渲染;不可用→回退核显,显示器仍走 iGPU
   services = {
     # Thunderbolt 授权守护进程(雷电显卡坞热插拔必需)
@@ -89,7 +89,6 @@ in
     timerConfig = {
       OnBootSec = "5s";
       OnCalendar = "*-*-* *:*:00/30";
-      AccuracySec = "1s";
     };
   };
 
@@ -119,7 +118,7 @@ in
   environment.systemPackages = with pkgs; [
     # 自动 eGPU 启动器:包住游戏进程,GPU 健康 → 带完整 PRIME offload 环境;
     # GPU 不可用(未通电/楔死)→ 清掉 nvidia 环境变量回退核显,游戏照常能跑。
-    # 接入口:Steam 启动选项 `nvidia-egpu %command%`、HMCL 的 Java 路径指向本脚本、或手动敲
+    # 接入口:Steam 启动选项 `nvidia-egpu %command%`、或手动敲
     (pkgs.writeShellScriptBin "nvidia-egpu" ''
       # 用法:nvidia-egpu <command...>
       set -euo pipefail

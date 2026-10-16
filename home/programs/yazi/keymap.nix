@@ -6,7 +6,7 @@
           "g"
           "f"
         ];
-        run = "cd ~/Flakes";
+        run = "cd ~/MyFlake";
       }
       {
         on = [

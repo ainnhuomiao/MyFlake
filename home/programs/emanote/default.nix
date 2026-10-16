@@ -1,7 +1,6 @@
 {
   pkgs,
   inputs,
-  me,
   ...
 }:
 let
@@ -21,7 +20,7 @@ in
     Service = {
       Restart = "on-failure";
       RestartSec = 2;
-      ExecStart = "${emanotePackage}/bin/emanote -L /home/${me.userName}/Blog run --port=7000";
+      ExecStart = "${emanotePackage}/bin/emanote -L %h/Blog run --port=7000";
     };
   };
 }

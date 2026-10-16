@@ -12,13 +12,13 @@ let
   videoDir = "${config.home.homeDirectory}/${appearance.videosDir}";
 
   # 官方插件源钉版(path source,不联网;升级 noctalia 时同步 bump)。
-  # 依赖关系:插件的 plugin_api 必须落在 shell 支持区间内 —— v5.0.1 为 3..30,
+  # 依赖关系:插件的 plugin_api 必须落在 shell 支持区间内 —— v5.2.1 为 3..32,
   # noctalia/mpvpaper 声明 plugin_api = 9。
   officialPlugins = pkgs.fetchFromGitHub {
     owner = "noctalia-dev";
     repo = "official-plugins";
-    rev = "dc04fdda0383196ff7cc88dc33be77e36761609c";
-    hash = "sha256-h/PnhllfPAi+QTvLa7Sf+Yj84KGcRI2I4F2gAIazA4A=";
+    rev = "233782933e999bc69aca1ac6bc1bb285b6b26a3e";
+    hash = "sha256-d/eZuJ2MJ8Ugqzf4QAmIx19Sy/6101BdfI5F5FBp5+I=";
   };
 in
 {
@@ -85,6 +85,6 @@ in
         lang = "zh-Hans";
       };
     };
-    # 不启用 systemd service: 用 sway exec 自启, 避免在 wayland socket 就绪前启动
+    # 不启用 systemd service: 用合成器 autostart 自启, 避免在 wayland socket 就绪前启动
   };
 }

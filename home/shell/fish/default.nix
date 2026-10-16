@@ -12,10 +12,10 @@ in
   programs.fish = {
     enable = true;
     loginShellInit =
-      if config.wayland.windowManager.sway.enable then
+      if config.wayland.windowManager.labwc.enable then
         ''
           set TTY1 (tty)
-          [ "$TTY1" = "/dev/tty1" ] && exec sway
+          [ "$TTY1" = "/dev/tty1" ] && exec labwc
         ''
       else
         "";
@@ -45,9 +45,7 @@ in
         and nvim $file
       '';
       nv = ''
-        if command -q neovide.exe
-            neovide.exe --wsl $argv
-        else if command -q neovide
+        if command -q neovide
             neovide $argv
         else
             nvim $argv

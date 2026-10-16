@@ -10,15 +10,15 @@
     microsoft-edge
     thunderbird-bin
     gdu
-    hmcl
     imv
     swayimg
     kooha
-    motrix-next
+    rayburst
     obsidian
     splayer-next
     kdePackages.kdenlive
     wl-screenrec
+    wl-clipboard
     wpsoffice-cn
     inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];

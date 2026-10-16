@@ -9,10 +9,6 @@
     ../../terminals
     ../../programs
     ../../ai
-    ../../wm/sway
+    ../../wm/labwc
   ];
-
-  wayland.windowManager.sway = lib.mkIf config.wayland.windowManager.sway.enable {
-    extraOptions = [ "--unsupported-gpu" ];
-  };
 }

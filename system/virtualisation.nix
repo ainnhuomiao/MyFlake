@@ -7,7 +7,6 @@
 {
   virtualisation.docker = {
     enable = true;
-    enableOnBoot = true;
   };
 
   services.flatpak.enable = true;

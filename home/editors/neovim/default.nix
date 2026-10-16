@@ -130,12 +130,12 @@ in
     "nvim/lua/plugins/catppuccin.lua".text = catppuccin-plugin;
   };
 
-  programs.fish.shellAliases = {
-    e = "nvim";
-    vi = "nvim";
-    vim = "nvim";
+  programs.neovim = {
+    enable = true;
+    defaultEditor = true;
   };
-  programs.bash.shellAliases = {
+
+  programs.fish.shellAliases = {
     e = "nvim";
     vi = "nvim";
     vim = "nvim";

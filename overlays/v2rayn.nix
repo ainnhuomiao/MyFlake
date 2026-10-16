@@ -6,6 +6,7 @@ final: prev:
   # v2rayN 后构造器把 EnableTun 重置为 off(sway 上系统代理脚本也不可用),
   # 表现为 rebuild 后所有节点 -1。本机 sudo 为 NOPASSWD 免密, 门禁无意义,
   # 打补丁让 Linux 分支直接放行(sudo -S 空密码在免密下可用, core 提权不受影响)。
+  # 已验证适用 v2rayN 7.25.4(升级版本后需重新确认 patch 仍能应用)。
   v2rayn = prev.v2rayn.overrideAttrs (old: {
     patches = (old.patches or [ ]) ++ [ ../patches/v2rayn-tun-gate.patch ];
   });

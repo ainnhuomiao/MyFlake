@@ -33,6 +33,7 @@
     options = [
       "subvol=root"
       "compress=zstd"
+      "noatime"
     ];
   };
 
@@ -42,6 +43,7 @@
     options = [
       "subvol=home"
       "compress=zstd"
+      "noatime"
     ];
   };
 

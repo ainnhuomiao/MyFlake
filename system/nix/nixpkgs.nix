@@ -10,9 +10,8 @@
       allowUnsupportedSystem = true;
       allowUnfree = true;
       permittedInsecurePackages = [
-        # 钉钉客户端自带 OpenSSL 1.1（EOL），见 pkgs/dingtalk/default.nix
-        "dingtalk-8.2.8.260818002"
-        "electron-39.8.10"
+        # 钉钉客户端自带 OpenSSL 1.1（EOL），见 pkgs/dingtalk/default.nix; 版本号单一来源 pkgs/dingtalk/version.nix
+        "dingtalk-${import ../../pkgs/dingtalk/version.nix}"
       ];
     };
     overlays = [

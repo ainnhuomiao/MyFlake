@@ -1,14 +1,5 @@
 { pkgs, appearance, ... }:
 let
-  maple-mono-NF-CN = pkgs.maple-mono.NF.overrideAttrs (_: rec {
-    version = "7.0-beta36";
-    pname = "MapleMono-NF-CN";
-    src = pkgs.fetchurl {
-      url = "https://github.com/subframe7536/Maple-font/releases/download/v${version}/${pname}.zip";
-      sha256 = "sha256-W5b4jcr6fGaAbasCXCswGMkG/SklCXUbfRcPvZfzsNo=";
-    };
-  });
-
   nerdFonts = with pkgs.nerd-fonts; [
     # fonts name can get in `https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/data/fonts/nerdfonts/shas.nix`
     hack
@@ -27,7 +18,7 @@ in
         noto-fonts-cjk-sans
         noto-fonts-cjk-serif
         noto-fonts-color-emoji
-        maple-mono-NF-CN
+        maple-mono.NF-CN
       ]
       ++ nerdFonts;
     fontconfig = {

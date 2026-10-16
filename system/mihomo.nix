@@ -19,6 +19,16 @@ let
 
   tools = import ../lib/proxy-tools.nix { inherit pkgs configDirectory; };
   inherit (tools) generateConfig subscriptionManager;
+
+  # generate→chgrp→chmod 0640 供 systemd regenerate 服务与 activation script 共用;
+  # set -e 与 systemd job script 语义一致: generate 失败即中止, 不碰旧配置、不触发重启
+  regenerateConfig = pkgs.writeShellScript "mihomo-regenerate-config" ''
+    set -e
+    ${pkgs.util-linux}/bin/runuser -u ${userName} -- \
+      ${generateConfig}/bin/mihomo-generate-config
+    chgrp ${configGroup} "${configFile}"
+    chmod 0640 "${configFile}"
+  '';
 in
 {
   services.mihomo = {
@@ -48,10 +58,7 @@ in
     description = "Regenerate Mihomo config after subscription changes";
     serviceConfig.Type = "oneshot";
     script = ''
-      ${pkgs.util-linux}/bin/runuser -u ${userName} -- \
-        ${generateConfig}/bin/mihomo-generate-config
-      chgrp ${configGroup} "${configFile}"
-      chmod 0640 "${configFile}"
+      ${regenerateConfig}
       systemctl try-restart mihomo.service
     '';
   };
@@ -80,10 +87,7 @@ in
       chown ${userName}:${configGroup} "${subscriptionsFile}"
       chmod 0600 "${subscriptionsFile}"
 
-      ${pkgs.util-linux}/bin/runuser -u ${userName} -- \
-        ${generateConfig}/bin/mihomo-generate-config
-      chgrp ${configGroup} "${configFile}"
-      chmod 0640 "${configFile}"
+      ${regenerateConfig}
     '';
   };
 }

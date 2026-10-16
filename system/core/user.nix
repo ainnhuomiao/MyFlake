@@ -4,7 +4,7 @@
   ...
 }:
 {
-  # Boot straight into sway via tty1 getty autologin (ly removed)
+  # Boot straight into labwc via tty1 getty autologin (ly removed)
   services.getty.autologinUser = me.userName;
 
   # Set to true so passwords can be changed with `passwd`

@@ -16,7 +16,7 @@
         fcitx5-pinyin-zhwiki
       ];
       waylandFrontend = true;
-      # 禁用 fcitx5-daemon.service: fcitx5 由 sway 会话自行启动 (sway exec),
+      # 禁用 fcitx5-daemon.service: fcitx5 由 labwc 会话自行启动 (autostart),
       # daemon 挂在 graphical-session.target 上会与合成器的 wayland socket
       # 就绪产生竞态 (连接失败 → 输入法热键失效)
       systemd.enable = false;

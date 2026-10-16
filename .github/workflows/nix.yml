@@ -18,7 +18,7 @@ jobs:
   build:
     name: Build NixOS x86_64-linux
     runs-on: ubuntu-24.04
-    timeout-minutes: 360
+    timeout-minutes: 180
 
     steps:
       - name: Check out repository
@@ -28,6 +28,14 @@ jobs:
         uses: cachix/install-nix-action@v31
         with:
           github_access_token: ${{ github.token }}
+
+      # store 级缓存:空 store 启动时 unfree 包要从厂商 CDN 重新下载(约 1-2 GB),
+      # 命中后这些 FOD 直接秒过。primary-key 基于 flake.lock hash,miss 时按前缀兜底旧缓存
+      - name: Restore and save Nix store
+        uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
 
       - name: Configure Cachix
         uses: cachix/cachix-action@v17
@@ -41,7 +49,8 @@ jobs:
       #   - nixpkgs unfree 应用   → 厂商 CDN 的预编译包(discord/vscode/chrome/qq/...)
       #   - llm-agents            → cache.numtide.com (omp/pi/antigravity-cli/kimi-code)
       #   - noctalia / steam      → noctalia.cachix.org / nix-community.cachix.org
-      #   - firefox-bin/zen-browser → 自行下载的厂商预编译包(仅重打包,无编译)
+      #   - zen-browser           → 自行下载的厂商预编译包(仅重打包,无编译, 不入 CI)
+      #   - firefox-bin           → 钉死 154.0 的厂商包重打包; 版本固定后入 CI, 命中 attic 避免每次重新拉取
       # 复核某包是否该在这里:取 nix eval .#<pkg>.outPath 的 hash,查
       # https://<cache>/<hash>.narinfo;全 404 且属于「编译」类才留下。
       - name: Build cached packages
@@ -54,17 +63,27 @@ jobs:
             --accept-flake-config \
             .#bili_tui \
             .#dingtalk \
+            .#firefox-bin \
             .#flake-stats-mcp \
             .#herdr \
             .#hyprpicker \
             .#linuxqq-wayland-fix \
             .#mcp-nixos \
-            .#motrix-next \
+            .#rayburst \
             .#noctalia \
             .#selector4nix \
-            .#swayfx \
             .#v2rayn)
           echo "paths=${paths//$'\n'/ }" >> "$GITHUB_OUTPUT"
+
+      # check 放在两个 push 之前:失败时直接终止,避免 Cachix 与 Attic 内容分叉
+      - name: Check flake
+        run: nix flake check --print-build-logs
+
+      # 系统构建 canary:仅 main 推送时构建完整 toplevel,提前暴露 CI 包列表之外的配置问题。
+      # 若 lantian 缓存从 GitHub 不可达导致内核编译超时,可删除此步骤
+      - name: Build NixOS system toplevel (canary)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: nix build --no-link --accept-flake-config .#nixosConfigurations.nixos.config.system.build.toplevel
 
       - name: Push cached packages
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -75,14 +94,11 @@ jobs:
           pathsToPush: ${{ steps.cached-packages.outputs.paths }}
           skipAddingSubstituter: true
 
-      - name: Check flake
-        run: nix flake check --print-build-logs
-
       - name: Push to self-hosted attic
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
         run: |
-          nix profile install nixpkgs#attic-client
+          nix profile install --inputs-from . nixpkgs#attic-client
           attic login vps https://ainnhuomiao.qianyuanqing.asia/ "$ATTIC_TOKEN"
           attic push ainnhuomiao ${{ steps.cached-packages.outputs.paths }}

@@ -23,6 +23,11 @@
       inputs.nixpkgs.follows = "nixpkgs-emanote";
     };
     nixpkgs-emanote.url = "github:nixos/nixpkgs/6b4955211758ba47fac850c040a27f23b9b4008f";
+    disko = {
+      # lib/scripts/disko.sh 全新安装流程使用, 布局见 lib/disko_layout/
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     flake-parts.url = "github:hercules-ci/flake-parts";
     flake-root.url = "github:srid/flake-root";
     flake-registry = {
@@ -57,12 +62,19 @@
       # 必须跟随宿主 nixpkgs: 其 EGL vendor 运行时 dlopen /run/opengl-driver 的宿主 Mesa,
       # 自带旧 glibc 闭包会 GLIBC 版本不匹配导致 eglGetDisplay failed 启动即崩
       # (代价: 丢 noctalia.cachix 命中, 由本仓库 CI 构建进 attic)
-      url = "github:noctalia-dev/noctalia/v5.0.1";
+      url = "github:noctalia-dev/noctalia/v5.2.1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-cachyos-kernel = {
+      # 内核缓存命中要求 derivation 与 lantian Hydra 构建时逐位一致, 即 nixpkgs 必须与上游
+      # release 分支 flake.lock 所钉的 rev 相同。因此:
+      # - 不 follows 宿主 nixpkgs (会改变 derivation, 全部 miss)
+      # - 也不能只删 follows: lock 会解析到任意 HEAD, 同样 miss (已实测 outPath 不一致)
+      # - 直接钉上游 release lock 中的 rev (实测 outPath 与 github:…/release 求值结果一致)
+      # 上游更新 nixpkgs 时同步此 rev:
+      #   curl -s https://raw.githubusercontent.com/xddxdd/nix-cachyos-kernel/release/flake.lock | jq -r '.nodes.nixpkgs.locked.rev'
       url = "github:xddxdd/nix-cachyos-kernel/release";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.url = "github:nixos/nixpkgs/545c226a9af7f59fba5c3873f7c6a65e014c8f5f";
     };
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable-small";
     nix-index-database = {
@@ -75,11 +87,6 @@
     };
     selector4nix = {
       url = "github:StarryReverie/selector4nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    swayfx = {
-      url = "github:WillPower3309/swayfx/0.6";
-      # 0.6 起才有 animation_duration_ms(窗口开合动画),nixpkgs 仍钉 0.5.3
       inputs.nixpkgs.follows = "nixpkgs";
     };
     treefmt-nix = {
@@ -109,9 +116,7 @@
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
       "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc="
     ];
-    trusted-users = [
-      "root"
-      "@wheel"
-    ];
+    # trusted-users 放在 flake nixConfig 里无效(对未信任用户被忽略, 对已信任用户无意义),
+    # 实际设置在 system/nix/substituters.nix
   };
 }

@@ -2,7 +2,7 @@
 #
 # nixpkgs PR #354928 / #431371 都因客户端硬依赖已 EOL 的 OpenSSL 1.1 而关闭，
 # 因此这里保留 deb 自带的 OpenSSL 1.1，并用 meta.knownVulnerabilities 显式标注：
-# 需要 permittedInsecurePackages = [ "dingtalk-8.2.8.260818002" ]
+# 需要 permittedInsecurePackages = [ "dingtalk-${version}" ]（版本见 ./version.nix）
 # （见 system/nix/nixpkgs.nix 与 flake/modules/packages.nix）。
 #
 # 配方移植自 NUR（github.com/Yakkhini/nur-packages，MIT）与 AUR dingtalk-bin。
@@ -93,7 +93,7 @@
 
 let
   pname = "dingtalk";
-  version = "8.2.8.260818002";
+  version = import ./version.nix;
 
   src = fetchurl {
     # 版本对齐端点（官方，可直接 jq 取当前版本/URL）:
