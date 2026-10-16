@@ -79,11 +79,11 @@ jobs:
       - name: Check flake
         run: nix flake check --print-build-logs
 
-      # 系统构建 canary:仅 main 推送时构建完整 toplevel,提前暴露 CI 包列表之外的配置问题。
-      # 若 lantian 缓存从 GitHub 不可达导致内核编译超时,可删除此步骤
-      - name: Build NixOS system toplevel (canary)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: nix build --no-link --accept-flake-config .#nixosConfigurations.nixos.config.system.build.toplevel
+      # 系统 toplevel canary 已关掉:linux-cachyos 依赖 lantian attic 二进制缓存,
+      # GitHub Actions 经常连不上该缓存(本机 curl 也握手失败),runner 就会从源码编内核,
+      # 磁盘很快写满(No space left on device)。flake check + 上方源码包列表已覆盖大部分。
+      # 等 lantian 对 GHA 稳定可达后再加回:
+      #   nix build --no-link --accept-flake-config .#nixosConfigurations.nixos.config.system.build.toplevel
 
       - name: Push cached packages
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
