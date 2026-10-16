@@ -79,11 +79,9 @@ jobs:
       - name: Check flake
         run: nix flake check --print-build-logs
 
-      # 系统 toplevel canary 已关掉:linux-cachyos 依赖 lantian attic 二进制缓存,
-      # GitHub Actions 经常连不上该缓存(本机 curl 也握手失败),runner 就会从源码编内核,
-      # 磁盘很快写满(No space left on device)。flake check + 上方源码包列表已覆盖大部分。
-      # 等 lantian 对 GHA 稳定可达后再加回:
-      #   nix build --no-link --accept-flake-config .#nixosConfigurations.nixos.config.system.build.toplevel
+      # 不在 CI 构建完整系统 toplevel: 系统闭包解包约 54 GiB(2026-10 实测), 远超标准 runner 的 14 GB 磁盘,
+      # 会因 No space left on device 失败。main 允许直推且 CI 不设门禁, 失败只能事后发现。
+      # eval 由 flake check 覆盖, 源码包由上方列表构建; 完整系统请在推送前用 `just build` 本机验证。
 
       - name: Push cached packages
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

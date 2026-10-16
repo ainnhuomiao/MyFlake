@@ -15,8 +15,8 @@
     <a href="https://nixos.org">
         <img src="https://img.shields.io/badge/NixOS-26.05-8caaee?style=for-the-badge&logo=nixos&logoColor=eff1f5&labelColor=303446" alt="NixOS 26.05" />
     </a>
-    <a href="https://github.com/xddxdd/nix-cachyos-kernel">
-        <img src="https://img.shields.io/badge/Kernel-CachyOS%20x86__64__v3-ca9ee6?style=for-the-badge&logoColor=eff1f5&labelColor=303446" alt="CachyOS Kernel" />
+    <a href="https://github.com/zen-kernel/zen-kernel">
+        <img src="https://img.shields.io/badge/Kernel-Linux%20Zen-ca9ee6?style=for-the-badge&logoColor=eff1f5&labelColor=303446" alt="Linux Zen Kernel" />
     </a>
     <a href="https://flake.parts">
         <img src="https://img.shields.io/badge/Built%20with-flake--parts-ef9f76?style=for-the-badge&logoColor=eff1f5&labelColor=303446" alt="flake-parts" />
@@ -37,7 +37,7 @@
 | Nixpkgs      | `nixos-unstable-small`                                                        |
 | 平台         | `x86_64-linux`                                                                |
 | 主机         | `nixos`                                                                       |
-| 内核         | CachyOS latest `x86_64-v3`（pinned）                                          |
+| 内核         | Linux Zen（nixpkgs `linuxPackages_zen`）                                      |
 | 显卡         | 雷电显卡坞外接 RTX 3050（PRIME offload）                                      |
 | 桌面         | labwc（getty 自动登录直接进入）                                               |
 | 用户环境     | Home Manager，作为 NixOS 模块集成                                             |
@@ -65,9 +65,9 @@ flake.nix
 
 ### 内核
 
-当前主机使用 [`xddxdd/nix-cachyos-kernel`](https://github.com/xddxdd/nix-cachyos-kernel) `release` 分支提供的 CachyOS 内核。`hosts/default.nix` 注入 `overlays.pinned`，`hosts/nixos/default.nix` 选择 `linuxPackages-cachyos-latest-x86_64-v3`；这与上游 Hydra 的构建环境保持一致，可命中 `https://attic.xuyh0120.win/lantian` 二进制缓存，避免本机编译内核。
+当前主机使用 nixpkgs 提供的 Linux Zen 内核，`hosts/nixos/default.nix` 中设置 `boot.kernelPackages = pkgs.linuxPackages_zen`。此前使用的 CachyOS 内核（`xddxdd/nix-cachyos-kernel`）因上游二进制缓存服务器被入侵而下线，相关输入、`lantian` 缓存及其签名密钥均已移除（见 [issue #110](https://github.com/xddxdd/nix-cachyos-kernel/issues/110)）。
 
-当前 `flake.lock` 对应的运行内核为 `7.2.4-cachyos`。更新 input 后版本会随 `release` 分支变化；不要让 `nix-cachyos-kernel.inputs.nixpkgs` 跟随本仓库的 `nixpkgs`，否则可能造成补丁版本不匹配或缓存未命中。切换内核配置后必须重启，运行中的版本可用 `uname -r` 检查。
+运行内核版本随 `flake.lock` 中锁定的 `nixpkgs` 变化。切换内核配置后必须重启，运行中的版本可用 `uname -r` 检查。
 
 ### 桌面与日常应用
 
@@ -228,7 +228,7 @@ http://127.0.0.1:9090/ui/
 
 - 并行查询所有上游缓存，按延迟和优先级选择最快源；故障源自动跳过并按指数退避重试
 - NAR 从最优源流式转发，本机只持久缓存 `.narinfo` 查询结果（`/var/cache/selector4nix`）
-- 上游列表：`ainnhuomiao` Attic、`ainnhuomiao.cachix.org`、`nix-community.cachix.org`、`lantian` Attic、`cache.numtide.com`，以及 USTC 镜像（cache.nixos.org 的 CN 直连镜像，作通用二进制源）
+- 上游列表：`ainnhuomiao` Attic、`ainnhuomiao.cachix.org`、`nix-community.cachix.org`、`cache.numtide.com`，以及 USTC 镜像（cache.nixos.org 的 CN 直连镜像，作通用二进制源）
 - cache.nixos.org 不作为上游：dae 将其（非 geosite:cn）路由进 mihomo 节点，实测间歇性瘫痪/限速；nix 直连列表保留它作最后兜底
 - `configureSubstituter = "prepend"`：代理 `http://127.0.0.1:5496/` 排在 substituters 首位，原始列表保留作 fallback；代理故障时 Nix 自动回退，不影响构建
 
@@ -564,7 +564,7 @@ reboot
 - Nix 每周自动执行 GC，并删除两天前的旧引用
 - `nix.settings.nix-path` 指向 `flake:nixpkgs`，由锁定的 `registry.nixpkgs` 提供；不再使用弃用的 `nix.nixPath`。
 - Flake 配置允许 unfree、broken 和 unsupported 包，并临时允许指定的不安全 Electron 版本；更新前应运行 `just check`
-- CachyOS 内核更新并执行 `just rebuild-switch` 后仍需重启；若新内核无法启动，可从 GRUB 选择旧 NixOS generation 回退
+- 内核更新并执行 `just rebuild-switch` 后仍需重启；若新内核无法启动，可从 GRUB 选择旧 NixOS generation 回退
 - 当前硬件配置含本机 Btrfs、EFI 和 Swap UUID，不应复制到其他机器
 
 ## 参考

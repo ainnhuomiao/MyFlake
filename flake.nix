@@ -65,17 +65,6 @@
       url = "github:noctalia-dev/noctalia/v5.2.1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    nix-cachyos-kernel = {
-      # 内核缓存命中要求 derivation 与 lantian Hydra 构建时逐位一致, 即 nixpkgs 必须与上游
-      # release 分支 flake.lock 所钉的 rev 相同。因此:
-      # - 不 follows 宿主 nixpkgs (会改变 derivation, 全部 miss)
-      # - 也不能只删 follows: lock 会解析到任意 HEAD, 同样 miss (已实测 outPath 不一致)
-      # - 直接钉上游 release lock 中的 rev (实测 outPath 与 github:…/release 求值结果一致)
-      # 上游更新 nixpkgs 时同步此 rev:
-      #   curl -s https://raw.githubusercontent.com/xddxdd/nix-cachyos-kernel/release/flake.lock | jq -r '.nodes.nixpkgs.locked.rev'
-      url = "github:xddxdd/nix-cachyos-kernel/release";
-      inputs.nixpkgs.url = "github:nixos/nixpkgs/545c226a9af7f59fba5c3873f7c6a65e014c8f5f";
-    };
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable-small";
     nix-index-database = {
       url = "github:Mic92/nix-index-database";
@@ -107,14 +96,12 @@
       "https://ainnhuomiao.qianyuanqing.asia/ainnhuomiao"
       "https://ainnhuomiao.cachix.org"
       "https://nix-community.cachix.org"
-      "https://attic.xuyh0120.win/lantian"
     ];
     extra-trusted-public-keys = [
       "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
       "ainnhuomiao:rSRSxFzka/Hu1R27mYg8TIE34+X9Vq4RA+orXAUr7U4="
       "ainnhuomiao.cachix.org-1:scMAjHS0YtCSBV0d6bbFWHDGD3BkPKuWbcfeWpqw5ck="
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-      "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc="
     ];
     # trusted-users 放在 flake nixConfig 里无效(对未信任用户被忽略, 对已信任用户无意义),
     # 实际设置在 system/nix/substituters.nix

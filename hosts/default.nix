@@ -33,9 +33,6 @@
           ../system
           inputs.disko.nixosModules.disko
           inputs.selector4nix.nixosModules.selector4nix
-          ({ ... }: {
-            nixpkgs.overlays = [ inputs.nix-cachyos-kernel.overlays.pinned ];
-          })
           inputs.home-manager.nixosModules.home-manager
           (mkHomeManager "nixos")
         ];

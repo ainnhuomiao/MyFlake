@@ -5,7 +5,7 @@
   networking.hostName = "nixos";
 
   boot = {
-    kernelPackages = pkgs.cachyosKernels.linuxPackages-cachyos-latest-x86_64-v3;
+    kernelPackages = pkgs.linuxPackages_zen;
     kernelParams = [
       "quiet"
       # Iris Xe (8086:a7a0) 改用新的 xe 驱动(本内核需 force_probe 才接管);
