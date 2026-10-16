@@ -6,7 +6,7 @@ let
       name = "kimi-code";
       publisher = "moonshot-ai";
       version = "0.8.1";
-      hash = "sha256-vEoh0IGNljbdMaVLNrPNDSmI6OhitJmdsFSbnheAw8g=";
+      hash = "sha256-L/o7e3UWR4rFjOi2RrBb3nodNFUd/JMDp3spQnuWRQk=";
     };
     meta = {
       description = "Kimi Code for VS Code";
