@@ -1,5 +1,4 @@
 {
-  config,
   pkgs,
   appearance,
   ...
@@ -11,14 +10,14 @@ in
 {
   programs.fish = {
     enable = true;
-    loginShellInit =
-      if config.wayland.windowManager.labwc.enable then
-        ''
-          set TTY1 (tty)
-          [ "$TTY1" = "/dev/tty1" ] && exec labwc
-        ''
-      else
-        "";
+    loginShellInit = ''
+      # niri-session 会再次调用非交互 login shell；只在 tty1 的交互登录启动，避免递归。
+      if status is-interactive; and not set -q WAYLAND_DISPLAY; and not set -q DISPLAY; and not set -q SSH_CONNECTION
+          if test (tty) = /dev/tty1
+              exec niri-session
+          end
+      end
+    '';
     interactiveShellInit = ''
       set fish_greeting ""
       set fish_key_bindings  fish_vi_key_bindings

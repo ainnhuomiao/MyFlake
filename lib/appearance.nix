@@ -33,12 +33,10 @@ let
 in
 {
   # 壁纸目录(home 相对路径): home/wall 在此建 symlink 指向 assets/wallpapers,
-  # Noctalia 壁纸管理器浏览该稳定路径 —— 它会把选中的壁纸绝对路径持久化到
-  # settings.toml,而 nix store 路径每次重建都会变,持久化后必然失效。
+  # DMS 把选中的壁纸绝对路径写入 session.json，稳定路径可跨重建保留。
   wallpapersDir = "Pictures/wallpapers";
 
-  # 视频壁纸目录(同上): Noctalia 官方 mpvpaper 插件把分配的视频路径持久化到
-  # 自己的 state(assignments.json),同样不能是 store 路径。
+  # 保留视频资源入口；dms-niri 分支本轮只迁移静态壁纸。
   videosDir = "Videos/wallpapers";
 
   font = {

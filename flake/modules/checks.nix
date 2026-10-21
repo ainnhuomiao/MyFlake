@@ -53,6 +53,21 @@
           throw "disko 布局 ${name} 的挂载与现机 hardware-configuration 不一致(需 btrfs 子卷 root/home/nix + vfat /boot + swap)";
     in
     {
+      # 用实际安装版本验证 KDL，避免配置语法错误导致登录后黑屏。
+      checks.niri-config =
+        let
+          configFile = pkgs.writeText "niri-config.kdl" (
+            import ../../home/wm/niri/config.nix {
+              inherit lib pkgs;
+              appearance = import ../../lib/appearance.nix;
+            }
+          );
+        in
+        pkgs.runCommand "niri-config" { nativeBuildInputs = [ pkgs.niri ]; } ''
+          niri validate --config ${configFile}
+          touch "$out"
+        '';
+
       checks.disko-layouts =
         pkgs.runCommand "disko-layouts"
           {

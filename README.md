@@ -5,7 +5,7 @@
 </h1>
 
 <p align="center">
-    个人 NixOS Flake 配置，当前面向 <code>x86_64-linux</code> 主机 <code>nixos</code>。仓库同时管理 NixOS、Home Manager、labwc 桌面、开发环境、AI CLI、dae + Mihomo 透明代理、自定义包与 overlays。
+    个人 NixOS Flake 配置，当前面向 <code>x86_64-linux</code> 主机 <code>nixos</code>。仓库同时管理 NixOS、Home Manager、niri + DMS 桌面、开发环境、AI CLI、dae + Mihomo 透明代理、自定义包与 overlays。
 </p>
 
 <div align="center">
@@ -39,7 +39,7 @@
 | 主机         | `nixos`                                                                       |
 | 内核         | Linux Zen（nixpkgs `linuxPackages_zen`）                                      |
 | 显卡         | 雷电显卡坞外接 RTX 3050（PRIME offload）                                      |
-| 桌面         | labwc（getty 自动登录直接进入）                                               |
+| 桌面         | niri + Dank Material Shell（getty 自动登录）                                  |
 | 用户环境     | Home Manager，作为 NixOS 模块集成                                             |
 | Shell        | Fish + Starship                                                               |
 | 音频         | PipeWire（ALSA、PulseAudio、JACK）                                            |
@@ -71,21 +71,25 @@ flake.nix
 
 ### 桌面与日常应用
 
-唯一 WM 为 **labwc**（wlroots，stacking 窗口管理，配置在 `home/wm/labwc/`）：状态栏、启动器、通知、锁屏、剪贴板与电源菜单全部由 **Noctalia** 提供（替代了此前的 Waybar/Rofi/Mako/swaylock 组合）。开机经 getty 自动登录直接进入 labwc（fish 登录 shell 在 tty1 上自动 `exec labwc`），无需显示管理器。
+当前 `dms-niri` 分支使用 **niri + Dank Material Shell（DMS）**；`main` 保留 **labwc + Noctalia**。niri 负责滚动平铺、工作区与显示输出，DMS 提供状态栏、启动器、通知、锁屏、剪贴板、截图、电源菜单及音量/亮度控制。
 
-窗口规则（全局去标题栏、固定尺寸、粘滞、无边框等）见 `home/wm/labwc/config.nix`；美化走 **Catppuccin Mocha Openbox 官方主题**（`home/wm/labwc/theme.nix` 钉版引入，labwc 主题引擎兼容 openbox）+ 窗口投影（`dropShadows`）。工作区精简为 5 个（`1`~`5`），按应用自动归位的规则已随之移除。组合键已按旧 sway 键位迁入（壁纸控制 5 条与大部分窗口管理键按决定未迁），见下文「常用 labwc 快捷键」；labwc 不支持旧 swayfx 的毛玻璃模糊与窗口动画。
+开机经 tty1 getty 自动登录，Fish 交互登录执行 `niri-session`，由上游会话脚本管理 systemd 与 DBus 环境。NixOS 的 `programs.niri` / `programs.dms-shell` 使用锁定 nixpkgs 中的包（目前 niri 26.04、DMS 1.6.3）；不单独引入第三方 niri flake 或 DMS flake。niri 的配置与快捷键在 `home/wm/niri/config.nix`，内屏保持 125% 缩放，触摸板轻触与自然滚动开启，保留命名工作区 `1`～`5`。快捷键使用锁定 DMS 版本自带的 niri 官方预设，终端选用已安装的 Kitty；不迁移 `main` 的个人按键，也不再将 Caps 映射为 Esc。
+
+niri 的屏幕共享使用 GNOME portal，文件选择使用 GTK portal；X11 应用由 xwayland-satellite 按需启动。DMS 只由 systemd 启动一次，合成器配置不重复拉起它；其服务要求 `NIRI_SOCKET`，避免在旧桌面会话中误启动。默认主题仍由 `lib/appearance.nix` 的 Catppuccin Mocha 色表生成，界面语言为简体中文。DMS 的 `settings.json` 与 `session.json` 仅在首次创建时填入默认值，保持可写，之后可以在设置界面保存偏好。
+
+修改配置后先运行 `just format`、`just check`、`just build`。实际切换时再执行 `just rebuild-switch` 并重启进入新会话；仅构建不会影响当前桌面。切换分支本身也不会切换运行中的桌面。
 
 - Kitty、Firefox、Zen Browser、Google Chrome、Microsoft Edge
 - 聊天：Telegram、QQ、Vesktop、WeChat、Discord、Feishu、腾讯会议、Element
-- Flameshot、Grimshot、Satty、wf-recorder、wl-screenrec、Kooha、OBS Studio、Kdenlive
+- niri 内置截图、Flameshot 编辑器、Satty、Kooha、OBS Studio、Kdenlive
 - MPV、SPlayer-Next、Go Musicfox、Bilibili 工具、Rayburst（原 Motrix Next）、Blender、scrcpy
 - Nemo、Yazi、Zathura、Obsidian、Emanote、imv/swayimg
 - Thunderbird、DBeaver
 - Fcitx5 + Rime + 中文扩展词库，左 `Ctrl` + 左 `Shift` 切换输入法
-- PipeWire、Blueman、NetworkManager Applet、XDG Desktop Portal、Noctalia 通知
+- PipeWire、Blueman、NetworkManager、XDG Desktop Portal、DMS 通知
 - btop 资源监视
-- getty 自动登录直接进入 labwc（tty1），kmscon 接管其他虚拟终端显示中文
-- 锁屏与待机：`swayidle` 挂起前触发 Noctalia 锁屏（桌面捕捉模糊，复刻 swaylock-blur）
+- getty 自动登录进入 niri（tty1），kmscon 接管其他虚拟终端显示中文
+- 锁屏与待机：DMS 原生锁屏、logind 锁屏集成、挂起前锁定；PAM 使用 `/etc/pam.d/dankshell`
 
 ### 雷电显卡坞（外接 RTX 3050）
 
@@ -106,11 +110,11 @@ nvidia-egpu-off              # 卸载驱动，提示“可安全关闭坞电源�
 要点：
 
 - `services.hardware.bolt` 负责雷电授权，坞已 `enroll --policy auto`，开电即自动授权
-- 全局 EGL 锁定 Mesa + `WLR_DRM_DEVICES=/dev/dri/card0`（wlroots 只探测 iGPU），保证合成器不占用 nvidia 模块，驱动可在游戏结束后干净卸载，`nvidia-egpu-off` 卸载成功后再断电即安全
+- 全局 EGL 锁定 Mesa；niri 的 `render-drm-device` 指向 Intel 的稳定 by-path 节点，`ignore-drm-device` 排除 NVIDIA 的 `renderD129`。迁移后仍需实测显卡坞热插拔，确认合成器没有占用新枚举节点；以 `nvidia-egpu-off` 卸载成功为断电依据
 - `nvidia-egpu` wrapper 同时覆盖 GL/GLX（PRIME 变量）与 Vulkan（`MESA_VK_DEVICE_SELECT=10de:2584` 强制选卡；595.84 的 `VK_LAYER_NV_optimus` 已不再过滤设备），启动前自动检查/加载驱动；GPU 楔死时（`nvidia-smi -L` 仍 exit 0 但打印 “No devices found.”）不会放行坏 GPU
 - 驱动 595.84 + **closed** 内核模块（`open = false`；open + GSP 固件在本机有已实证的 TLB/GSP RPC 崩溃）；坞通电时请勿合盖挂起
 
-配置位置：`system/hardware/egpu.nix`（驱动、授权与 wrapper）、`home/wm/labwc/default.nix`（`WLR_DRM_DEVICES`）。
+配置位置：`system/hardware/egpu.nix`（驱动、授权与 wrapper）、`home/wm/niri/config.nix`（渲染设备与忽略节点）。
 
 ### 开发环境
 
@@ -247,17 +251,11 @@ assets/wallpapers/   # 静态壁纸（.png/.jpg/.jpeg/.webp）
 assets/videos/       # 视频壁纸（.mp4/.webm/.mkv/.mov）
 ```
 
-静态壁纸由 **Noctalia 自带壁纸管理器** 渲染（background layer），视频壁纸由 **官方 `noctalia/mpvpaper` 插件** 托管（插件按 output 拉起 mpvpaper，并让 Noctalia 在该 output 上收起自己的壁纸层）。浏览目录都用稳定软链，避免把每次重建都会变的 nix store 路径写进 Noctalia 状态：`~/Pictures/wallpapers` → `assets/wallpapers`，`~/Videos/wallpapers` → `assets/videos`。
+静态壁纸由 **DMS 原生壁纸管理器** 渲染，`Super + y` 打开选择器。稳定资源软链仍为 `~/Pictures/wallpapers` → `assets/wallpapers`、`~/Videos/wallpapers` → `assets/videos`，避免重建后保存的路径失效。
 
-Noctalia 使用 Home Manager 内置 `programs.noctalia` 模块，`package` 显式指向 flake input 锁定的 v5.0.1；不再导入上游 `homeModules.default`，避免与 Home Manager 重复声明选项。
+本轮只迁移静态壁纸，保留视频资源，不再安装 Noctalia 的 mpvpaper 插件与视频服务。视频播放功能后续另行迁移。
 
-- `Mod + Shift + w`：随机切换一次（静态）
-- `Mod + Ctrl + w`：每 120 秒随机切换（静态）
-- `Mod + Ctrl + Shift + w`：停止轮换并恢复默认壁纸
-- `Mod + Ctrl + v`：打开视频壁纸选择器（选片/暂停/清除；分配会持久化，登录后自动恢复）
-- `Mod + Ctrl + Shift + v`：清除视频壁纸，回到静态壁纸
-
-状态栏的壁纸按钮打开静态壁纸选择器。休眠时用户服务会冻结视频壁纸，唤醒后解冻。
+保留命令行入口：`wallpaper_random` 切换下一张（首次默认配置使用随机顺序），`dynamic_wallpaper` 每 120 秒切换，`default_wall` 停止脚本轮换并恢复 `default.png`。这些脚本通过 DMS IPC 控制壁纸；也可以在 DMS 界面设置原生壁纸轮换。
 
 新增或替换仓库内壁纸后需要重建系统，使资源进入新的 Nix store 路径：
 
@@ -267,7 +265,7 @@ just rebuild-switch
 
 ### 主题（Catppuccin）
 
-桌面、Shell、GTK、终端工具与编辑器统一使用 Catppuccin **Mocha**，不随壁纸变化、无运行时切换。锁屏亦为 Noctalia 内置 Catppuccin 主题。
+桌面、Shell、GTK、终端工具与编辑器统一使用 Catppuccin **Mocha**，不随壁纸变化、无运行时切换。DMS 与锁屏使用同一份由公共色表生成的自定义主题。首次默认值不启用壁纸动态取色；之后可在 DMS 中修改。
 
 `lib/appearance.nix` 只保留当前 Mocha 语义色表；各工具复用此入口或对应的上游 Catppuccin Mocha 主题，不再并行维护 Tokyo Night、Nord 和四套备用终端色表。
 
@@ -290,23 +288,22 @@ just rebuild-switch
 - `mcp-nixos`：禁用一个会误判普通源码内容的上游测试
 - `v2rayn`：修复 Linux TUN 门禁（rebuild 后节点延迟 -1 的根因）
 
-Flake 对外 `packages.x86_64-linux.*` 只包含 CI 预构建的源码包（见下）、固定版本的 `firefox-bin` 与 `disko`（`lib/scripts/disko.sh` 使用）。`nix flake check` 会构建 `packages` 内全部包，因此不把 unfree 厂商包（chrome/vscode/qq/wechat/wps 等）放进来：它们每次都要从厂商 CDN 重下 1–2 GB 且不在公共缓存。这些包仍经 overlay 或模块引用进入 `nixosConfigurations`，系统构建照常包含；需要单独构建时用 `nix build nixpkgs#<name>`。清单以实际输出为准：
+Flake 对外 `packages.x86_64-linux.*` 只包含 CI 预构建的源码包（见下）、固定版本的 `firefox-bin` 与 `disko`（`lib/scripts/disko.sh` 使用）。`nix flake check` 只求值 `packages`，不构建它们；为控制独立包输出范围，不把 unfree 厂商包（chrome/vscode/qq/wechat/wps 等）放进来：它们每次都要从厂商 CDN 重下 1–2 GB 且不在公共缓存。这些包仍经 overlay 或模块引用进入 `nixosConfigurations`，系统构建照常包含；需要单独构建时用 `nix build nixpkgs#<name>`。清单以实际输出为准：
 
 ```bash
 nix flake show
 ```
 
-来源：`noctalia`、`hyprpicker`、`selector4nix`、`linuxqq-wayland-fix`、`disko` 来自各自 flake input；`firefox-bin` 为 `overlays/firefox.nix` 钉死版本的厂商包重打包；`herdr` 经 `pkgs/default.nix` 取自其 flake input；`bili_tui`、`dingtalk`、`flake-stats-mcp` 为 `pkgs/` 本地包；`mcp-nixos`、`rayburst`、`v2rayn` 为 nixpkgs 包，经 `overlays/` 修补。
+来源：`selector4nix`、`linuxqq-wayland-fix`、`disko` 来自各自 flake input；`firefox-bin` 为 `overlays/firefox.nix` 钉死版本的厂商包重打包；`herdr` 经 `pkgs/default.nix` 取自其 flake input；`bili_tui`、`dingtalk`、`flake-stats-mcp` 为 `pkgs/` 本地包；`mcp-nixos`、`rayburst`、`v2rayn` 为 nixpkgs 包，经 `overlays/` 修补。
 
-Herdr 保留上游锁定的 `nixpkgs` 和 `rust-overlay`，不跟随宿主工具链，以保持 Herdr 上游测试的工具链组合；系统安装与 CI 导出统一使用 `pkgs.herdr`。Noctalia 相反：必须跟随宿主 `nixpkgs`——它的 EGL vendor 运行时 dlopen 宿主 `/run/opengl-driver` 的 Mesa，独立闭包会因 glibc 版本不匹配在启动时 `eglGetDisplay failed` 崩溃。
+Herdr 保留上游锁定的 `nixpkgs` 和 `rust-overlay`，不跟随宿主工具链，以保持 Herdr 上游测试的工具链组合；系统安装与 CI 导出统一使用 `pkgs.herdr`。niri、DMS 与其 Qt 依赖均使用宿主锁定的 nixpkgs，直接使用公共二进制缓存，不增加独立 package 输出。
 
-CI 构建「上游任何二进制缓存里都没有、必须从源码编译」的 11 个包（`bili_tui`、`dingtalk`、`flake-stats-mcp`、`herdr`、`hyprpicker`、`linuxqq-wayland-fix`、`mcp-nixos`、`noctalia`、`rayburst`、`selector4nix`、`v2rayn`），外加版本钉死、只做重打包的 `firefox-bin`，并推送到自建 Attic 缓存。其余包都能直接替换（nixpkgs 自由软件走 cache.nixos.org，unfree 应用走厂商预编译包，`llm-agents` 走 cache.numtide.com），列进 CI 只会重复下载+上传，lock 更新后还要全部重来。
+CI 构建的源码包清单见 `.github/workflows/nix.yml`，固定版本的 `firefox-bin` 也参与缓存。`dms-niri` 分支已移除 Noctalia 与 hyprpicker 的输入、导出和 CI 构建项。
 
 例如：
 
 ```bash
-nix build .#omp
-nix build .#pi
+nix build --no-link .#nixosConfigurations.nixos.pkgs.omp-provider
 ```
 
 ## 目录结构
@@ -323,8 +320,8 @@ nix build .#pi
 │   ├── programs/            # 配置模块；apps.nix 聚合纯安装应用
 │   ├── shell/               # Fish、Starship 与 Shell 工具
 │   ├── terminals/           # 终端配置
-│   ├── wall/                # 壁纸:Noctalia 静态 + mpvpaper 视频
-│   └── wm/                  # labwc WM 配置
+│   ├── wall/                # DMS 静态壁纸与保留的视频资源
+│   └── wm/                  # niri KDL 配置
 ├── hosts/                   # NixOS 主机定义
 │   └── nixos/               # 当前物理机配置
 ├── lib/
@@ -397,102 +394,53 @@ just rebuild-switch  # 检查、格式化、构建并切换
 # 本地验证无误后推 main，CI 自动构建需源码编译的包进 Attic
 ```
 
-`main` 允许直接推送（无需开 PR）：`just push "msg"` 提交**已暂存**的改动并直推（可写 `just push "msg" 路径…` 直接指定文件；未暂存的 WIP 不会被带上），`just push-all "msg"` 则是一键 `git add -A` 后提交直推。CI 在推送后运行 `nix.yml` 构建那 11 个源码包并推送到 Attic。`just pr` / `just pr-merge` 为可选 PR 流程（基于 `origin/main` 建分支、开 PR；后者立即合并）。
+`main` 允许直接推送（无需开 PR）：`just push "msg"` 提交**已暂存**的改动并直推（可写 `just push "msg" 路径…` 直接指定文件；未暂存的 WIP 不会被带上），`just push-all "msg"` 则是一键 `git add -A` 后提交直推。CI 在推送后运行 `nix.yml` 构建配置的缓存包并推送到 Attic。`just pr` / `just pr-merge` 为可选 PR 流程（基于 `origin/main` 建分支、开 PR；后者立即合并）。
 
 ### 关于自动更新
 
 不配置定时 `nix flake update` 工作流：`nixos-unstable` 的滚动升级可能夹带破坏性变更，无人值守时容易把半坏的 `flake.lock` 推上 `main`。依赖更新一律走上面的本地流程（`just update` → `just check`），确认通过后再推送。（原 `.github/workflows/flake-update.yml` 已移除。）
 
-## 常用 labwc 快捷键（迁移中）
+## 常用 niri + DMS 默认快捷键
 
-> [!NOTE]
-> 组合键逐项迁移中：Noctalia、截图、应用启动、媒体、工作区已迁入 `home/wm/labwc/config.nix` 的 `keyboard` 节（沿用旧 sway 键位）；壁纸控制 5 条已决定不迁；窗口管理组后续再迁。底座为 labwc 自带默认键，冲突处以自定义键为准。
+`home/wm/niri/config.nix` 直接包含 `pkgs.dms-shell.src` 中的 `core/internal/config/embedded/niri-binds.kdl`，在构建时将终端占位符替换为 `kitty`。按键随 `flake.lock` 锁定的 DMS 版本同步，不再单独维护迁移自 labwc 的快捷键；Caps 恢复默认行为。
 
-| 按键                              | 功能                  |
-| --------------------------------- | --------------------- |
-| `Alt + Tab` / `Alt + Shift + Tab` | 切换下一个/上一个窗口 |
-| `Super + Return`                  | 打开终端（Kitty）     |
-| `Alt + F4`                        | 关闭窗口              |
-| `Super + a`                       | 最大化切换            |
-| `Super + d`                       | 显示桌面              |
-| `Super + 方向键`                  | 窗口贴半屏/四分屏     |
-| `Alt + Space`                     | 窗口菜单              |
-| 媒体/亮度键                       | 音量、亮度、播放控制  |
+| 按键                                     | 功能                               |
+| ---------------------------------------- | ---------------------------------- |
+| `Super + t`                              | 打开 Kitty                         |
+| `Super + Space` / `Alt + Space`          | 应用启动器 / Spotlight Bar         |
+| `Super + o` 或 `Super + Tab`             | niri 概览                          |
+| `Super + v` / `Super + n`                | 剪贴板历史 / 通知中心              |
+| `Super + m` 或 `Ctrl + Alt + Delete`     | 任务管理器                         |
+| `Super + ,` / `Super + y`                | DMS 设置 / 壁纸选择器              |
+| `Super + Shift + n`                      | 记事本                             |
+| `Super + x` / `Super + Alt + l`          | 电源菜单 / 锁屏                    |
+| `Super + Shift + p`                      | 关闭显示器                         |
+| `Super + Shift + e`                      | 退出当前 niri 会话                 |
+| `Super + Shift + /`                      | 显示快捷键提示                     |
+| `Print` / `Ctrl + Print` / `Alt + Print` | DMS 区域截图 / 整屏截图 / 窗口截图 |
+| 音量、亮度、媒体键                       | DMS 音量/亮度与 MPRIS 播放控制     |
 
-### Noctalia（已迁入）
+截图快捷键调用 DMS 自带的 `dms screenshot`，不再绑定到 Flameshot 或 niri 截图选择器。Flameshot 仍保留为编辑器。录制或屏幕共享可在 OBS / Kooha 中选择 GNOME ScreenCast portal。
 
-| 按键                | 功能                    |
-| ------------------- | ----------------------- |
-| `Super + o`         | 显示/隐藏 Noctalia 顶栏 |
-| `Super + z`         | Noctalia 应用启动器     |
-| `Super + v`         | 剪贴板历史              |
-| `Super + Shift + p` | 电源菜单                |
-| `Super + Shift + x` | 锁屏                    |
-
-### 截图（已迁入）
-
-| 按键        | 功能                                                   |
-| ----------- | ------------------------------------------------------ |
-| `Print`     | Flameshot GUI                                          |
-| `Super + [` | 交互截图，存+复制到 `~/Pictures`                       |
-| `Super + ]` | 交互截图，仅复制                                       |
-| `Super + a` | 交互截图，存+复制到 `~/Pictures`（覆盖默认键的最大化） |
-
-### 应用启动（已迁入）
-
-| 按键                     | 功能                                       |
-| ------------------------ | ------------------------------------------ |
-| `Super + Return`         | Kitty                                      |
-| `Super + Shift + Return` | 浮动 Kitty                                 |
-| `Super + Shift + b`      | Firefox                                    |
-| `Super + Shift + y`      | Qutebrowser                                |
-| `Super + Shift + t`      | Telegram                                   |
-| `Super + Shift + q`      | QQ（旧键位含切工作区，已随专属工作区移除） |
-| `Super + Shift + v`      | Vesktop                                    |
-| `Alt + Shift + s`        | SPlayer-Next                               |
-
-### 工作区 1~5（已迁入）
-
-| 按键                      | 功能                     |
-| ------------------------- | ------------------------ |
-| `Super + 1..5`            | 切换工作区               |
-| `Super + Shift + 1..5`    | 窗口发到工作区（不跟随） |
-| `Super + Ctrl + 1..5`     | 窗口发到工作区并跟随     |
-| `Super + /`               | 当前↔上一个工作区        |
-| `Super + .` / `Super + ,` | 下一个/上一个工作区      |
-
-### 媒体（已迁入）
-
-| 按键            | 功能          |
-| --------------- | ------------- |
-| `XF86AudioPlay` | 播放/暂停 mpc |
-| `XF86AudioNext` | 下一曲        |
-| `XF86AudioPrev` | 上一曲        |
-
-（音量/亮度键由 labwc 默认绑定提供）
-
-### 窗口管理（仅迁 2 条）
-
-| 按键                | 功能                                            |
-| ------------------- | ----------------------------------------------- |
-| `Super + q`         | 关闭窗口                                        |
-| `Super + f`         | 带间隙的柔和最大化（四周留 gap + 投影，可还原） |
-| `Super + Shift + f` | 真全屏（贴边铺满，可还原）                      |
-
-（旧 sway 的移动焦点/移动窗口/resize/scratchpad/布局切换等因 labwc 是 stacking 范式无对应能力，未迁）
-
-### 截图与录制
-
-截图快捷键待组合键重写时接上。
-
-直接使用 `wf-recorder`：
-
-```bash
-wf-recorder -f recording.mkv
-wf-recorder -g "$(slurp)" --audio -f recording.mkv
-```
-
-按 `Ctrl + C` 停止并保存。
+| 按键                                           | 功能                                  |
+| ---------------------------------------------- | ------------------------------------- |
+| `Super + q`                                    | 关闭窗口                              |
+| `Super + f` / `Super + Shift + f`              | 最大化当前列 / 窗口全屏               |
+| `Super + h/j/k/l` 或方向键                     | 左列 / 下窗 / 上窗 / 右列             |
+| 加 `Shift`                                     | 移动列或窗口                          |
+| `Super + Shift + t` / `Super + Shift + v`      | 切换浮动 / 浮动与平铺焦点切换         |
+| `Super + w`                                    | 列标签布局                            |
+| `Super + [` / `Super + ]`                      | 向左 / 右合并或拆出窗口               |
+| `Super + .`                                    | 从当前列拆出窗口                      |
+| `Super + r` / `Super + Shift + r`              | 切换列宽 / 窗口高度预设               |
+| `Super + -/=` / 加 `Shift`                     | 调整列宽 / 窗口高度                   |
+| `Super + c`                                    | 当前列居中                            |
+| `Super + 1..9` / `Super + Shift + 1..9`        | 按位置切换工作区 / 移动当前列到工作区 |
+| `Super + PageUp/PageDown` 或 `Super + i/u`     | 上一个 / 下一个工作区                 |
+| `Super + Ctrl + i/u` 或 `Super + Ctrl + 上/下` | 移动当前列到上一个 / 下一个工作区     |
+| `Super + Shift + PageUp/PageDown`              | 调整当前工作区的顺序                  |
+| `Super + Ctrl + 左/右` / 再加 `Shift`          | 切换显示器 / 移动列到显示器           |
+| `Ctrl + Shift + r`                             | 重命名工作区                          |
 
 ## 全新安装
 

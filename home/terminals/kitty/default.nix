@@ -17,7 +17,7 @@ in
       confirm_os_window_close = 0;
       # 毛玻璃(磨砂玻璃) = 半透明 + 冰霜色调, 字不再与壁纸重叠。
       # 注: 真·背景模糊(background_blur)走 KDE/ext-background-effect 协议,
-      # 需合成器实现 —— labwc 无模糊协议(wayland-info 实测), 故该选项在本机无效,
+      # 需合成器实现；此处不依赖合成器的模糊协议，
       # 用 background_tint 做磨砂质感(客户端绘制, 任意合成器可用)。
       background_opacity = "0.8";
       background_tint = "0.15";

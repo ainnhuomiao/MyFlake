@@ -4,7 +4,7 @@
   ...
 }:
 {
-  # Boot straight into labwc via tty1 getty autologin (ly removed)
+  # tty1 getty 自动登录后，由 fish 启动 niri-session。
   services.getty.autologinUser = me.userName;
 
   # Set to true so passwords can be changed with `passwd`

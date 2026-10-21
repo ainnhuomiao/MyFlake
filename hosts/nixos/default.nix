@@ -19,8 +19,7 @@
     fstrim.enable = true;
     fwupd.enable = true;
     upower.enable = true;
-    # Noctalia 控制中心的"电源配置"模块走 org.freedesktop.UPower.PowerProfiles,
-    # 该 DBus 接口由 power-profiles-daemon 提供; 缺失时电源配置模块为 no-op
+    # DMS 的电源模式切换依赖 power-profiles-daemon 的 DBus 接口。
     power-profiles-daemon.enable = true;
   };
 

@@ -2,6 +2,7 @@
   imports = [
     ./apps.nix
     ./dae-toggle
+    ./dms
     ./emanote
     ./fastfetch
     ./fcitx5
@@ -16,7 +17,6 @@
     ./mpv
     ./music
     ./nix-index
-    ./noctalia
     ./nvtop
     ./obs-studio
     ./qutebrowser

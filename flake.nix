@@ -42,10 +42,6 @@
       # 保留上游锁定工具链,避免宿主 nixpkgs 的 Zig 更新破坏 Ghostty 链接。
       url = "github:ogulcancelik/herdr";
     };
-    hyprpicker = {
-      url = "github:hyprwm/hyprpicker";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     linuxqq-wayland-fix = {
       # 修复 Linux QQ 在 Wayland 下的屏幕共享/剪贴板/截图 (nixosModules.default)
       # 模块用宿主 pkgs 构建, follows 只为少拉一份 nixpkgs-unstable
@@ -57,13 +53,6 @@
       # 不 follows nixpkgs: 其包只对其钉的 nixpkgs-unstable 构建测试,
       # 跟随会丢 cache.numtide.com 缓存命中且随上游 nixpkgs 更新漂移
       url = "github:numtide/llm-agents.nix";
-    };
-    noctalia = {
-      # 必须跟随宿主 nixpkgs: 其 EGL vendor 运行时 dlopen /run/opengl-driver 的宿主 Mesa,
-      # 自带旧 glibc 闭包会 GLIBC 版本不匹配导致 eglGetDisplay failed 启动即崩
-      # (代价: 丢 noctalia.cachix 命中, 由本仓库 CI 构建进 attic)
-      url = "github:noctalia-dev/noctalia/v5.2.1";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable-small";
     nix-index-database = {
@@ -92,13 +81,11 @@
     fallback = true;
     http-connections = 16;
     extra-substituters = [
-      "https://noctalia.cachix.org"
       "https://ainnhuomiao.qianyuanqing.asia/ainnhuomiao"
       "https://ainnhuomiao.cachix.org"
       "https://nix-community.cachix.org"
     ];
     extra-trusted-public-keys = [
-      "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
       "ainnhuomiao:rSRSxFzka/Hu1R27mYg8TIE34+X9Vq4RA+orXAUr7U4="
       "ainnhuomiao.cachix.org-1:scMAjHS0YtCSBV0d6bbFWHDGD3BkPKuWbcfeWpqw5ck="
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="

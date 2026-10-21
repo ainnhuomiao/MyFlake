@@ -43,8 +43,6 @@
           v2rayn
           ;
         disko = inputs.disko.packages.${system}.disko;
-        noctalia = inputs.noctalia.packages.${system}.default;
-        hyprpicker = inputs.hyprpicker.packages.${system}.hyprpicker;
         linuxqq-wayland-fix = inputs.linuxqq-wayland-fix.packages.${system}.default;
         selector4nix = inputs.selector4nix.packages.${system}.default;
       };

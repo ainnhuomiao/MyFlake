@@ -2,14 +2,14 @@
 
 Personal NixOS flake for one machine: host `nixos`, user `huomiao`, `x86_64-linux` only, built with flake-parts. This working copy is that live host, so switching affects it immediately.
 
-`README.md` is a Chinese user manual and is partly stale. For example, it pins Noctalia to v5.0.1 (`flake.nix` uses v5.2.1), and it documents `nix build .#omp-provider`, `.#omp`, and `.#pi`, which are not flake outputs. Trust `nix flake show` and the code.
+`dms-niri` uses niri + Dank Material Shell (DMS); `main` retains labwc + Noctalia. `README.md` is a Chinese user manual and may contain stale examples. Trust `nix flake show` and the code.
 
 ## Commands
 
 Run from the repo root. Typical loop: edit, `git add` new files, `just format`, `just check`.
 
 - `just format`: `nix fmt` (treefmt: nixfmt, prettier for Markdown/YAML/JSON, shfmt, stylua). Rewrites files in place across the repo.
-- `just check`: `nix flake check --fallback`. Evaluates every output, including the NixOS config, and builds the `treefmt` and `disko-layouts` checks. It does not build `packages`.
+- `just check`: `nix flake check --fallback`. Evaluates every output, including the NixOS config, and builds the `treefmt`, `disko-layouts`, and `niri-config` checks. It does not build `packages`.
 - `just build`: builds the `nixos` system without activating it. CI never builds the system closure, so this is the only full system check.
 - Single check: `nix build --no-link .#checks.x86_64-linux.treefmt` (formatting) or `.#checks.x86_64-linux.disko-layouts` (pure eval of `lib/disko_layout/`).
 - Single package: `nix build --no-link .#<name>` for names in `nix flake show`. Overlay-only packages such as `omp-provider` build via `.#nixosConfigurations.nixos.pkgs.omp-provider`.
@@ -46,8 +46,8 @@ Run from the repo root. Typical loop: edit, `git add` new files, `just format`, 
 
 ## Deliberate choices, don't "clean up"
 
-- Input wiring is deliberate, and comments in `flake.nix` say why. `noctalia` follows host nixpkgs because a bundled older glibc crashes at startup. `emanote`, `herdr`, and `llm-agents` keep their own nixpkgs pins.
-- Bumping `noctalia` also means bumping `officialPlugins.rev` in `home/programs/noctalia/default.nix`.
+- Input wiring is deliberate, and comments in `flake.nix` say why. `emanote`, `herdr`, and `llm-agents` keep their own nixpkgs pins.
+- niri and DMS use native nixpkgs modules/packages. niri KDL is managed in `home/wm/niri/config.nix`; do not run `dms setup` to overwrite it. Use the upstream niri keybinding template from the locked DMS package with Kitty as the terminal; do not port personal shortcuts from `main`. DMS settings/session JSON are seeded only on first activation so the UI can save changes. Video resources are preserved, but video wallpaper playback is not migrated yet.
 - `packages` outputs are deliberately limited to the CI-prebuilt set plus `disko`. Vendor apps belong in `home/` or overlays. `nix flake check` doesn't build `packages`, so the comment in `flake/modules/packages.nix` that says it does is stale.
 - To get a source-built package into the Attic cache, add it to `flake/modules/packages.nix` and to the build list in `.github/workflows/nix.yml`.
 - dae and mihomo are not started at boot (`system/proxy.nix`, `wantedBy = []`). Manage them with `dae-toggle`.

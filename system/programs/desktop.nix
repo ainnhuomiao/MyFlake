@@ -1,6 +1,5 @@
 {
   pkgs,
-  me,
   ...
 }:
 {
@@ -9,33 +8,34 @@
     dconf.enable = true;
   };
 
-  programs.nm-applet = {
+  programs.niri = {
     enable = true;
-    indicator = true;
+    useNautilus = false;
+  };
+
+  programs.dms-shell = {
+    enable = true;
+    systemd.enable = true;
+  };
+
+  # DMS 自带 polkit agent、通知和锁屏；不再并行启动 GNOME agent。
+  security.pam.services.dankshell = { };
+  systemd.user.services.dms = {
+    after = [ "niri.service" ];
+    partOf = [ "niri.service" ];
+    unitConfig.ConditionEnvironment = "NIRI_SOCKET";
   };
 
   services.blueman.enable = true;
 
   xdg.portal = {
     enable = true;
-    config = {
-      labwc = {
-        default = [ "gtk" ];
-        "org.freedesktop.impl.portal.ScreenCast" = [ "wlr" ];
-        "org.freedesktop.impl.portal.Screenshot" = [ "wlr" ];
-      };
-    };
-    wlr = {
-      enable = true;
-      settings.screencast.chooser_type = "none";
-    };
+    # programs.niri 配置 GNOME ScreenCast + GTK FileChooser；niri 不走 wlr portal。
     extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
   };
 
   # xdg-desktop-portal 在登录早期会被 fake graphical-session 拉起, 彼时
-  # XDG_CURRENT_DESKTOP 尚未经 dbus-update-activation-environment 导入
-  # user manager → portal 进程缺该变量 → 匹配不到 labwc 的 portal 配置 →
-  # 不导出 Screenshot/ScreenCast 接口 → flameshot 等截图应用 30s 超时无窗口。
+  # XDG_CURRENT_DESKTOP 尚未经 niri-session 导入 user manager。
   # 条件失败后 portal 会延后到首次被调用时(此时会话环境已就绪)再启动。
   systemd.user.services."xdg-desktop-portal".unitConfig.ConditionEnvironment = [
     "XDG_CURRENT_DESKTOP"
@@ -44,9 +44,6 @@
   environment = {
     systemPackages = with pkgs; [
       libnotify
-      wlr-randr
-      wf-recorder
-      wlprop
       xeyes
       nemo
       wev
@@ -54,8 +51,6 @@
       sshpass
       imagemagick
       chafa
-      grim
-      slurp
       satty
       linux-wifi-hotspot
       scrcpy
@@ -83,19 +78,4 @@
     };
   };
 
-  systemd = {
-    user.services.polkit-gnome-authentication-agent-1 = {
-      description = "polkit-gnome-authentication-agent-1";
-      wantedBy = [ "graphical-session.target" ];
-      wants = [ "graphical-session.target" ];
-      after = [ "graphical-session.target" ];
-      serviceConfig = {
-        Type = "simple";
-        ExecStart = "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
-        Restart = "on-failure";
-        RestartSec = 1;
-        TimeoutStopSec = 10;
-      };
-    };
-  };
 }

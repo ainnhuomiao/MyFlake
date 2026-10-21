@@ -48,7 +48,7 @@ jobs:
       #   - nixpkgs 自由软件      → cache.nixos.org (selector4nix 上游里也有 USTC 镜像)
       #   - nixpkgs unfree 应用   → 厂商 CDN 的预编译包(discord/vscode/chrome/qq/...)
       #   - llm-agents            → cache.numtide.com (omp/pi/antigravity-cli/kimi-code)
-      #   - noctalia / steam      → noctalia.cachix.org / nix-community.cachix.org
+      #   - niri / DMS / steam    → cache.nixos.org / nix-community.cachix.org
       #   - zen-browser           → 自行下载的厂商预编译包(仅重打包,无编译, 不入 CI)
       #   - firefox-bin           → 钉死 154.0 的厂商包重打包; 版本固定后入 CI, 命中 attic 避免每次重新拉取
       # 复核某包是否该在这里:取 nix eval .#<pkg>.outPath 的 hash,查
@@ -66,11 +66,9 @@ jobs:
             .#firefox-bin \
             .#flake-stats-mcp \
             .#herdr \
-            .#hyprpicker \
             .#linuxqq-wayland-fix \
             .#mcp-nixos \
             .#rayburst \
-            .#noctalia \
             .#selector4nix \
             .#v2rayn)
           echo "paths=${paths//$'\n'/ }" >> "$GITHUB_OUTPUT"
