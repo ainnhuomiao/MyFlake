@@ -28,6 +28,7 @@ in
       inputs.llm-agents.packages.${system}.opencode2-desktop
       inputs.llm-agents.packages.${system}.grok-bot
       inputs.llm-agents.packages.${system}.cursor-agent
+      inputs.llm-agents.packages.${system}.chatgpt
       pkgs.omp-provider
     ]
     ++ mcps;

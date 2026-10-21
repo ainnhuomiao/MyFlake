@@ -23,6 +23,7 @@ in
       extensions = [
         pkgs.vscode-extensions.catppuccin.catppuccin-vsc
         pkgs.vscode-extensions.jnoortheen.nix-ide
+        pkgs.vscode-extensions.golang.go
         pkgs.vscode-extensions.arrterian.nix-env-selector
         pkgs.vscode-extensions.mkhl.direnv
         pkgs.vscode-extensions.illixion.vscode-vibrancy-continued

@@ -5,6 +5,7 @@ in
 {
   home.packages = with pkgs; [
     go
+    golangci-lint
     graphviz
     protobuf
     protoc-gen-go
