@@ -1,11 +1,17 @@
 <h1 align="center">
-    <img src="assets/cirno.png" alt="MyFlake" width="360px" />
+    <img src="assets/cirno.png" alt="MyFlake 吉祥物琪露诺" width="180" />
     <br>
     MyFlake
 </h1>
 
 <p align="center">
-    个人 NixOS Flake 配置，当前面向 <code>x86_64-linux</code> 主机 <code>nixos</code>。仓库同时管理 NixOS、Home Manager、niri 桌面、开发环境、AI CLI、dae + Mihomo 透明代理、自定义包与 overlays。
+    <strong>NixOS · niri · Noctalia · Home Manager</strong>
+    <br>
+    一份配置，从系统到桌面。
+</p>
+
+<p align="center">
+    面向 <code>x86_64-linux</code> 主机 <code>nixos</code> 的个人 Flake，统一管理系统、桌面、开发环境、AI CLI、透明代理与自定义包。
 </p>
 
 <div align="center">
@@ -25,6 +31,42 @@
         <img src="https://img.shields.io/github/repo-size/ainnhuomiao/MyFlake?style=for-the-badge&logo=github&logoColor=babbf1&labelColor=303446&color=babbf1" alt="Repo Size" />
     </a>
 </div>
+
+<p align="center">
+    <a href="#桌面预览">桌面预览</a> ·
+    <a href="#配置概览">配置概览</a> ·
+    <a href="#目录结构">目录结构</a> ·
+    <a href="#日常维护">日常维护</a> ·
+    <a href="#常用-niri-快捷键">快捷键</a> ·
+    <a href="#全新安装">全新安装</a>
+</p>
+
+## 桌面预览
+
+<table>
+    <tr>
+        <td width="50%" align="center">
+            <a href="assets/screenshots/desktop.png">
+                <img src="assets/screenshots/desktop.png" alt="niri 桌面：蓝色动漫壁纸、Noctalia 顶栏与圆形音频可视化" width="100%" />
+            </a>
+            <br>
+            <strong>桌面 · niri × Noctalia</strong>
+            <br>
+            <sub>蓝色壁纸、紧凑顶栏与音频可视化</sub>
+        </td>
+        <td width="50%" align="center">
+            <a href="assets/screenshots/music.png">
+                <img src="assets/screenshots/music.png" alt="音乐播放界面：专辑封面、双语滚动歌词与播放控制" width="100%" />
+            </a>
+            <br>
+            <strong>音乐 · 沉浸播放</strong>
+            <br>
+            <sub>专辑封面、双语歌词与柔和背景</sub>
+        </td>
+    </tr>
+</table>
+
+<p align="center"><sub>实际桌面截图 · 点击图片查看原图</sub></p>
 
 > [!NOTE]
 > 这是与个人硬件、用户名和本地状态绑定的配置，不是开箱即用的通用模板。复用前必须检查 `me.nix`、`hosts/nixos/`、磁盘布局以及涉及个人凭据的配置。
