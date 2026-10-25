@@ -40,10 +40,11 @@ in
     video-wall-resume = {
       Unit = {
         Description = "Freeze/resume mpvpaper video wallpaper around suspend";
-        PartOf = lib.mkForce [ "labwc-session.target" ];
-        After = [ "graphical-session.target" ];
+        PartOf = [ "niri.service" ];
+        After = [ "niri.service" ];
+        ConditionEnvironment = "WAYLAND_DISPLAY";
       };
-      Install.WantedBy = lib.mkForce [ "labwc-session.target" ];
+      Install.WantedBy = [ "niri.service" ];
       Service = {
         Type = "simple";
         ExecStart = pkgs.writeShellScript "video-wall-resume" ''

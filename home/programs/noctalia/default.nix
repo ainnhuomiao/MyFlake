@@ -80,6 +80,11 @@ in
       lockscreen = {
         blurred_desktop = true;
       };
+      # getty 自动登录无法解锁密钥环;主密钥使用用户私有文件,避免启动时弹窗。
+      storage = {
+        key_source = "file";
+        key_file = "${config.home.homeDirectory}/.config/noctalia/storage-key";
+      };
       # 中文界面 (系统 locale 是 en_US, 默认会是英文)
       shell = {
         lang = "zh-Hans";

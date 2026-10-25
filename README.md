@@ -5,7 +5,7 @@
 </h1>
 
 <p align="center">
-    个人 NixOS Flake 配置，当前面向 <code>x86_64-linux</code> 主机 <code>nixos</code>。仓库同时管理 NixOS、Home Manager、labwc 桌面、开发环境、AI CLI、dae + Mihomo 透明代理、自定义包与 overlays。
+    个人 NixOS Flake 配置，当前面向 <code>x86_64-linux</code> 主机 <code>nixos</code>。仓库同时管理 NixOS、Home Manager、niri 桌面、开发环境、AI CLI、dae + Mihomo 透明代理、自定义包与 overlays。
 </p>
 
 <div align="center">
@@ -39,7 +39,7 @@
 | 主机         | `nixos`                                                                       |
 | 内核         | Linux Zen（nixpkgs `linuxPackages_zen`）                                      |
 | 显卡         | 雷电显卡坞外接 RTX 3050（PRIME offload）                                      |
-| 桌面         | labwc（getty 自动登录直接进入）                                               |
+| 桌面         | niri（getty 自动登录，经 niri-session 进入）                                  |
 | 用户环境     | Home Manager，作为 NixOS 模块集成                                             |
 | Shell        | Fish + Starship                                                               |
 | 音频         | PipeWire（ALSA、PulseAudio、JACK）                                            |
@@ -71,9 +71,11 @@ flake.nix
 
 ### 桌面与日常应用
 
-唯一 WM 为 **labwc**（wlroots，stacking 窗口管理，配置在 `home/wm/labwc/`）：状态栏、启动器、通知、锁屏、剪贴板与电源菜单全部由 **Noctalia** 提供（替代了此前的 Waybar/Rofi/Mako/swaylock 组合）。开机经 getty 自动登录直接进入 labwc（fish 登录 shell 在 tty1 上自动 `exec labwc`），无需显示管理器。
+唯一 WM 为 **niri**（原生滚动平铺，配置在 `home/wm/niri/`）：状态栏、启动器、通知、锁屏、剪贴板与电源菜单全部由 **Noctalia** 提供。开机经 getty 自动登录，由 tty1 的交互式 fish 登录 shell 启动 `niri-session`，无需显示管理器。启动守卫排除已有图形会话和非交互 shell，避免 niri-session 再次调用登录 shell 时递归。
 
-窗口规则（全局去标题栏、固定尺寸、粘滞、无边框等）见 `home/wm/labwc/config.nix`；美化走 **Catppuccin Mocha Openbox 官方主题**（`home/wm/labwc/theme.nix` 钉版引入，labwc 主题引擎兼容 openbox）+ 窗口投影（`dropShadows`）。工作区精简为 5 个（`1`~`5`），按应用自动归位的规则已随之移除。组合键已按旧 sway 键位迁入（壁纸控制 5 条与大部分窗口管理键按决定未迁），见下文「常用 labwc 快捷键」；labwc 不支持旧 swayfx 的毛玻璃模糊与窗口动画。
+窗口规则、输入、输出与键位见 `home/wm/niri/config.nix`。内屏 `eDP-1` 缩放为 1.25，普通平铺窗口默认以满宽最大化打开，按 `Super + f` 恢复半屏宽，再按切回满宽，间隙为 5 像素；Catppuccin 配色与光标复用统一外观配置，使用 niri 默认动画，背景模糊保持关闭。`termfloat`、mpv、Nemo、ncmpcpp 默认以 960×540 浮动；ncmpcpp 与飞书共享控制条仅在所属工作区可见。常驻命名工作区为 `1`~`5`，另允许 niri 自动创建空白工作区；按名称定位，不按动态序号定位。普通应用不强制派发到专属工作区。
+
+NixOS 管理 `niri.service` 与 portal；Home Manager 管理 niri 配置并在构建时执行 `niri validate`。Noctalia 与 fcitx5 通过 `spawn-at-startup` 启动一次；swayidle、polkit、网络/蓝牙托盘和视频壁纸休眠监听在 niri 就绪后启动，随会话停止。fcitx5 与托盘程序的包自带 XDG 自启动项被屏蔽，避免重复或过早启动。portal 及其后端同样绑定 niri 生命周期，且检查 niri 会话环境，避免沿用上一会话的进程。X11 程序通过 niri 按需启动的 `xwayland-satellite` 运行；屏幕共享走 GNOME portal，截图走 wlr portal，文件选择走 GTK portal（保留 Nemo）。
 
 - Kitty、Firefox、Zen Browser、Google Chrome、Microsoft Edge
 - 聊天：Telegram、QQ、Vesktop、WeChat、Discord、Feishu、腾讯会议、Element
@@ -84,7 +86,7 @@ flake.nix
 - Fcitx5 + Rime + 中文扩展词库，左 `Ctrl` + 左 `Shift` 切换输入法
 - PipeWire、Blueman、NetworkManager Applet、XDG Desktop Portal、Noctalia 通知
 - btop 资源监视
-- getty 自动登录直接进入 labwc（tty1），kmscon 接管其他虚拟终端显示中文
+- getty 自动登录进入 niri（tty1），kmscon 接管其他虚拟终端显示中文
 - 锁屏与待机：`swayidle` 挂起前触发 Noctalia 锁屏（桌面捕捉模糊，复刻 swaylock-blur）
 
 ### 雷电显卡坞（外接 RTX 3050）
@@ -106,11 +108,11 @@ nvidia-egpu-off              # 卸载驱动，提示“可安全关闭坞电源�
 要点：
 
 - `services.hardware.bolt` 负责雷电授权，坞已 `enroll --policy auto`，开电即自动授权
-- 全局 EGL 锁定 Mesa + `WLR_DRM_DEVICES=/dev/dri/card0`（wlroots 只探测 iGPU），保证合成器不占用 nvidia 模块，驱动可在游戏结束后干净卸载，`nvidia-egpu-off` 卸载成功后再断电即安全
+- 全局 EGL 锁定 Mesa；niri 的 `render-drm-device` 固定 Intel 的 `/dev/dri/by-path/pci-0000:00:02.0-render`，`ignore-drm-device` 排除 udev 按设备身份创建的 `/dev/dri/nvidia-egpu-render`，保证合成器不占用 NVIDIA。游戏结束后先执行 `nvidia-egpu-off`，卸载成功再断电
 - `nvidia-egpu` wrapper 同时覆盖 GL/GLX（PRIME 变量）与 Vulkan（`MESA_VK_DEVICE_SELECT=10de:2584` 强制选卡；595.84 的 `VK_LAYER_NV_optimus` 已不再过滤设备），启动前自动检查/加载驱动；GPU 楔死时（`nvidia-smi -L` 仍 exit 0 但打印 “No devices found.”）不会放行坏 GPU
 - 驱动 595.84 + **closed** 内核模块（`open = false`；open + GSP 固件在本机有已实证的 TLB/GSP RPC 崩溃）；坞通电时请勿合盖挂起
 
-配置位置：`system/hardware/egpu.nix`（驱动、授权与 wrapper）、`home/wm/labwc/default.nix`（`WLR_DRM_DEVICES`）。
+配置位置：`system/hardware/egpu.nix`（驱动、授权、稳定 DRM 别名与 wrapper）、`home/wm/niri/config.nix`（渲染设备与排除规则）。
 
 ### 开发环境
 
@@ -324,7 +326,7 @@ nix build .#pi
 │   ├── shell/               # Fish、Starship 与 Shell 工具
 │   ├── terminals/           # 终端配置
 │   ├── wall/                # 壁纸:Noctalia 静态 + mpvpaper 视频
-│   └── wm/                  # labwc WM 配置
+│   └── wm/                  # niri WM 配置
 ├── hosts/                   # NixOS 主机定义
 │   └── nixos/               # 当前物理机配置
 ├── lib/
@@ -403,23 +405,21 @@ just rebuild-switch  # 检查、格式化、构建并切换
 
 不配置定时 `nix flake update` 工作流：`nixos-unstable` 的滚动升级可能夹带破坏性变更，无人值守时容易把半坏的 `flake.lock` 推上 `main`。依赖更新一律走上面的本地流程（`just update` → `just check`），确认通过后再推送。（原 `.github/workflows/flake-update.yml` 已移除。）
 
-## 常用 labwc 快捷键（迁移中）
+## 常用 niri 快捷键
 
 > [!NOTE]
-> 组合键逐项迁移中：Noctalia、截图、应用启动、媒体、工作区已迁入 `home/wm/labwc/config.nix` 的 `keyboard` 节（沿用旧 sway 键位）；壁纸控制 5 条已决定不迁；窗口管理组后续再迁。底座为 labwc 自带默认键，冲突处以自定义键为准。
+> Noctalia、截图、应用启动、媒体和工作区保留原键位，窗口操作采用 niri 平铺语义。配置集中在 `home/wm/niri/config.nix`，`Super + Shift + /` 查看快捷键提示；不加载上游整套默认键位，避免覆盖既有快捷键。
 
-| 按键                              | 功能                  |
-| --------------------------------- | --------------------- |
-| `Alt + Tab` / `Alt + Shift + Tab` | 切换下一个/上一个窗口 |
-| `Super + Return`                  | 打开终端（Kitty）     |
-| `Alt + F4`                        | 关闭窗口              |
-| `Super + a`                       | 最大化切换            |
-| `Super + d`                       | 显示桌面              |
-| `Super + 方向键`                  | 窗口贴半屏/四分屏     |
-| `Alt + Space`                     | 窗口菜单              |
-| 媒体/亮度键                       | 音量、亮度、播放控制  |
+| 按键                              | 功能                         |
+| --------------------------------- | ---------------------------- |
+| `Alt + Tab` / `Alt + Shift + Tab` | 最近窗口正向/反向切换        |
+| `Super + Return`                  | 打开终端（Kitty）            |
+| `Super + Tab`                     | 工作区概览                   |
+| `Super + 方向键 / HJKL`           | 左右切换列，上下切换列内窗口 |
+| `Super + Shift + 方向键 / HJKL`   | 移动列或列内窗口             |
+| 媒体/亮度键                       | 音量、亮度、播放控制         |
 
-### Noctalia（已迁入）
+### Noctalia
 
 | 按键                | 功能                    |
 | ------------------- | ----------------------- |
@@ -429,16 +429,16 @@ just rebuild-switch  # 检查、格式化、构建并切换
 | `Super + Shift + p` | 电源菜单                |
 | `Super + Shift + x` | 锁屏                    |
 
-### 截图（已迁入）
+### 截图
 
-| 按键        | 功能                                                   |
-| ----------- | ------------------------------------------------------ |
-| `Print`     | Flameshot GUI                                          |
-| `Super + [` | 交互截图，存+复制到 `~/Pictures`                       |
-| `Super + ]` | 交互截图，仅复制                                       |
-| `Super + a` | 交互截图，存+复制到 `~/Pictures`（覆盖默认键的最大化） |
+| 按键        | 功能                                            |
+| ----------- | ----------------------------------------------- |
+| `Print`     | Flameshot GUI                                   |
+| `Super + [` | niri 交互截图，按时间戳存到 `~/Pictures` 并复制 |
+| `Super + ]` | Grimshot 区域截图，仅复制                       |
+| `Super + a` | 同 `Super + [`                                  |
 
-### 应用启动（已迁入）
+### 应用启动
 
 | 按键                     | 功能                                       |
 | ------------------------ | ------------------------------------------ |
@@ -451,7 +451,7 @@ just rebuild-switch  # 检查、格式化、构建并切换
 | `Super + Shift + v`      | Vesktop                                    |
 | `Alt + Shift + s`        | SPlayer-Next                               |
 
-### 工作区 1~5（已迁入）
+### 命名工作区 1~5
 
 | 按键                      | 功能                     |
 | ------------------------- | ------------------------ |
@@ -461,7 +461,7 @@ just rebuild-switch  # 检查、格式化、构建并切换
 | `Super + /`               | 当前↔上一个工作区        |
 | `Super + .` / `Super + ,` | 下一个/上一个工作区      |
 
-### 媒体（已迁入）
+### 媒体
 
 | 按键            | 功能          |
 | --------------- | ------------- |
@@ -469,21 +469,32 @@ just rebuild-switch  # 检查、格式化、构建并切换
 | `XF86AudioNext` | 下一曲        |
 | `XF86AudioPrev` | 上一曲        |
 
-（音量/亮度键由 labwc 默认绑定提供）
+音量键每次调整 5%，静音键切换输出静音，麦克风静音键切换默认输入静音，亮度键每次调整 5%；这些键在锁屏时仍可用。
 
-### 窗口管理（仅迁 2 条）
+### 窗口管理
 
-| 按键                | 功能                                            |
-| ------------------- | ----------------------------------------------- |
-| `Super + q`         | 关闭窗口                                        |
-| `Super + f`         | 带间隙的柔和最大化（四周留 gap + 投影，可还原） |
-| `Super + Shift + f` | 真全屏（贴边铺满，可还原）                      |
+| 按键                                      | 功能                              |
+| ----------------------------------------- | --------------------------------- |
+| `Super + q` / `Alt + F4`                  | 关闭窗口                          |
+| `Super + f` / `Super + Shift + f`         | 满宽与半宽切换 / 真全屏           |
+| `Super + Space` / `Super + Shift + Space` | 切换浮动状态 / 切换浮动与平铺焦点 |
+| `Super + r`                               | 切换列宽 ⅓、½、⅔                  |
+| `Super + - / =`                           | 列宽减少/增加 10%                 |
+| `Super + Shift + - / =`                   | 窗口高度减少/增加 10%             |
+| `Super + Ctrl + [ / ]`                    | 将窗口并入或移出相邻列            |
+| `Super + w`                               | 切换列内标签布局                  |
+| `Super + Ctrl + 方向键`                   | 切换显示器焦点                    |
+| `Super + Ctrl + Shift + 方向键`           | 将当前列移到另一显示器            |
+| `Super + Shift + e`                       | 显示退出会话确认                  |
+| `Super + Escape`                          | 解除应用对快捷键的独占            |
 
-（旧 sway 的移动焦点/移动窗口/resize/scratchpad/布局切换等因 labwc 是 stacking 范式无对应能力，未迁）
+`Super + 鼠标左键拖动` 移动窗口，`Super + 鼠标右键拖动` 调整大小。桌面入口使用 Noctalia 启动器和 niri 概览。
 
 ### 截图与录制
 
-截图快捷键待组合键重写时接上。
+`grimshot-savecopy` 保留历史命令名，实际调用 niri 原生交互截图界面，支持选择区域、窗口或输出。Grimshot 仍安装，但其 `anything`、`window`、`active`、`output` 模式依赖 `swaymsg`，在 niri 下请使用 `area`、`screen` 或原生截图界面。
+
+`color-picker` 选取一个像素，将 `#RRGGBB` 输出并复制到剪贴板；按 Escape 取消时不修改剪贴板。当前 hyprpicker pin 需要 niri 26.04 尚未支持的 ext-image-copy-capture，主机改用 grim/slurp 取色，flake 输出和 CI 构建集合保留。
 
 直接使用 `wf-recorder`：
 
@@ -493,6 +504,14 @@ wf-recorder -g "$(slurp)" --audio -f recording.mkv
 ```
 
 按 `Ctrl + C` 停止并保存。
+
+### 桌面切换验收与回退
+
+迁移后先运行 `just format`、构建生成的 niri 配置，再运行 `just check`、`just build`。`just check` 只做求值和独立 checks，完整系统构建与 niri 配置构建都需要实际通过。
+
+切换前记录 `readlink -f /run/current-system`；从独立 TTY 执行 `just rebuild-switch`，然后退出旧图形会话、重新登录 tty1 进入 niri。验收输入法、Noctalia、浮动窗口、截图与复制、浏览器及会议软件屏幕共享、锁屏和休眠恢复，反复登录确认服务没有重复启动。显卡坞需分别测试断开、连接、游戏 offload，以及退出游戏后 `nvidia-egpu-off` 是否能卸载驱动。
+
+检查运行时状态可使用 `niri msg windows`、`niri msg outputs`、`journalctl --user -b -u niri.service` 和 `systemctl --user status swayidle video-wall-resume`。遇到共享或显卡坞回归，通过其他 TTY 执行 `sudo <记录的旧系统路径>/bin/switch-to-configuration switch`，或从启动菜单选择上一系统代，恢复原桌面。
 
 ## 全新安装
 

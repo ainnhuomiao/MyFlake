@@ -1,12 +1,39 @@
 {
+  lib,
   pkgs,
-  me,
   ...
 }:
+let
+  # graphical-session.target 可能早于 niri 存在,仅检查 Wayland 变量也会
+  # 接受上一会话的旧环境。portal 必须等 niri 就绪并随其退出,避免旧进程
+  # 留到下一次登录后只导出 GTK 接口、缺失 Screenshot/ScreenCast。
+  portalServices =
+    lib.genAttrs
+      [
+        "xdg-desktop-portal"
+        "xdg-desktop-portal-gtk"
+        "xdg-desktop-portal-gnome"
+        "xdg-desktop-portal-wlr"
+      ]
+      (_: {
+        partOf = [ "niri.service" ];
+        after = [ "niri.service" ];
+        unitConfig.ConditionEnvironment = [
+          "XDG_CURRENT_DESKTOP=niri"
+          "WAYLAND_DISPLAY"
+          "NIRI_SOCKET"
+        ];
+      });
+in
 {
   programs.wshowkeys.enable = true;
   programs = {
     dconf.enable = true;
+    niri = {
+      enable = true;
+      # 继续使用 Nemo,文件选择交给 GTK portal。
+      useNautilus = false;
+    };
   };
 
   programs.nm-applet = {
@@ -19,32 +46,21 @@
   xdg.portal = {
     enable = true;
     config = {
-      labwc = {
-        default = [ "gtk" ];
-        "org.freedesktop.impl.portal.ScreenCast" = [ "wlr" ];
+      niri = {
+        # 其他接口沿用 NixOS niri 模块的 gnome/gtk 默认路由。
+        "org.freedesktop.impl.portal.ScreenCast" = [ "gnome" ];
         "org.freedesktop.impl.portal.Screenshot" = [ "wlr" ];
       };
     };
     wlr = {
       enable = true;
-      settings.screencast.chooser_type = "none";
     };
     extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
   };
 
-  # xdg-desktop-portal 在登录早期会被 fake graphical-session 拉起, 彼时
-  # XDG_CURRENT_DESKTOP 尚未经 dbus-update-activation-environment 导入
-  # user manager → portal 进程缺该变量 → 匹配不到 labwc 的 portal 配置 →
-  # 不导出 Screenshot/ScreenCast 接口 → flameshot 等截图应用 30s 超时无窗口。
-  # 条件失败后 portal 会延后到首次被调用时(此时会话环境已就绪)再启动。
-  systemd.user.services."xdg-desktop-portal".unitConfig.ConditionEnvironment = [
-    "XDG_CURRENT_DESKTOP"
-  ];
-
   environment = {
     systemPackages = with pkgs; [
       libnotify
-      wlr-randr
       wf-recorder
       wlprop
       xeyes
@@ -83,12 +99,29 @@
     };
   };
 
-  systemd = {
-    user.services.polkit-gnome-authentication-agent-1 = {
+  systemd.user.services = portalServices // {
+    # 不依赖 graphical-session.target 的历史状态,等待 niri 的 Type=notify。
+    # 对应 XDG 自启动文件在 HM 屏蔽,只保留这一份实例。
+    nm-applet = {
+      wantedBy = lib.mkForce [ "niri.service" ];
+      partOf = lib.mkForce [ "niri.service" ];
+      after = lib.mkForce [ "niri.service" ];
+      unitConfig.ConditionEnvironment = "WAYLAND_DISPLAY";
+    };
+    blueman-applet = {
+      description = "Blueman applet for the niri session";
+      wantedBy = [ "niri.service" ];
+      partOf = [ "niri.service" ];
+      after = [ "niri.service" ];
+      unitConfig.ConditionEnvironment = "WAYLAND_DISPLAY";
+      # 沿用 blueman 包的 Type=dbus/ExecStart,这里只补会话依赖。
+    };
+    polkit-gnome-authentication-agent-1 = {
       description = "polkit-gnome-authentication-agent-1";
-      wantedBy = [ "graphical-session.target" ];
-      wants = [ "graphical-session.target" ];
-      after = [ "graphical-session.target" ];
+      wantedBy = [ "niri.service" ];
+      partOf = [ "niri.service" ];
+      after = [ "niri.service" ];
+      unitConfig.ConditionEnvironment = "WAYLAND_DISPLAY";
       serviceConfig = {
         Type = "simple";
         ExecStart = "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";

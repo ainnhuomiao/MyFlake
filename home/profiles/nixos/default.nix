@@ -9,6 +9,6 @@
     ../../terminals
     ../../programs
     ../../ai
-    ../../wm/labwc
+    ../../wm/niri
   ];
 }

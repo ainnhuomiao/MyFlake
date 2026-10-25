@@ -12,10 +12,13 @@ in
   programs.fish = {
     enable = true;
     loginShellInit =
-      if config.wayland.windowManager.labwc.enable then
+      if config.wayland.windowManager.niri.enable then
         ''
-          set TTY1 (tty)
-          [ "$TTY1" = "/dev/tty1" ] && exec labwc
+          # niri-session 会再调用一次非交互登录 shell,必须排除以免递归。
+          if status is-interactive; and test (tty) = /dev/tty1; and test -z "$WAYLAND_DISPLAY"; and test -z "$DISPLAY"; and test -z "$NIRI_SOCKET"
+              # 会话标识仅传给图形会话,不污染其他 TTY/SSH 登录。
+              exec env XDG_SESSION_DESKTOP=niri XDG_SESSION_TYPE=wayland ${config.wayland.windowManager.niri.package}/bin/niri-session
+          end
         ''
       else
         "";

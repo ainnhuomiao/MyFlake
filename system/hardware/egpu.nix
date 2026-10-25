@@ -45,6 +45,8 @@ in
 
     # 拔插坞/GPU 重新枚举时,自动把新设备及其父桥钉在 D0(防 D3hot 唤醒失败掉线)
     udev.extraRules = ''
+      # niri 按稳定别名忽略 N 卡;雷电重枚举的 BDF/DRM 编号变化不影响规则。
+      SUBSYSTEM=="drm", KERNEL=="renderD[0-9]*", ATTRS{vendor}=="0x10de", ATTRS{device}=="0x2584", SYMLINK+="dri/nvidia-egpu-render"
       # GPU 出现时钉住整条父链;桥/根端口单独匹配,覆盖 GPU 未枚举的窗口期
       ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{device}=="0x2584", RUN+="${egpu-pm-on} $env{DEVPATH}"
       ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x8086", ATTR{device}=="0x15d3", RUN+="${egpu-pm-on} $env{DEVPATH}"
