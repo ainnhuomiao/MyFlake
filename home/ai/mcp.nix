@@ -1,4 +1,5 @@
 {
+  config,
   inputs,
   lib,
   pkgs,
@@ -7,6 +8,7 @@
 
 let
   context7Url = "https://mcp.context7.com/mcp";
+  mcpBusJson = config.xdg.configFile."mcp/mcp.json".source;
   # Obsidian Local REST API 插件自带的 MCP server(Streamable HTTP)。
   # 需要 Obsidian 打开 ai-knowledge vault 且启用该插件。
   obsidianMcpUrl = "http://127.0.0.1:27123/mcp/";
@@ -69,6 +71,7 @@ in
   # - Obsidian:apiKey 运行时从 vault 插件 data.json 读取,不能声明进 store
   # - cc-switch:SQLite 里的 context7 / codex backup,无程序私有 DB
   # - Kimi:尚无 programs.* MCP 集成,仍写用户级 ~/.kimi-code/mcp.json
+  # - omp:同上,合并进 ~/.omp/agent/mcp.json
   # cursor-agent:HM 没有 enableMcpIntegration,读 ~/.cursor/mcp.json。
   # 把 programs.mcp 生成的 ~/.config/mcp/mcp.json 合并进去,保留用户自己加的 server。
   home.activation.configureCursorAgentMcp = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
@@ -234,6 +237,41 @@ in
       else
         ${pkgs.coreutils}/bin/chmod --reference="$kimi_config" "$kimi_tmp"
         ${pkgs.coreutils}/bin/mv "$kimi_tmp" "$kimi_config"
+      fi
+
+      # omp:不读其他客户端的配置,只认 ~/.omp/agent/mcp.json。
+      # 总线直接取 store 里的生成文件(writeBoundary 时 ~/.config/mcp 可能还是上一代),
+      # 再叠加 obsidian;保留用户 /mcp add 的 server 与 disabledServers。
+      omp_config_dir="$HOME/.omp/agent"
+      omp_config="$omp_config_dir/mcp.json"
+      ${pkgs.coreutils}/bin/mkdir -p "$omp_config_dir"
+      if [[ ! -s "$omp_config" ]]; then
+        ${pkgs.coreutils}/bin/printf '{}\n' > "$omp_config"
+        ${pkgs.coreutils}/bin/chmod 600 "$omp_config"
+      fi
+      omp_tmp="$(${pkgs.coreutils}/bin/mktemp "$omp_config_dir/mcp.json.XXXXXX")"
+      ${pkgs.jq}/bin/jq -s \
+        --arg obsidian_url "${obsidianMcpUrl}" \
+        --arg obsidian_key "$obsidian_key" \
+        '.[0] * {
+          mcpServers: ((.[0].mcpServers // {}) + .[1].mcpServers
+            + {
+                obsidian: ({ type: "http", url: $obsidian_url }
+                  + (if $obsidian_key != "" then
+                       {
+                         headers: {
+                           Authorization: "Bearer " + $obsidian_key
+                         }
+                       }
+                     else {} end))
+              })
+        }' \
+        "$omp_config" "${mcpBusJson}" > "$omp_tmp"
+      if ${pkgs.diffutils}/bin/cmp -s "$omp_config" "$omp_tmp"; then
+        ${pkgs.coreutils}/bin/rm "$omp_tmp"
+      else
+        ${pkgs.coreutils}/bin/chmod --reference="$omp_config" "$omp_tmp"
+        ${pkgs.coreutils}/bin/mv "$omp_tmp" "$omp_config"
       fi
     fi
   '';
