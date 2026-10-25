@@ -49,19 +49,11 @@
             <a href="assets/screenshots/desktop.png">
                 <img src="assets/screenshots/desktop.png" alt="niri 桌面：蓝色动漫壁纸、Noctalia 顶栏与圆形音频可视化" width="100%" />
             </a>
-            <br>
-            <strong>桌面 · niri × Noctalia</strong>
-            <br>
-            <sub>蓝色壁纸、紧凑顶栏与音频可视化</sub>
         </td>
         <td width="50%" align="center">
             <a href="assets/screenshots/music.png">
                 <img src="assets/screenshots/music.png" alt="音乐播放界面：专辑封面、双语滚动歌词与播放控制" width="100%" />
             </a>
-            <br>
-            <strong>音乐 · 沉浸播放</strong>
-            <br>
-            <sub>专辑封面、双语歌词与柔和背景</sub>
         </td>
     </tr>
 </table>
