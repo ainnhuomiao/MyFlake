@@ -68,7 +68,10 @@ in
     }
     // 保留终端当前透明度,迁移时不额外开启背景模糊。
     blur { off; }
-    hotkey-overlay { skip-at-startup; }
+    hotkey-overlay {
+        skip-at-startup
+        hide-not-bound
+    }
     screenshot-path "~/Pictures/%Y-%m-%dT%H_%M_%S.png"
 
     ${lib.concatMapStringsSep "\n" (name: ''workspace "${name}"'') workspaces}
@@ -134,26 +137,27 @@ in
     }
 
     binds {
-        Mod+O { spawn "${noctalia}" "msg" "bar-toggle"; }
-        Mod+Z { spawn "${noctalia}" "msg" "panel-toggle" "launcher"; }
-        Mod+V { spawn "${noctalia}" "msg" "panel-toggle" "clipboard"; }
-        Mod+Shift+P { spawn "${noctalia}" "msg" "panel-toggle" "session"; }
-        Mod+Shift+X allow-inhibiting=false { spawn "${noctalia}" "msg" "session" "lock"; }
+        // 为原生快捷键浮层提供中文说明;媒体/跨屏等完整键位见 README。
+        Mod+O hotkey-overlay-title="显示／隐藏状态栏" { spawn "${noctalia}" "msg" "bar-toggle"; }
+        Mod+Z hotkey-overlay-title="打开应用启动器" { spawn "${noctalia}" "msg" "panel-toggle" "launcher"; }
+        Mod+V hotkey-overlay-title="打开剪贴板历史" { spawn "${noctalia}" "msg" "panel-toggle" "clipboard"; }
+        Mod+Shift+P hotkey-overlay-title="打开电源与会话菜单" { spawn "${noctalia}" "msg" "panel-toggle" "session"; }
+        Mod+Shift+X allow-inhibiting=false hotkey-overlay-title="锁定屏幕" { spawn "${noctalia}" "msg" "session" "lock"; }
 
-        Print { spawn "flameshot" "gui"; }
-        Mod+BracketLeft { spawn "grimshot-savecopy"; }
+        Print hotkey-overlay-title="截图并标注（Flameshot）" { spawn "flameshot" "gui"; }
+        Mod+BracketLeft hotkey-overlay-title="交互截图：保存并复制（也可按 Super+A）" { spawn "grimshot-savecopy"; }
         // 26.04 的交互 screenshot 没有 write-to-disk 参数,仅复制走 Grimshot area。
-        Mod+BracketRight { spawn "grimshot" "--notify" "copy" "area"; }
+        Mod+BracketRight hotkey-overlay-title="交互截图：仅复制" { spawn "grimshot" "--notify" "copy" "area"; }
         Mod+A { spawn "grimshot-savecopy"; }
 
-        Mod+Return { spawn "kitty"; }
-        Mod+Shift+Return { spawn "kitty" "--class" "termfloat"; }
-        Mod+Shift+B { spawn "firefox"; }
-        Mod+Shift+Y { spawn "qutebrowser"; }
-        Mod+Shift+T { spawn "Telegram"; }
-        Mod+Shift+Q { spawn "linuxqq-wayland-fix"; }
-        Alt+Shift+S { spawn "SPlayer-Next"; }
-        Mod+Shift+V { spawn "vesktop"; }
+        Mod+Return hotkey-overlay-title="打开终端（Kitty）" { spawn "kitty"; }
+        Mod+Shift+Return hotkey-overlay-title="打开浮动终端（Kitty）" { spawn "kitty" "--class" "termfloat"; }
+        Mod+Shift+B hotkey-overlay-title="打开 Firefox 浏览器" { spawn "firefox"; }
+        Mod+Shift+Y hotkey-overlay-title="打开 Qutebrowser 浏览器" { spawn "qutebrowser"; }
+        Mod+Shift+T hotkey-overlay-title="打开 Telegram" { spawn "Telegram"; }
+        Mod+Shift+Q hotkey-overlay-title="打开 QQ" { spawn "linuxqq-wayland-fix"; }
+        Alt+Shift+S hotkey-overlay-title="打开音乐播放器（SPlayer）" { spawn "SPlayer-Next"; }
+        Mod+Shift+V hotkey-overlay-title="打开 Vesktop" { spawn "vesktop"; }
 
         XF86AudioPlay { spawn "mpc" "-q" "toggle"; }
         XF86AudioNext { spawn "mpc" "-q" "next"; }
@@ -165,24 +169,24 @@ in
         XF86MonBrightnessUp allow-when-locked=true { spawn "${pkgs.brightnessctl}/bin/brightnessctl" "set" "5%+"; }
         XF86MonBrightnessDown allow-when-locked=true { spawn "${pkgs.brightnessctl}/bin/brightnessctl" "set" "5%-"; }
 
-        Mod+Q { close-window; }
+        Mod+Q hotkey-overlay-title="关闭当前窗口（也可按 Alt+F4）" { close-window; }
         Alt+F4 { close-window; }
-        Mod+F { maximize-column; }
-        Mod+Shift+F { fullscreen-window; }
-        Mod+Space { toggle-window-floating; }
-        Mod+Shift+Space { switch-focus-between-floating-and-tiling; }
-        Mod+R { switch-preset-column-width; }
+        Mod+F hotkey-overlay-title="满宽／半屏切换" { maximize-column; }
+        Mod+Shift+F hotkey-overlay-title="切换真全屏" { fullscreen-window; }
+        Mod+Space hotkey-overlay-title="切换浮动／平铺" { toggle-window-floating; }
+        Mod+Shift+Space hotkey-overlay-title="在浮动与平铺窗口间切换焦点" { switch-focus-between-floating-and-tiling; }
+        Mod+R hotkey-overlay-title="切换列宽：1/3、1/2、2/3（Super+-/= 微调）" { switch-preset-column-width; }
         Mod+Minus { set-column-width "-10%"; }
         Mod+Equal { set-column-width "+10%"; }
         Mod+Shift+Minus { set-window-height "-10%"; }
         Mod+Shift+Equal { set-window-height "+10%"; }
-        Mod+Ctrl+BracketLeft { consume-or-expel-window-left; }
-        Mod+Ctrl+BracketRight { consume-or-expel-window-right; }
-        Mod+W { toggle-column-tabbed-display; }
-        Mod+Tab { toggle-overview; }
-        Mod+Shift+E { quit; }
-        Mod+Escape allow-inhibiting=false { toggle-keyboard-shortcuts-inhibit; }
-        Mod+Shift+Slash { show-hotkey-overlay; }
+        Mod+Ctrl+BracketLeft hotkey-overlay-title="向左并入或拆出当前窗口" { consume-or-expel-window-left; }
+        Mod+Ctrl+BracketRight hotkey-overlay-title="向右并入或拆出当前窗口" { consume-or-expel-window-right; }
+        Mod+W hotkey-overlay-title="切换列内标签布局" { toggle-column-tabbed-display; }
+        Mod+Tab hotkey-overlay-title="打开／关闭工作区概览" { toggle-overview; }
+        Mod+Shift+E hotkey-overlay-title="退出 niri（先确认）" { quit; }
+        Mod+Escape allow-inhibiting=false hotkey-overlay-title="解除／恢复应用的快捷键独占" { toggle-keyboard-shortcuts-inhibit; }
+        Mod+Shift+Slash hotkey-overlay-title="显示快捷键提示（Esc 关闭）" { show-hotkey-overlay; }
 
         ${lib.concatMapStringsSep "\n"
           (
@@ -190,10 +194,19 @@ in
             let
               key = direction.key;
               axis = direction.axis;
+              directionName =
+                {
+                  left = "左";
+                  right = "右";
+                  up = "上";
+                  down = "下";
+                }
+                .${direction.name};
+              target = if axis == "column" then "列" else "窗口";
             in
             ''
-              Mod+${key} { focus-${axis}-${direction.name}; }
-              Mod+Shift+${key} { move-${axis}-${direction.name}; }
+              Mod+${key} hotkey-overlay-title="向${directionName}切换${target}（方向键或 HJKL）" { focus-${axis}-${direction.name}; }
+              Mod+Shift+${key} hotkey-overlay-title="向${directionName}移动${target}（方向键或 HJKL）" { move-${axis}-${direction.name}; }
             ''
           )
           [
@@ -266,14 +279,21 @@ in
         }
 
         // 引用字符串名称,避免动态工作区改变编号后切错位置。
+        // 数字工作区只展示一组范例,避免重复列出 15 行挤出屏幕。
         ${lib.concatMapStringsSep "\n" (name: ''
-          Mod+${name} { focus-workspace "${name}"; }
-          Mod+Shift+${name} { move-window-to-workspace "${name}" focus=false; }
-          Mod+Ctrl+${name} { move-window-to-workspace "${name}" focus=true; }
+          Mod+${name} ${
+            lib.optionalString (name == "1") ''hotkey-overlay-title="切换工作区（数字键 1～5）"''
+          } { focus-workspace "${name}"; }
+          Mod+Shift+${name} ${
+            lib.optionalString (name == "1") ''hotkey-overlay-title="发送窗口到工作区，不跟随（数字键 1～5）"''
+          } { move-window-to-workspace "${name}" focus=false; }
+          Mod+Ctrl+${name} ${
+            lib.optionalString (name == "1") ''hotkey-overlay-title="发送窗口到工作区并跟随（数字键 1～5）"''
+          } { move-window-to-workspace "${name}" focus=true; }
         '') workspaces}
-        Mod+Slash { focus-workspace-previous; }
-        Mod+Comma { focus-workspace-up; }
-        Mod+Period { focus-workspace-down; }
+        Mod+Slash hotkey-overlay-title="返回上一个工作区" { focus-workspace-previous; }
+        Mod+Comma hotkey-overlay-title="切换到上一个工作区" { focus-workspace-up; }
+        Mod+Period hotkey-overlay-title="切换到下一个工作区" { focus-workspace-down; }
     }
   '';
 }
