@@ -36,7 +36,7 @@ in
   # 注意:这是模块参数,只影响 TB 链路低功耗,与 pcie_aspm 不同(那个实测会弄死设备初始化)
   boot.kernelParams = [ "thunderbolt.clx=0" ];
 
-  # === 雷电显卡坞:外接 RTX 3050 (GA107),Sway 下 PRIME offload ===
+  # === 雷电显卡坞:外接 RTX 3050 (GA107),niri 下 PRIME offload ===
   # 用法:游戏入口直接交给 `nvidia-egpu`(Steam 启动选项 / 手动),
   # 自动检测:GPU 健康→offload 渲染;不可用→回退核显,显示器仍走 iGPU
   services = {
@@ -104,7 +104,7 @@ in
     # (TLB invalidation failed / GSP RPC failed 崩溃,日志实证两次),closed 不依赖 GSP 更稳
     open = false;
     prime = {
-      # Sway 下 offload.enable 仅生成惰性 X11 配置(bus ID 不会被读取),
+      # niri 下 offload.enable 仅生成惰性 X11 配置(bus ID 不会被读取),
       # 保留是因为 enableOffloadCmd 断言依赖它
       offload.enable = true;
       offload.enableOffloadCmd = true; # 提供 nvidia-offload 命令

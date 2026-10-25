@@ -20,7 +20,7 @@
     ./nvtop
     ./obs-studio
     ./qutebrowser
-    ./resource_monitor
+    ./resource-monitor
     ./search
     ./ssh
     ./v2rayn

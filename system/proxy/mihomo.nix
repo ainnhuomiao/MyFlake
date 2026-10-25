@@ -17,7 +17,7 @@ let
     hash = "sha256-HnbkkmDJeTE+ynvgLevWuGGRVjUlO8fIAGaPHLHxbj8=";
   };
 
-  tools = import ../lib/proxy-tools.nix { inherit pkgs configDirectory; };
+  tools = import ../../lib/proxy { inherit pkgs configDirectory; };
   inherit (tools) generateConfig subscriptionManager;
 
   # generate→chgrp→chmod 0640 供 systemd regenerate 服务与 activation script 共用;

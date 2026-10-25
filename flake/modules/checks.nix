@@ -8,7 +8,7 @@
       ...
     }:
     let
-      layouts = import ../../lib/disko_layout;
+      layouts = import ../../lib/disko-layout;
       # 用 disko 上游 NixOS 模块真实求值每个布局(非手写 schema): 上游会拒绝非法的
       # 设备/分区/子卷/加密声明; 这里再断言挂载结果与现机 hardware-configuration 语义一致。
       # 纯求值, 不触碰任何磁盘。

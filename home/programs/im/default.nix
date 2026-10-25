@@ -44,7 +44,6 @@
       # 配方保留 deb 自带 OpenSSL 1.1 → 依赖 permittedInsecurePackages(system/nix/nixpkgs.nix)
       # wrapper 强制 QT_QPA_PLATFORM=xcb (走 XWayland), 1.25 缩放下不如 wayland 原生清晰
       dingtalk
-      # nur.repos.linyinfeng.icalingua-plus-plus
       vesktop
       (element-desktop.override {
         commandLineArgs = "--enable-features=UseOzonePlatform --ozone-platform=x11";

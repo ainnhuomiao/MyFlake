@@ -12,7 +12,7 @@ let
   wallpaperDir = "${config.home.homeDirectory}/${appearance.wallpapersDir}";
   noctalia = lib.getExe config.programs.noctalia.package;
   pluginService = "noctalia/mpvpaper:service";
-  sharedScripts = import ./share_scripts.nix {
+  sharedScripts = import ./shared-scripts.nix {
     inherit pkgs noctalia wallpaperDir;
   };
 in

@@ -48,16 +48,15 @@ generations:
 rebuild-switch host="nixos": check format
     NIX_CONFIG="experimental-features = nix-command flakes" bash ./lib/scripts/rebuild.sh {{host}}
 
-
-
 # Fast path: build and switch without pre-check or formatting
 rebuild-switch-fast host="nixos":
     NIX_CONFIG="experimental-features = nix-command flakes" bash ./lib/scripts/rebuild.sh {{host}}
 
 # Explicit full validation before switching
 verify:
-    just check
     just format
+    just check
+
 # Delete old generations and gcroots, keeping 3 generations and 7 days of history
 # nh clean all extends nix-collect-garbage with gcroot cleanup
 # (replace the old `nix-collect-garbage --delete-old`)

@@ -7,7 +7,7 @@ let
     configDirectory=${pkgs.lib.escapeShellArg configDirectory}
     subscriptionsFile="$configDirectory/subscriptions.yaml"
   '';
-  shared = builtins.readFile ./scripts/proxy-stack.sh;
+  shared = builtins.readFile ./proxy-stack.sh;
 in
 {
   inherit shared;
@@ -24,7 +24,7 @@ in
         configFile="$configDirectory/config.yaml"
         providerDirectory="$configDirectory/proxy-providers"
       ''
-      + builtins.readFile ./scripts/mihomo-generate-config.sh;
+      + builtins.readFile ./mihomo-generate-config.sh;
   };
   subscriptionManager = pkgs.writeShellApplication {
     name = "mihomo-sub";
@@ -35,6 +35,6 @@ in
       systemd
       yq-go
     ];
-    text = paths + builtins.readFile ./scripts/mihomo-sub.sh;
+    text = paths + builtins.readFile ./mihomo-sub.sh;
   };
 }

@@ -24,7 +24,7 @@
     };
     nixpkgs-emanote.url = "github:nixos/nixpkgs/6b4955211758ba47fac850c040a27f23b9b4008f";
     disko = {
-      # lib/scripts/disko.sh 全新安装流程使用, 布局见 lib/disko_layout/
+      # lib/scripts/disko.sh 全新安装流程使用, 布局见 lib/disko-layout/
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
@@ -92,13 +92,11 @@
     fallback = true;
     http-connections = 16;
     extra-substituters = [
-      "https://noctalia.cachix.org"
       "https://ainnhuomiao.qianyuanqing.asia/ainnhuomiao"
       "https://ainnhuomiao.cachix.org"
       "https://nix-community.cachix.org"
     ];
     extra-trusted-public-keys = [
-      "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
       "ainnhuomiao:rSRSxFzka/Hu1R27mYg8TIE34+X9Vq4RA+orXAUr7U4="
       "ainnhuomiao.cachix.org-1:scMAjHS0YtCSBV0d6bbFWHDGD3BkPKuWbcfeWpqw5ck="
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="

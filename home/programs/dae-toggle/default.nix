@@ -3,7 +3,7 @@
   ...
 }:
 let
-  proxy = import ../../../lib/proxy-tools.nix { inherit pkgs; };
+  proxy = import ../../../lib/proxy { inherit pkgs; };
   daeToggle = pkgs.writeShellApplication {
     name = "dae-toggle";
     runtimeInputs = with pkgs; [

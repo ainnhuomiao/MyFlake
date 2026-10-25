@@ -5,6 +5,7 @@
 }:
 let
   system = pkgs.stdenv.hostPlatform.system;
+  llmAgents = inputs.llm-agents.packages.${system};
   mcps = with pkgs; [
     flake-stats-mcp
     mcp-nixos
@@ -21,14 +22,14 @@ in
     [
       cc-switch
       herdr
-      inputs.llm-agents.packages.${system}.omp
-      inputs.llm-agents.packages.${system}.pi
-      inputs.llm-agents.packages.${system}.kimi-code
-      inputs.llm-agents.packages.${system}.opencode2
-      inputs.llm-agents.packages.${system}.opencode2-desktop
-      inputs.llm-agents.packages.${system}.grok-bot
-      inputs.llm-agents.packages.${system}.cursor-agent
-      inputs.llm-agents.packages.${system}.chatgpt
+      llmAgents.omp
+      llmAgents.pi
+      llmAgents.kimi-code
+      llmAgents.opencode2
+      llmAgents.opencode2-desktop
+      llmAgents.grok-bot
+      llmAgents.cursor-agent
+      llmAgents.chatgpt
       pkgs.omp-provider
     ]
     ++ mcps;

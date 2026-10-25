@@ -4,7 +4,7 @@ set -euo pipefail
 
 # --- Configuration & Styling ---
 FLAKE_ROOT="${FLAKE_ROOT:-$(pwd)}"
-LAYOUT_DIR="$FLAKE_ROOT/lib/disko_layout"
+LAYOUT_DIR="$FLAKE_ROOT/lib/disko-layout"
 LUKS_KEY_FILE="/tmp/secret.key"
 
 # Colors
@@ -149,7 +149,7 @@ nixos-generate-config --no-filesystems --root /mnt --dir "$host_dir"
 
 # Patch hardware-configuration.nix to import the layout
 layout_filename="$(basename "$partition_layout")"
-relative_path="../../lib/disko_layout"
+relative_path="../../lib/disko-layout"
 layout_import_path="$relative_path/$layout_filename"
 
 # WARNING: Direct 'sed' modification of Nix files can be brittle.

@@ -11,13 +11,13 @@ Run from the repo root. Typical loop: edit, `git add` new files, `just format`, 
 - `just format`: `nix fmt` (treefmt: nixfmt, prettier for Markdown/YAML/JSON, shfmt, stylua). Rewrites files in place across the repo.
 - `just check`: `nix flake check --fallback`. Evaluates every output, including the NixOS config, and builds the `treefmt` and `disko-layouts` checks. It does not build `packages`.
 - `just build`: builds the `nixos` system without activating it. CI never builds the system closure, so this is the only full system check.
-- Single check: `nix build --no-link .#checks.x86_64-linux.treefmt` (formatting) or `.#checks.x86_64-linux.disko-layouts` (pure eval of `lib/disko_layout/`).
+- Single check: `nix build --no-link .#checks.x86_64-linux.treefmt` (formatting) or `.#checks.x86_64-linux.disko-layouts` (pure eval of `lib/disko-layout/`).
 - Single package: `nix build --no-link .#<name>` for names in `nix flake show`. Overlay-only packages such as `omp-provider` build via `.#nixosConfigurations.nixos.pkgs.omp-provider`.
 - Eval one option without building: `nix eval .#nixosConfigurations.nixos.config.<path>`.
 - There is no test suite. Verification is the checks above.
 - `just build` can run for a long time because it builds the whole system closure. Use a long timeout or run it in the background.
 - Substituter errors in `just check` output, such as an unreachable substituter, are logged and ignored because of `--fallback`. Trust the exit code.
-- Run `just format` before `just check`. `just verify` and `just rebuild-switch` run check first, so unformatted files fail them.
+- Run `just format` before `just check`. `just verify` follows this order; `just rebuild-switch` runs check first, so unformatted files fail it.
 
 ## Requires explicit user request
 
@@ -48,9 +48,9 @@ Run from the repo root. Typical loop: edit, `git add` new files, `just format`, 
 
 - Input wiring is deliberate, and comments in `flake.nix` say why. `noctalia` follows host nixpkgs because a bundled older glibc crashes at startup. `emanote`, `herdr`, and `llm-agents` keep their own nixpkgs pins.
 - Bumping `noctalia` also means bumping `officialPlugins.rev` in `home/programs/noctalia/default.nix`.
-- `packages` outputs are deliberately limited to the CI-prebuilt set plus `disko`. Vendor apps belong in `home/` or overlays. `nix flake check` doesn't build `packages`, so the comment in `flake/modules/packages.nix` that says it does is stale.
+- `packages` outputs are deliberately limited to the CI-prebuilt set plus `disko`. Vendor apps belong in `home/` or overlays. `nix flake check` doesn't build `packages`; CI builds the explicit package list in `.github/workflows/nix.yml`.
 - To get a source-built package into the Attic cache, add it to `flake/modules/packages.nix` and to the build list in `.github/workflows/nix.yml`.
-- dae and mihomo are not started at boot (`system/proxy.nix`, `wantedBy = []`). Manage them with `dae-toggle`.
+- dae and mihomo are not started at boot (`system/proxy/default.nix`, `wantedBy = []`). Manage them with `dae-toggle`.
 - Read comments near pins and workarounds before changing them. They record why, usually a verified breakage.
 
 ## Maintenance and secrets

@@ -5,7 +5,7 @@
 let
   v2rayN = pkgs.v2rayn;
 
-  proxy = import ../../../lib/proxy-tools.nix { inherit pkgs; };
+  proxy = import ../../../lib/proxy { inherit pkgs; };
   # Shared proxy lifecycle; this wrapper only owns v2rayN and its child processes.
   wrapper = pkgs.writeShellApplication {
     name = "v2rayN";

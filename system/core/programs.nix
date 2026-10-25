@@ -1,13 +1,17 @@
+{ me, ... }:
+let
+  flakeDirectory = "/home/${me.userName}/MyFlake";
+in
 {
   programs = {
     fish.enable = true;
     git = {
       enable = true;
-      config.safe.directory = [ "/home/huomiao/MyFlake" ];
+      config.safe.directory = [ flakeDirectory ];
     };
     nh = {
       enable = true;
-      flake = "/home/huomiao/MyFlake";
+      flake = flakeDirectory;
     };
   };
 }
