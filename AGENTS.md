@@ -50,7 +50,7 @@ Run from the repo root. Typical loop: edit, `git add` new files, `just format`, 
 - Bumping `noctalia` also means bumping `officialPlugins.rev` in `home/programs/noctalia/default.nix`.
 - `packages` outputs are deliberately limited to the CI-prebuilt set plus `disko`. Vendor apps belong in `home/` or overlays. `nix flake check` doesn't build `packages`; CI builds the explicit package list in `.github/workflows/nix.yml`.
 - To get a source-built package into the Attic cache, add it to `flake/modules/packages.nix` and to the build list in `.github/workflows/nix.yml`.
-- dae and mihomo are not started at boot (`system/proxy/default.nix`, `wantedBy = []`). Manage them with `dae-toggle`.
+- sing-box is not started at boot (`system/proxy/default.nix`, `wantedBy = []`). Manage it with `sing-box-toggle`.
 - Read comments near pins and workarounds before changing them. They record why, usually a verified breakage.
 
 ## Maintenance and secrets
@@ -58,7 +58,7 @@ Run from the repo root. Typical loop: edit, `git add` new files, `just format`, 
 - After `just update`, run `just format`, `just check`, and `just build`. Pushing `flake.lock` (only when asked) is what makes CI rebuild and upload the source-built packages to Attic.
 - The kimi-code VS Code extension in `home/editors/vscode.nix` is pinned by hash. On a fixed-output hash mismatch, update that hash.
 - Edit MCP servers in `home/ai/mcp.nix` (`programs.mcp.servers`). Activation merges them into each tool's config, so don't hand-edit `~/.codex/config.toml` or `~/.kimi-code/mcp.json`.
-- Never put tokens or subscription URLs in Nix files; they end up in the world-readable store. Mihomo subscriptions live in `/var/lib/mihomo-config/subscriptions.yaml`. The Obsidian API key is read at activation.
+- Never put tokens or subscription URLs in Nix files; they end up in the world-readable store. sing-box subscriptions live in `/var/lib/sing-box-config/subscriptions.yaml`. The Obsidian API key is read at activation.
 
 ## Conventions
 

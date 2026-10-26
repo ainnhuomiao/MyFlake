@@ -1,33 +1,42 @@
 {
   pkgs,
-  configDirectory ? "/var/lib/mihomo-config",
+  configDirectory ? "/var/lib/sing-box-config",
+  directRules ? {
+    domains = [ ];
+    ipCidrs = [ ];
+  },
 }:
 let
-  paths = ''
-    configDirectory=${pkgs.lib.escapeShellArg configDirectory}
-    subscriptionsFile="$configDirectory/subscriptions.yaml"
+  python = pkgs.python3.withPackages (packages: [ packages.pyyaml ]);
+  environment = ''
+    export SINGBOX_CONFIG_DIR=${pkgs.lib.escapeShellArg configDirectory}
+    export SINGBOX_SUBSCRIPTIONS_FILE="$SINGBOX_CONFIG_DIR/subscriptions.yaml"
+    export SINGBOX_CONFIG_FILE="$SINGBOX_CONFIG_DIR/config.json"
+    export SINGBOX_PROVIDER_DIR="$SINGBOX_CONFIG_DIR/providers"
+    export SINGBOX_CLASH_API_SECRET_FILE="$SINGBOX_CONFIG_DIR/clash-api-secret"
+    export SINGBOX_CHANGED_FILE="$SINGBOX_CONFIG_DIR/.config-changed"
+    export SINGBOX_DIRECT_RULES=${pkgs.lib.escapeShellArg (builtins.toJSON directRules)}
+    export SINGBOX_STATE_DIR=/var/lib/sing-box
+    export SINGBOX_BIN=${pkgs.lib.getExe pkgs.sing-box}
+    export SINGBOX_DASHBOARD_DIR=${pkgs.metacubexd}
+    export SINGBOX_GEOSITE_DIR=${pkgs.sing-geosite}/share/sing-box/rule-set
+    export SINGBOX_GEOIP_DIR=${pkgs.sing-geoip}/share/sing-box/rule-set
   '';
-  shared = builtins.readFile ./proxy-stack.sh;
 in
 {
-  inherit shared;
   generateConfig = pkgs.writeShellApplication {
-    name = "mihomo-generate-config";
+    name = "sing-box-generate-config";
     runtimeInputs = with pkgs; [
       coreutils
-      mihomo
-      yq-go
+      curl
     ];
-    text =
-      paths
-      + ''
-        configFile="$configDirectory/config.yaml"
-        providerDirectory="$configDirectory/proxy-providers"
-      ''
-      + builtins.readFile ./mihomo-generate-config.sh;
+    text = environment + ''
+      exec ${python}/bin/python3 ${./generate-config.py}
+    '';
   };
+
   subscriptionManager = pkgs.writeShellApplication {
-    name = "mihomo-sub";
+    name = "sing-box-sub";
     runtimeInputs = with pkgs; [
       coreutils
       curl
@@ -35,6 +44,6 @@ in
       systemd
       yq-go
     ];
-    text = paths + builtins.readFile ./mihomo-sub.sh;
+    text = environment + builtins.readFile ./sing-box-sub.sh;
   };
 }

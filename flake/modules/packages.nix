@@ -40,7 +40,6 @@
           herdr
           mcp-nixos
           rayburst
-          v2rayn
           ;
         disko = inputs.disko.packages.${system}.disko;
         noctalia = inputs.noctalia.packages.${system}.default;

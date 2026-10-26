@@ -9,7 +9,6 @@
 
         settings.global.excludes = [
           "*.conf"
-          "*.dae"
           "*.fish"
           "*.png"
           "*secrets.yaml"

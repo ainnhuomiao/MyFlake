@@ -77,7 +77,7 @@
 | 用户环境     | Home Manager，作为 NixOS 模块集成                                             |
 | Shell        | Fish + Starship                                                               |
 | 音频         | PipeWire（ALSA、PulseAudio、JACK）                                            |
-| 网络         | NetworkManager + dae eBPF + Mihomo SOCKS                                      |
+| 网络         | NetworkManager + sing-box TUN + metacubexd                                    |
 | 二进制缓存   | GitHub Actions → Attic（VPS）+ Cachix + selector4nix 代理 + USTC 镜像（备用） |
 | 引导         | GRUB EFI                                                                      |
 | 文件系统     | Btrfs 子卷 + 独立 EFI 分区 + Swap                                             |
@@ -208,55 +208,44 @@ Context7 地址为 `https://mcp.context7.com/mcp`。如果 cc-switch 数据库�
 
 ### 透明代理
 
-当前采用 **dae + Mihomo** 双层架构：
+当前采用 **sing-box 单核心**架构：
 
 ```text
 应用流量
-  └─ dae：eBPF 透明代理、DNS 与路由
-      ├─ 国内、私网、广播/多播 → DIRECT
-      ├─ 广告与指定 Bilibili 遥测域名 → BLOCK
-      ├─ auto.c3pool.org → 127.0.0.1:12347 → DAE-MINING
-      └─ 其他流量 → 127.0.0.1:12346 → DAE-PROXY
+  └─ sing-box：TUN、DNS 与路由
+      ├─ 国内、私网、广播/多播与必要白名单 → direct
+      ├─ 广告与指定 Bilibili 遥测域名 → reject
+      ├─ OpenAI、Anthropic、Gemini → AI selector
+      └─ 其他流量 → proxy selector → 跨订阅自动选择
 ```
 
-dae 配置位于 `system/dae.dae`，主要行为：
+TUN 使用 `198.18.0.1/30` 和 MTU 9000，启用 `auto_route`、`auto_redirect`、`strict_route` 与 DNS 劫持。RFC1918 和 `fc00::/7` 通过 `route_exclude_address` 直接走内核，避免局域网与 Docker 流量绕道 TUN。DNS 使用真实 IP 而非 Fake-IP：国内域名查询阿里 DoH，国外及未知域名通过跨订阅自动组查询 Google DoH；局域网和门户探测域名使用 DHCP DNS。
 
-- 自动选择出口网卡，透明代理端口为 `12345`，且不向防火墙开放该端口
-- DNS 优先 IPv4；`geosite:cn` 使用阿里 DoQ `223.5.5.5:853`，其余请求回退到 Google TCP DNS `8.8.8.8:53`
-- `proxy` 组固定使用 Mihomo SOCKS 上游 `127.0.0.1:12346`
-- `mining` 组固定使用 Mihomo SOCKS 上游 `127.0.0.1:12347`
-- `pname(mihomo) -> direct(must)` 防止 Mihomo 出站再次被 dae 捕获形成代理环路
-- NetworkManager、私网、中国域名和中国 IP 直连；未命中的流量回退到 `proxy`
+每个 Clash/Mihomo 订阅转换为一个内嵌 `urltest` 的 selector，另有跨订阅的 `自动选择/全部` 作为默认代理组。`AI` selector 只包含具体节点，首次默认首个可用节点，可在面板固定选择，不随测速结果漂移。选择结果保存在 sing-box 缓存中。生成器支持常见的 SS、VMess、VLESS、Trojan、Hysteria2、TUIC、AnyTLS、SOCKS 和 HTTP 节点，以及 hy2 端口跳跃、SS UDP-over-TCP 和 TLS ECH；不支持或字段不完整的节点会被跳过并显示数量。
 
-Mihomo 关闭 TUN，只负责订阅、节点健康检查和两个本地 SOCKS5 出口：
-
-| Listener | Mihomo 组    | 用途                   |
-| -------- | ------------ | ---------------------- |
-| `12346`  | `DAE-PROXY`  | dae 的普通境外流量出口 |
-| `12347`  | `DAE-MINING` | dae 的专用流量出口     |
-
-订阅 URL 仅保存在 `/var/lib/mihomo-config/subscriptions.yaml`，不会写入 Nix store。首次激活仅在文件不存在时创建权限为 `0600` 的空订阅，不覆盖已有内容。订阅变化会触发配置重新生成、`mihomo -t` 校验和服务重启；生成失败时保留原配置。使用以下命令管理订阅：
+订阅 URL 仅保存在 `/var/lib/sing-box-config/subscriptions.yaml`，不会写入 Nix store。激活脚本只创建缺失的订阅文件；订阅变化会触发重新生成和 `sing-box check`，每日 timer 也会自动刷新。JSON 内容不变时不替换配置、不重启 sing-box；生成或校验失败时保留原配置，删除订阅时同步清理对应缓存。使用以下命令管理订阅：
 
 ```bash
-mihomo-sub
+sing-box-sub
 ```
 
-Mihomo Zashboard 仅监听本机：
+sing-box 不随开机启动，手动控制命令：
 
-```text
-http://127.0.0.1:9090/ui/
+```bash
+sing-box-toggle [on|off|status|toggle]
 ```
 
-可在面板中分别选择 `DAE-PROXY` 和 `DAE-MINING` 的出口。当前没有启用 dae 自身的 WebUI；官方 `daed` 会同时接管 dae 后端和 eBPF 核心，不能与现有 `services.dae` 并行运行。
+Web 面板仅监听本机，服务启动后访问 `http://127.0.0.1:9090/ui/`。Clash API 使用随机 secret，保存在 `/var/lib/sing-box-config/clash-api-secret`（不会写入 Nix store），面板认证时填写该文件内容；`sing-box-sub` 会自动携带认证。
+
+另提供仅监听 `127.0.0.1:7890` 的 mixed 入站，可供显式设置 HTTP/SOCKS 代理的程序使用。
 
 配置位置：
 
-- `system/dae.nix`：dae 服务、Mihomo 启动依赖和反向路径检查
-- `system/dae.dae`：DNS、双 SOCKS 上游、分组与透明路由规则
-- `system/mihomo.nix`：订阅存储、systemd、Zashboard 与脚本接线
-- `lib/proxy-tools.nix`、`lib/scripts/mihomo-*.sh`：独立配置生成器与订阅管理 CLI
-- `system/proxy.nix`：两项服务的手动启动策略与集中 polkit 授权
-- `lib/scripts/proxy-stack.sh`：`dae-toggle` 与 v2rayN 共用的停止顺序、原状态恢复和互斥逻辑；v2rayN 接管期间拒绝开启透明代理
+- `system/proxy/default.nix`：sing-box 服务、订阅初始化、path/timer、polkit 与反向路径检查
+- `lib/proxy/generate-config.py`：订阅转换、DNS、TUN、出站组与路由规则
+- `lib/proxy/rules.nix`：个人直连规则，复用 `flake.nix` 中唯一定义的 Attic URL
+- `lib/proxy/sing-box-sub.sh`：订阅管理 CLI
+- `home/programs/sing-box-toggle/default.nix`：手动开关与桌面通知
 
 ### 二进制缓存代理
 
@@ -265,7 +254,7 @@ http://127.0.0.1:9090/ui/
 - 并行查询所有上游缓存，按延迟和优先级选择最快源；故障源自动跳过并按指数退避重试
 - NAR 从最优源流式转发，本机只持久缓存 `.narinfo` 查询结果（`/var/cache/selector4nix`）
 - 上游列表：`ainnhuomiao` Attic、`ainnhuomiao.cachix.org`、`nix-community.cachix.org`、`cache.numtide.com`，以及 USTC 镜像（cache.nixos.org 的 CN 直连镜像，作通用二进制源）
-- cache.nixos.org 不作为上游：dae 将其（非 geosite:cn）路由进 mihomo 节点，实测间歇性瘫痪/限速；nix 直连列表保留它作最后兜底
+- cache.nixos.org 不作为上游：sing-box 将其（非 geosite:cn）路由进代理节点，实测间歇性瘫痪/限速；nix 直连列表保留它作最后兜底
 - `configureSubstituter = "prepend"`：代理 `http://127.0.0.1:5496/` 排在 substituters 首位，原始列表保留作 fallback；代理故障时 Nix 自动回退，不影响构建
 
 配置位置：`system/nix/substituters.nix`。查看日志：
@@ -324,7 +313,6 @@ just rebuild-switch
 - `firefox`：固定 firefox-bin 154.0 与 zh-CN 语言包（nixpkgs 升级不再带动 Firefox 版本）
 - `rayburst`（原 motrix-next）：跟随 nixpkgs 版本，只叠加 `autoPatchelfHook` 修复其 sidecar 在 NixOS 上的动态链接
 - `mcp-nixos`：禁用一个会误判普通源码内容的上游测试
-- `v2rayn`：修复 Linux TUN 门禁（rebuild 后节点延迟 -1 的根因）
 
 Flake 对外 `packages.x86_64-linux.*` 只包含 CI 预构建的源码包（见下）、固定版本的 `firefox-bin` 与 `disko`（`lib/scripts/disko.sh` 使用）。`nix flake check` 会构建 `packages` 内全部包，因此不把 unfree 厂商包（chrome/vscode/qq/wechat/wps 等）放进来：它们每次都要从厂商 CDN 重下 1–2 GB 且不在公共缓存。这些包仍经 overlay 或模块引用进入 `nixosConfigurations`，系统构建照常包含；需要单独构建时用 `nix build nixpkgs#<name>`。清单以实际输出为准：
 
@@ -332,11 +320,11 @@ Flake 对外 `packages.x86_64-linux.*` 只包含 CI 预构建的源码包（见�
 nix flake show
 ```
 
-来源：`noctalia`、`hyprpicker`、`selector4nix`、`linuxqq-wayland-fix`、`disko` 来自各自 flake input；`firefox-bin` 为 `overlays/firefox.nix` 钉死版本的厂商包重打包；`herdr` 经 `pkgs/default.nix` 取自其 flake input；`bili_tui`、`dingtalk`、`flake-stats-mcp` 为 `pkgs/` 本地包；`mcp-nixos`、`rayburst`、`v2rayn` 为 nixpkgs 包，经 `overlays/` 修补。
+来源：`noctalia`、`hyprpicker`、`selector4nix`、`linuxqq-wayland-fix`、`disko` 来自各自 flake input；`firefox-bin` 为 `overlays/firefox.nix` 钉死版本的厂商包重打包；`herdr` 经 `pkgs/default.nix` 取自其 flake input；`bili_tui`、`dingtalk`、`flake-stats-mcp` 为 `pkgs/` 本地包；`mcp-nixos`、`rayburst` 为 nixpkgs 包，经 `overlays/` 修补。
 
 Herdr 保留上游锁定的 `nixpkgs` 和 `rust-overlay`，不跟随宿主工具链，以保持 Herdr 上游测试的工具链组合；系统安装与 CI 导出统一使用 `pkgs.herdr`。Noctalia 相反：必须跟随宿主 `nixpkgs`——它的 EGL vendor 运行时 dlopen 宿主 `/run/opengl-driver` 的 Mesa，独立闭包会因 glibc 版本不匹配在启动时 `eglGetDisplay failed` 崩溃。
 
-CI 构建「上游任何二进制缓存里都没有、必须从源码编译」的 11 个包（`bili_tui`、`dingtalk`、`flake-stats-mcp`、`herdr`、`hyprpicker`、`linuxqq-wayland-fix`、`mcp-nixos`、`noctalia`、`rayburst`、`selector4nix`、`v2rayn`），外加版本钉死、只做重打包的 `firefox-bin`，并推送到自建 Attic 缓存。其余包都能直接替换（nixpkgs 自由软件走 cache.nixos.org，unfree 应用走厂商预编译包，`llm-agents` 走 cache.numtide.com），列进 CI 只会重复下载+上传，lock 更新后还要全部重来。
+CI 构建「上游任何二进制缓存里都没有、必须从源码编译」的 10 个包（`bili_tui`、`dingtalk`、`flake-stats-mcp`、`herdr`、`hyprpicker`、`linuxqq-wayland-fix`、`mcp-nixos`、`noctalia`、`rayburst`、`selector4nix`），外加版本钉死、只做重打包的 `firefox-bin`，并推送到自建 Attic 缓存。其余包都能直接替换（nixpkgs 自由软件走 cache.nixos.org，unfree 应用走厂商预编译包，`llm-agents` 走 cache.numtide.com），列进 CI 只会重复下载+上传，lock 更新后还要全部重来。
 
 例如：
 
@@ -423,7 +411,7 @@ just build
 
 ## CI 缓存与更新流程
 
-推送到 `main` 后，GitHub Actions（`.github/workflows/nix.yml`）只会构建**上游无二进制缓存、必须从源码编译的 11 个包**并推送到自建 Attic 缓存（`ainnhuomiao.qianyuanqing.asia`）；其余包本就是预编译产物或已在上游缓存里，重建时直接替换即可，不必经 CI 搬运。因此**更新依赖后必须推送 `flake.lock`**，CI 才会为新路径重新构建那 11 个包。
+推送到 `main` 后，GitHub Actions（`.github/workflows/nix.yml`）只会构建**上游无二进制缓存、必须从源码编译的 10 个包**并推送到自建 Attic 缓存（`ainnhuomiao.qianyuanqing.asia`）；其余包本就是预编译产物或已在上游缓存里，重建时直接替换即可，不必经 CI 搬运。因此**更新依赖后必须推送 `flake.lock`**，CI 才会为新路径重新构建那 10 个包。
 
 ### 日常更新（配置 / nixpkgs）
 

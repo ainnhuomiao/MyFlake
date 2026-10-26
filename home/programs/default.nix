@@ -1,7 +1,6 @@
 {
   imports = [
     ./apps.nix
-    ./dae-toggle
     ./emanote
     ./fastfetch
     ./fcitx5
@@ -22,8 +21,8 @@
     ./qutebrowser
     ./resource-monitor
     ./search
+    ./sing-box-toggle
     ./ssh
-    ./v2rayn
     ./yazi
     ./yt-dlp
     ./zathura

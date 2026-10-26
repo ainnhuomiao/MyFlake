@@ -1,7 +1,8 @@
 let
+  rules = import ../../lib/proxy/rules.nix;
   substituters = [
     {
-      url = "https://ainnhuomiao.qianyuanqing.asia/ainnhuomiao";
+      url = rules.attic.substituterUrl;
       publicKey = "ainnhuomiao:rSRSxFzka/Hu1R27mYg8TIE34+X9Vq4RA+orXAUr7U4=";
     }
     {
@@ -42,8 +43,8 @@ in
         # port = 5496; # Default port
       };
 
-      # NOTE: cache.nixos.org deliberately NOT an upstream — dae routes it
-      # (non-geosite:cn) through the mihomo node, where it is intermittently
+      # NOTE: cache.nixos.org deliberately NOT an upstream — sing-box routes it
+      # (non-geosite:cn) through the proxy node, where it is intermittently
       # dead/throttled (33KB/s-6.5MB/s measured 2026-09-04); USTC below
       # mirrors its content and goes direct (geosite:cn). Direct
       # cache.nixos.org remains in nix.settings.substituters as a last-resort

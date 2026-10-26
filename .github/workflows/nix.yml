@@ -71,8 +71,7 @@ jobs:
             .#mcp-nixos \
             .#rayburst \
             .#noctalia \
-            .#selector4nix \
-            .#v2rayn)
+            .#selector4nix)
           echo "paths=${paths//$'\n'/ }" >> "$GITHUB_OUTPUT"
 
       # check 放在两个 push 之前:失败时直接终止,避免 Cachix 与 Attic 内容分叉
