@@ -10,7 +10,12 @@ rec {
   };
 
   direct = {
-    domains = [ attic.domain ];
+    domains = [
+      attic.domain
+      "mirrors.ustc.edu.cn"
+      "mirrors.tuna.tsinghua.edu.cn"
+      "mirror.sjtu.edu.cn"
+    ];
     ipCidrs = [ "${attic.ipv4}/32" ];
   };
 }

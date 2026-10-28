@@ -38,7 +38,7 @@ Run from the repo root. Typical loop: edit, `git add` new files, `just format`, 
 ## Architecture
 
 - `flake.nix` declares inputs and `nixConfig`. Outputs come from `flake/modules/` (packages, checks, dev shells, formatter, overlays) and `hosts/`.
-- `hosts/default.nix` builds `nixosConfigurations.nixos` from `hosts/nixos/`, `system/`, disko, selector4nix, and Home Manager profile `home/profiles/huomiao@nixos`.
+- `hosts/default.nix` builds `nixosConfigurations.nixos` from `hosts/nixos/`, `system/`, disko, ncro, and Home Manager profile `home/profiles/huomiao@nixos`.
 - `system/` holds NixOS modules and `home/` holds Home Manager modules. `home/programs/default.nix` aggregates per-program modules. Plain packages go in `home/programs/apps.nix`.
 - `me` (`me.nix`) and `appearance` (`lib/appearance.nix`) are specialArgs in all modules. Use them instead of importing `me.nix` or hardcoding colors and fonts.
 - `pkgs/` holds local packages (overlay in `pkgs/default.nix`). `overlays/` holds nixpkgs patches. `flake/modules/overlays.nix` combines both.
@@ -47,7 +47,7 @@ Run from the repo root. Typical loop: edit, `git add` new files, `just format`, 
 ## Deliberate choices, don't "clean up"
 
 - Input wiring is deliberate, and comments in `flake.nix` say why. `noctalia` follows host nixpkgs because a bundled older glibc crashes at startup. `emanote`, `herdr`, and `llm-agents` keep their own nixpkgs pins.
-- Bumping `noctalia` also means bumping `officialPlugins.rev` in `home/programs/noctalia/default.nix`.
+- Bumping `noctalia` also means bumping `officialPlugins.rev` in `home/programs/noctalia/default.nix` and reviewing `patches/noctalia-transparent-bar-capsule-blur.patch`, which limits blur on transparent bars to their capsules and makes media fallback content inherit capsule foreground colors.
 - `packages` outputs are deliberately limited to the CI-prebuilt set plus `disko`. Vendor apps belong in `home/` or overlays. `nix flake check` doesn't build `packages`; CI builds the explicit package list in `.github/workflows/nix.yml`.
 - To get a source-built package into the Attic cache, add it to `flake/modules/packages.nix` and to the build list in `.github/workflows/nix.yml`.
 - sing-box is not started at boot (`system/proxy/default.nix`, `wantedBy = []`). Manage it with `sing-box-toggle`.

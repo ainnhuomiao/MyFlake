@@ -43,9 +43,11 @@
           ;
         disko = inputs.disko.packages.${system}.disko;
         noctalia = inputs.noctalia.packages.${system}.default;
-        hyprpicker = inputs.hyprpicker.packages.${system}.hyprpicker;
+        hyprpicker = inputs.hyprpicker.packages.${system}.hyprpicker.override {
+          pcre = pkgs.pcre2;
+        };
         linuxqq-wayland-fix = inputs.linuxqq-wayland-fix.packages.${system}.default;
-        selector4nix = inputs.selector4nix.packages.${system}.default;
+        ncro = inputs.ncro.packages.${system}.default;
       };
     };
 }

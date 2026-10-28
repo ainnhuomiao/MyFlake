@@ -45,7 +45,7 @@ jobs:
 
       # 只构建「上游任何二进制缓存里都没有、必须从源码编译」的包。
       # 其余包都能直接替换,列进来只会重复下载 + 上传(lock 更新后全部重来):
-      #   - nixpkgs 自由软件      → cache.nixos.org (selector4nix 上游里也有 USTC 镜像)
+      #   - nixpkgs 自由软件      → cache.nixos.org (ncro 上游里也有 USTC 镜像)
       #   - nixpkgs unfree 应用   → 厂商 CDN 的预编译包(discord/vscode/chrome/qq/...)
       #   - llm-agents            → cache.numtide.com (omp/pi/antigravity-cli/kimi-code)
       #   - noctalia / steam      → noctalia.cachix.org / nix-community.cachix.org
@@ -71,7 +71,7 @@ jobs:
             .#mcp-nixos \
             .#rayburst \
             .#noctalia \
-            .#selector4nix)
+            .#ncro)
           echo "paths=${paths//$'\n'/ }" >> "$GITHUB_OUTPUT"
 
       # check 放在两个 push 之前:失败时直接终止,避免 Cachix 与 Attic 内容分叉

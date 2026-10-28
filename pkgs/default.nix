@@ -10,6 +10,7 @@
     };
     flake-stats-mcp = final.callPackage ./flake-stats-mcp { };
     herdr = inputs.herdr.packages.${final.stdenv.hostPlatform.system}.default;
+    kimi-code-desktop = final.callPackage ./kimi-code-desktop { };
     omp-provider = final.callPackage ./omp-provider { };
   };
 }

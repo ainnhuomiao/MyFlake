@@ -1,0 +1,88 @@
+--- a/src/shell/bar/bar.cpp
++++ b/src/shell/bar/bar.cpp
+@@ -3176,6 +3176,43 @@
+     return;
+   }
+ 
++  // Transparent floating bars blur their capsules, not the empty lane between them.
++  if (instance.barConfig.backgroundOpacity <= 0.0F) {
++    std::vector<InputRect> blurStrips;
++    auto appendRuns = [&blurStrips](const std::vector<BarCapsuleRun>& runs) {
++      for (const auto& run : runs) {
++        if (!run.hasPaintedCapsuleBackground || run.bg == nullptr || !run.bg->visible()) {
++          continue;
++        }
++        float absX = 0.0F;
++        float absY = 0.0F;
++        Node::absolutePosition(run.bg, absX, absY);
++        const int px = static_cast<int>(std::lround(absX));
++        const int py = static_cast<int>(std::lround(absY));
++        const int pw = static_cast<int>(std::lround(std::max(0.0F, run.bg->width())));
++        const int ph = static_cast<int>(std::lround(std::max(0.0F, run.bg->height())));
++        if (pw <= 0 || ph <= 0) {
++          continue;
++        }
++        const Widget* radiusSource = !run.widgets.empty() ? run.widgets.front() : nullptr;
++        const float radius = radiusSource != nullptr
++            ? radiusSource->resolvedBarCapsuleRadius(run.bg->width(), run.bg->height())
++            : std::max(0.0F, std::min(run.bg->width(), run.bg->height()) * 0.5F);
++        auto runStrips = Surface::tessellateRoundedRect(px, py, pw, ph, radius);
++        blurStrips.insert(blurStrips.end(), runStrips.begin(), runStrips.end());
++      }
++    };
++    appendRuns(instance.startCapsuleRuns);
++    appendRuns(instance.centerCapsuleRuns);
++    appendRuns(instance.endCapsuleRuns);
++    if (blurStrips.empty()) {
++      instance.surface->clearBlurRegion();
++    } else {
++      instance.surface->setBlurRegion(blurStrips);
++    }
++    return;
++  }
++
+   if (instance.bg == nullptr) {
+     return;
+   }
+@@ -3480,6 +3517,7 @@
+   if (needsUpdate) {
+     UiPhaseScope updatePhase(UiPhase::Update);
+     updateWidgets(instance);
++    applyBarCompositorBlur(instance);
+     return;
+   }
+ 
+@@ -3510,6 +3548,7 @@
+     }
+     layoutBarSections(instance, renderer, barAreaW, barAreaH, padding, isVertical);
+   }
++  applyBarCompositorBlur(instance);
+ }
+ 
+ bool Bar::onPointerEvent(const PointerEvent& event) {
+--- a/src/shell/bar/widgets/media_widget.cpp
++++ b/src/shell/bar/widgets/media_widget.cpp
+@@ -85,9 +85,9 @@
+   area->addChild(
+       ui::glyph({
+           .out = &m_emptyGlyph,
+           .glyph = "music-off",
+           .glyphSize = Style::baseGlyphSize * m_contentScale,
+-          .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
++          .color = widgetIconColorOr(colorSpecFromRole(ColorRole::OnSurfaceVariant)),
+           .visible = false,
+       })
+   );
+@@ -117,10 +117,10 @@
+   m_label->setColor(
+       m_lastPlaybackStatus == "Playing" ? widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface))
+-                                        : colorSpecFromRole(ColorRole::OnSurfaceVariant)
++                                        : widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurfaceVariant))
+   );
+   m_emptyGlyph->setGlyph(active.has_value() ? "disc" : "music-off");
+   m_emptyGlyph->setGlyphSize(Style::baseGlyphSize * m_contentScale);
+-  m_emptyGlyph->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
++  m_emptyGlyph->setColor(widgetIconColorOr(colorSpecFromRole(ColorRole::OnSurfaceVariant)));
+   m_emptyGlyph->measure(renderer);
+ 
+   const bool hideAlbumArt = m_hideAlbumArt && !m_isVertical;

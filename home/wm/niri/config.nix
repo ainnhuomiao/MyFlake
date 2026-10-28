@@ -66,8 +66,13 @@ in
             urgent-color "${h cp.red}"
         }
     }
-    // 保留终端当前透明度,迁移时不额外开启背景模糊。
-    blur { off; }
+    // 允许 Noctalia 等 layer surface 按需请求背景模糊;普通窗口不额外开启。
+    blur {
+        passes 3
+        offset 2.0
+        noise 0.02
+        saturation 1.1
+    }
     hotkey-overlay {
         skip-at-startup
         hide-not-bound

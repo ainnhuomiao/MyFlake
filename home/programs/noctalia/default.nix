@@ -11,6 +11,13 @@ let
   wallpaperDir = "${config.home.homeDirectory}/${appearance.wallpapersDir}";
   videoDir = "${config.home.homeDirectory}/${appearance.videosDir}";
 
+  # 透明浮岛栏只模糊胶囊，不模糊胶囊之间的空白；升级 Noctalia 时需复核补丁。
+  noctaliaPackage =
+    inputs.noctalia.packages.${pkgs.stdenv.hostPlatform.system}.default.overrideAttrs
+      (old: {
+        patches = (old.patches or [ ]) ++ [ ../../../patches/noctalia-transparent-bar-capsule-blur.patch ];
+      });
+
   # 官方插件源钉版(path source,不联网;升级 noctalia 时同步 bump)。
   # 依赖关系:插件的 plugin_api 必须落在 shell 支持区间内 —— v5.2.1 为 3..32,
   # noctalia/mpvpaper 声明 plugin_api = 9。
@@ -24,12 +31,139 @@ in
 {
   programs.noctalia = {
     enable = true;
-    package = inputs.noctalia.packages.${pkgs.stdenv.hostPlatform.system}.default;
+    package = noctaliaPackage;
     settings = {
       theme = {
         mode = "dark";
-        source = "builtin";
+        source = "wallpaper";
+        wallpaper_scheme = "soft";
         builtin = "Catppuccin";
+      };
+      # 三段式浮岛栏：栏间保持透明，仅胶囊请求背景模糊；胶囊与前景色跟随壁纸配对。
+      bar.default = {
+        thickness = 40;
+        margin_ends = 12;
+        margin_edge = 6;
+        padding = 8;
+        widget_spacing = 6;
+        radius = 12;
+        background_opacity = 0.0;
+        compositor_blur = true;
+        concave_edge_corners = false;
+        contact_shadow = true;
+        font_family = appearance.font.name;
+        capsule = true;
+        capsule_fill = "primary";
+        capsule_foreground = "on_primary";
+        capsule_opacity = 0.65;
+        capsule_padding = 8.0;
+        capsule_radius = 10.0;
+        capsule_border = "outline";
+        capsule_border_width = 0.6;
+        start = [
+          "launcher"
+          "group:g4"
+          "workspaces"
+          "group:g2"
+        ];
+        center = [ "clock" ];
+        end = [
+          "group:g1"
+          "group:g3"
+          "group:g5"
+          "tray"
+          "notifications"
+          "session"
+          "control-center"
+        ];
+        capsule_group = [
+          {
+            id = "g1";
+            members = [
+              "network_tx"
+              "network_rx"
+              "network"
+              "bluetooth"
+            ];
+            accordion = true;
+            accordion_direction = "start";
+            fill = "primary";
+            foreground = "on_primary";
+            opacity = 0.65;
+            padding = 6.0;
+            border = "outline";
+            border_width = 0.6;
+          }
+          {
+            id = "g2";
+            members = [
+              "audio_visualizer"
+              "media"
+            ];
+            fill = "primary";
+            foreground = "on_primary";
+            opacity = 0.65;
+            padding = 6.0;
+            border = "outline";
+            border_width = 0.6;
+          }
+          {
+            id = "g3";
+            members = [
+              "battery"
+              "volume"
+            ];
+            fill = "primary";
+            foreground = "on_primary";
+            opacity = 0.65;
+            padding = 6.0;
+            border = "outline";
+            border_width = 0.6;
+          }
+          {
+            id = "g4";
+            members = [
+              "wallpaper"
+              "mpvpaper"
+            ];
+            accordion = true;
+            accordion_direction = "end";
+            fill = "primary";
+            foreground = "on_primary";
+            opacity = 0.65;
+            padding = 6.0;
+            border = "outline";
+            border_width = 0.6;
+          }
+          {
+            id = "g5";
+            members = [
+              "cpu"
+              "ram"
+              "brightness"
+            ];
+            accordion = true;
+            accordion_direction = "start";
+            fill = "primary";
+            foreground = "on_primary";
+            opacity = 0.65;
+            padding = 6.0;
+            border = "outline";
+            border_width = 0.6;
+          }
+        ];
+      };
+      widget = {
+        clock.font_weight = 700;
+        audio_visualizer = {
+          color_1 = "on_primary";
+          color_2 = "on_primary";
+        };
+        media = {
+          hide_artist = true;
+          hide_when_no_media = true;
+          max_length = 40;
+        };
       };
       # 静态壁纸由 Noctalia 自带壁纸管理器渲染(background layer、
       # 选择器面板 panel-toggle wallpaper、IPC wallpaper-random/set)

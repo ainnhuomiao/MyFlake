@@ -24,6 +24,7 @@ in
     imv
     swayimg
     kooha
+    kimi-code-desktop
     rayburst
     obsidian
     splayer-next

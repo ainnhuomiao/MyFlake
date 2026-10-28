@@ -32,7 +32,7 @@
           ./nixos
           ../system
           inputs.disko.nixosModules.disko
-          inputs.selector4nix.nixosModules.selector4nix
+          inputs.ncro.nixosModules.ncro
           inputs.home-manager.nixosModules.home-manager
           (mkHomeManager "nixos")
         ];

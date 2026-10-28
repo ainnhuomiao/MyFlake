@@ -74,8 +74,8 @@
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    selector4nix = {
-      url = "github:StarryReverie/selector4nix";
+    ncro = {
+      url = "github:feel-co/ncro";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     treefmt-nix = {

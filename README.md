@@ -65,24 +65,24 @@
 
 ## 配置概览
 
-| 项目         | 当前配置                                                                      |
-| ------------ | ----------------------------------------------------------------------------- |
-| Flake        | `flake-parts`                                                                 |
-| Nixpkgs      | `nixos-unstable-small`                                                        |
-| 平台         | `x86_64-linux`                                                                |
-| 主机         | `nixos`                                                                       |
-| 内核         | Linux Zen（nixpkgs `linuxPackages_zen`）                                      |
-| 显卡         | 雷电显卡坞外接 RTX 3050（PRIME offload）                                      |
-| 桌面         | niri（getty 自动登录，经 niri-session 进入）                                  |
-| 用户环境     | Home Manager，作为 NixOS 模块集成                                             |
-| Shell        | Fish + Starship                                                               |
-| 音频         | PipeWire（ALSA、PulseAudio、JACK）                                            |
-| 网络         | NetworkManager + sing-box TUN + metacubexd                                    |
-| 二进制缓存   | GitHub Actions → Attic（VPS）+ Cachix + selector4nix 代理 + USTC 镜像（备用） |
-| 引导         | GRUB EFI                                                                      |
-| 文件系统     | Btrfs 子卷 + 独立 EFI 分区 + Swap                                             |
-| 容器         | Docker + Distrobox + Flatpak                                                  |
-| 系统状态版本 | NixOS `26.05`，Home Manager `25.11`                                           |
+| 项目         | 当前配置                                                                     |
+| ------------ | ---------------------------------------------------------------------------- |
+| Flake        | `flake-parts`                                                                |
+| Nixpkgs      | `nixos-unstable-small`                                                       |
+| 平台         | `x86_64-linux`                                                               |
+| 主机         | `nixos`                                                                      |
+| 内核         | Linux Zen（nixpkgs `linuxPackages_zen`）                                     |
+| 显卡         | 雷电显卡坞外接 RTX 3050（PRIME offload）                                     |
+| 桌面         | niri（getty 自动登录，经 niri-session 进入）                                 |
+| 用户环境     | Home Manager，作为 NixOS 模块集成                                            |
+| Shell        | Fish + Starship                                                              |
+| 音频         | PipeWire（ALSA、PulseAudio、JACK）                                           |
+| 网络         | NetworkManager + sing-box TUN + metacubexd                                   |
+| 二进制缓存   | GitHub Actions → Attic（VPS）+ Cachix + ncro 代理 + USTC 镜像 + 官方缓存兜底 |
+| 引导         | GRUB EFI                                                                     |
+| 文件系统     | Btrfs 子卷 + 独立 EFI 分区 + Swap                                            |
+| 容器         | Docker + Distrobox + Flatpak                                                 |
+| 系统状态版本 | NixOS `26.05`，Home Manager `25.11`                                          |
 
 当前配置入口为：
 
@@ -216,12 +216,17 @@ Context7 地址为 `https://mcp.context7.com/mcp`。如果 cc-switch 数据库�
       ├─ 国内、私网、广播/多播与必要白名单 → direct
       ├─ 广告与指定 Bilibili 遥测域名 → reject
       ├─ OpenAI、Anthropic、Gemini → AI selector
+      ├─ 国外 Nix 缓存与 GitHub 下载 → Nix下载 urltest → 自动选线
       └─ 其他流量 → proxy selector → 跨订阅自动选择
 ```
 
 TUN 使用 `198.18.0.1/30` 和 MTU 9000，启用 `auto_route`、`auto_redirect`、`strict_route` 与 DNS 劫持。RFC1918 和 `fc00::/7` 通过 `route_exclude_address` 直接走内核，避免局域网与 Docker 流量绕道 TUN。DNS 使用真实 IP 而非 Fake-IP：国内域名查询阿里 DoH，国外及未知域名通过跨订阅自动组查询 Google DoH；局域网和门户探测域名使用 DHCP DNS。
 
 每个 Clash/Mihomo 订阅转换为一个内嵌 `urltest` 的 selector，另有跨订阅的 `自动选择/全部` 作为默认代理组。`AI` selector 只包含具体节点，首次默认首个可用节点，可在面板固定选择，不随测速结果漂移。选择结果保存在 sing-box 缓存中。生成器支持常见的 SS、VMess、VLESS、Trojan、Hysteria2、TUIC、AnyTLS、SOCKS 和 HTTP 节点，以及 hy2 端口跳跃、SS UDP-over-TCP 和 TLS ECH；不支持或字段不完整的节点会被跳过并显示数量。
+
+`Nix下载` 使用独立 `urltest`，启动时及下载活跃期间每 3 分钟检测全部订阅节点到 `https://cache.numtide.com/nix-cache-info` 的连通性和延迟，按 100 ms 容差自动选择线路，不固定节点；闲置 30 分钟后暂停测速，恢复流量后重新检查。订阅更新后自动使用新的候选列表，无节点时直连。下载专用节点使用独立 tag，隔离日常 Cloudflare 测速的历史记录；自动换线不打断已有下载。`urltest` 发送 HEAD 请求，不测 NAR 下载带宽，因此它优化的是目标可达性和连接延迟，不能保证选中大文件吞吐最高的节点。
+
+下载分流覆盖 `cache.nixos.org`、`cache.numtide.com`、`cachix.org`、`github.com`、`githubusercontent.com` 及其子域，因此这些域名的其他应用访问也使用该组。对应 Google DoH 查询跟随自动下载出口；Attic 和 USTC 镜像显式直连并使用阿里 DoH。日常 `proxy` 和 `AI` 的选择独立于下载组。
 
 订阅 URL 仅保存在 `/var/lib/sing-box-config/subscriptions.yaml`，不会写入 Nix store。激活脚本只创建缺失的订阅文件；订阅变化会触发重新生成和 `sing-box check`，每日 timer 也会自动刷新。JSON 内容不变时不替换配置、不重启 sing-box；生成或校验失败时保留原配置，删除订阅时同步清理对应缓存。使用以下命令管理订阅：
 
@@ -249,18 +254,21 @@ Web 面板仅监听本机，服务启动后访问 `http://127.0.0.1:9090/ui/`。
 
 ### 二进制缓存代理
 
-本机通过 [`selector4nix`](https://github.com/StarryReverie/selector4nix) 代理全部 Nix substituter 查询：
+本机通过 [`ncro`](https://github.com/feel-co/ncro) 代理全部 Nix substituter 查询：
 
-- 并行查询所有上游缓存，按延迟和优先级选择最快源；故障源自动跳过并按指数退避重试
-- NAR 从最优源流式转发，本机只持久缓存 `.narinfo` 查询结果（`/var/cache/selector4nix`）
-- 上游列表：`ainnhuomiao` Attic、`ainnhuomiao.cachix.org`、`nix-community.cachix.org`、`cache.numtide.com`，以及 USTC 镜像（cache.nixos.org 的 CN 直连镜像，作通用二进制源）
-- cache.nixos.org 不作为上游：sing-box 将其（非 geosite:cn）路由进代理节点，实测间歇性瘫痪/限速；nix 直连列表保留它作最后兜底
-- `configureSubstituter = "prepend"`：代理 `http://127.0.0.1:5496/` 排在 substituters 首位，原始列表保留作 fallback；代理故障时 Nix 自动回退，不影响构建
+- 并行查询所有上游缓存，按实测延迟的移动平均值与优先级选择源；故障源自动进入冷却并在恢复后重新参与选路
+- NAR 从最优源流式转发，本机只在 SQLite 中持久保存路由决策（`/var/lib/ncro/routes.db`），不保存 NAR 内容
+- 专用上游：`ainnhuomiao` Attic、`ainnhuomiao.cachix.org`、`nix-community.cachix.org` 和 `cache.numtide.com`；USTC、TUNA、SJTU 三个国内镜像直连，cache.nixos.org 作为低优先级常规上游补齐镜像漏包
+- 上游优先级只在延迟差约小于 10% 时决胜；自有 Attic 与官方代理链路不作为额外 NAR hedge，避免重复流量
+- 404 负缓存保留 1 分钟，降低新包尚未同步时的影响；NAR 首个数据块 1 秒未到达时启动第二个候选，最多两个并发请求
+- cache.nixos.org 同时配置为 ncro 的 `fallback_cache`，处理正常上游故障，网络出口由 `Nix下载` 控制
+- `nix.settings.substituters` 仅保留本地代理 `http://127.0.0.1:5496/`；上游与 fallback 的签名公钥由 ncro 的 NixOS 模块自动加入信任列表
+- `just check` 和 `just build` 共用系统下载源配置，避免手写两份列表；`just update` 的 GitHub 输入下载由 sing-box 分流，不经过 ncro
 
 配置位置：`system/nix/substituters.nix`。查看日志：
 
 ```bash
-journalctl -u selector4nix -f
+journalctl -u ncro -f
 ```
 
 ### 壁纸
@@ -320,11 +328,11 @@ Flake 对外 `packages.x86_64-linux.*` 只包含 CI 预构建的源码包（见�
 nix flake show
 ```
 
-来源：`noctalia`、`hyprpicker`、`selector4nix`、`linuxqq-wayland-fix`、`disko` 来自各自 flake input；`firefox-bin` 为 `overlays/firefox.nix` 钉死版本的厂商包重打包；`herdr` 经 `pkgs/default.nix` 取自其 flake input；`bili_tui`、`dingtalk`、`flake-stats-mcp` 为 `pkgs/` 本地包；`mcp-nixos`、`rayburst` 为 nixpkgs 包，经 `overlays/` 修补。
+来源：`noctalia`、`hyprpicker`、`ncro`、`linuxqq-wayland-fix`、`disko` 来自各自 flake input；`firefox-bin` 为 `overlays/firefox.nix` 钉死版本的厂商包重打包；`herdr` 经 `pkgs/default.nix` 取自其 flake input；`bili_tui`、`dingtalk`、`flake-stats-mcp` 为 `pkgs/` 本地包；`mcp-nixos`、`rayburst` 为 nixpkgs 包，经 `overlays/` 修补。
 
 Herdr 保留上游锁定的 `nixpkgs` 和 `rust-overlay`，不跟随宿主工具链，以保持 Herdr 上游测试的工具链组合；系统安装与 CI 导出统一使用 `pkgs.herdr`。Noctalia 相反：必须跟随宿主 `nixpkgs`——它的 EGL vendor 运行时 dlopen 宿主 `/run/opengl-driver` 的 Mesa，独立闭包会因 glibc 版本不匹配在启动时 `eglGetDisplay failed` 崩溃。
 
-CI 构建「上游任何二进制缓存里都没有、必须从源码编译」的 10 个包（`bili_tui`、`dingtalk`、`flake-stats-mcp`、`herdr`、`hyprpicker`、`linuxqq-wayland-fix`、`mcp-nixos`、`noctalia`、`rayburst`、`selector4nix`），外加版本钉死、只做重打包的 `firefox-bin`，并推送到自建 Attic 缓存。其余包都能直接替换（nixpkgs 自由软件走 cache.nixos.org，unfree 应用走厂商预编译包，`llm-agents` 走 cache.numtide.com），列进 CI 只会重复下载+上传，lock 更新后还要全部重来。
+CI 构建「上游任何二进制缓存里都没有、必须从源码编译」的 10 个包（`bili_tui`、`dingtalk`、`flake-stats-mcp`、`herdr`、`hyprpicker`、`linuxqq-wayland-fix`、`mcp-nixos`、`noctalia`、`rayburst`、`ncro`），外加版本钉死、只做重打包的 `firefox-bin`，并推送到自建 Attic 缓存。其余包都能直接替换（nixpkgs 自由软件走 cache.nixos.org，unfree 应用走厂商预编译包，`llm-agents` 走 cache.numtide.com），列进 CI 只会重复下载+上传，lock 更新后还要全部重来。
 
 例如：
 

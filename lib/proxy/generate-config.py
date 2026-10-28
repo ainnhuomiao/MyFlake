@@ -2,6 +2,7 @@
 
 import base64
 import binascii
+import copy
 import json
 import os
 import re
@@ -26,6 +27,10 @@ GEOIP_DIR = Path(os.environ["SINGBOX_GEOIP_DIR"])
 STATE_DIR = Path(os.environ["SINGBOX_STATE_DIR"])
 CHECK_URL = "https://cp.cloudflare.com/generate_204"
 AUTO_ALL_TAG = "自动选择/全部"
+NIX_DOWNLOAD_TAG = "Nix下载"
+NIX_DOWNLOAD_CHECK_URL = "https://cache.numtide.com/nix-cache-info"
+# GitHub 的 API、codeload、raw 与 release 重定向使用同一稳定下载出口。
+NIX_DOWNLOAD_DOMAINS = ["cache.nixos.org", "cache.numtide.com", "cachix.org", "github.com", "githubusercontent.com"]
 AI_RULE_SETS = ["geosite-openai", "geosite-anthropic", "geosite-google-gemini"]
 EXCLUDE_NODE = re.compile(r"剩余流量|下次重置|套餐到期|套餐.*过期|续费|流量已耗尽|购买后|官网|Telegram|建议每天|如果很少节点|欢迎加入|IPv6", re.I)
 PORTAL_DOMAINS = [
@@ -401,7 +406,7 @@ def convert_proxy(proxy):
 
 def unique_tag(base, used):
     base = base.strip() or "unnamed"
-    if base in ("GLOBAL", "proxy", "direct", "dns-out"):
+    if base in ("GLOBAL", "proxy", "direct", "dns-out", NIX_DOWNLOAD_TAG):
         base = f"node-{base}"
     tag = base
     index = 2
@@ -469,6 +474,26 @@ def build_config(node_outbounds, groups):
             }
         )
 
+    # urltest 历史按实际出站 tag 共享；复制出站以隔离下载与日常测速记录。
+    nix_node_outbounds = []
+    used_tags = set(node_tags + group_tags + auto_group_tags + [AUTO_ALL_TAG, "AI", "proxy", "GLOBAL", "direct", NIX_DOWNLOAD_TAG])
+    for node in node_outbounds:
+        nix_node = copy.deepcopy(node)
+        nix_node["tag"] = unique_tag(f"下载节点/{node['tag']}", used_tags)
+        nix_node_outbounds.append(nix_node)
+    outbounds.append(
+        {
+            "type": "urltest",
+            "tag": NIX_DOWNLOAD_TAG,
+            "outbounds": [node["tag"] for node in nix_node_outbounds] or ["direct"],
+            "url": NIX_DOWNLOAD_CHECK_URL,
+            "interval": "3m",
+            "tolerance": 100,
+            "idle_timeout": "30m",
+            "interrupt_exist_connections": False,
+        }
+    )
+
     proxy_choices = ([AUTO_ALL_TAG] if auto_group_tags else []) + group_tags + ["direct"] + node_tags
     outbounds.append(
         {
@@ -479,7 +504,7 @@ def build_config(node_outbounds, groups):
             "interrupt_exist_connections": True,
         }
     )
-    global_choices = ["proxy"] + ([AUTO_ALL_TAG, "AI"] if auto_group_tags else []) + group_tags + ["direct"] + node_tags
+    global_choices = ["proxy", NIX_DOWNLOAD_TAG] + ([AUTO_ALL_TAG, "AI"] if auto_group_tags else []) + group_tags + ["direct"] + node_tags
     outbounds.append(
         {
             "type": "selector",
@@ -491,6 +516,7 @@ def build_config(node_outbounds, groups):
     )
     outbounds.append({"type": "direct", "tag": "direct"})
     outbounds.extend(node_outbounds)
+    outbounds.extend(nix_node_outbounds)
 
     direct_domains = DIRECT_RULES["domains"]
     direct_ip_cidrs = DIRECT_RULES["ipCidrs"]
@@ -500,6 +526,7 @@ def build_config(node_outbounds, groups):
     ]
     if direct_domains:
         dns_rules.append({"domain": direct_domains, "server": "ali"})
+    dns_rules.append({"domain_suffix": NIX_DOWNLOAD_DOMAINS, "server": "nix-dns"})
     if auto_group_tags:
         dns_rules.append({"rule_set": AI_RULE_SETS, "server": "google"})
     dns_rules.append({"rule_set": ["geosite-cn"], "server": "ali"})
@@ -525,6 +552,7 @@ def build_config(node_outbounds, groups):
     )
     if auto_group_tags:
         route_rules.append({"rule_set": AI_RULE_SETS, "action": "route", "outbound": "AI"})
+    route_rules.append({"domain_suffix": NIX_DOWNLOAD_DOMAINS, "action": "route", "outbound": NIX_DOWNLOAD_TAG})
     route_rules.append({"rule_set": ["geosite-cn", "geoip-cn"], "action": "route", "outbound": "direct"})
 
     rule_sets = [
@@ -556,6 +584,14 @@ def build_config(node_outbounds, groups):
                     "path": "/dns-query",
                     "tls": {"enabled": True, "server_name": "dns.google"},
                     "detour": AUTO_ALL_TAG if auto_group_tags else "direct",
+                },
+                {
+                    "type": "https",
+                    "tag": "nix-dns",
+                    "server": "8.8.8.8",
+                    "path": "/dns-query",
+                    "tls": {"enabled": True, "server_name": "dns.google"},
+                    "detour": NIX_DOWNLOAD_TAG,
                 },
                 {"type": "dhcp", "tag": "dhcp"},
             ],
