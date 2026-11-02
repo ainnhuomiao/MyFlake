@@ -43,20 +43,11 @@
 
 ## 桌面预览
 
-<table>
-    <tr>
-        <td width="50%" align="center">
-            <a href="assets/screenshots/desktop.png">
-                <img src="assets/screenshots/desktop.png" alt="niri 桌面：动漫壁纸、Noctalia 顶栏与圆形音频可视化" width="100%" />
-            </a>
-        </td>
-        <td width="50%" align="center">
-            <a href="assets/screenshots/music.png">
-                <img src="assets/screenshots/music.png" alt="SPlayer-Next 音乐界面：CLANNAD 专辑封面、滚动歌词与 Noctalia 状态栏" width="100%" />
-            </a>
-        </td>
-    </tr>
-</table>
+<p align="center">
+    <a href="assets/screenshots/music.png">
+        <img src="assets/screenshots/music.png" alt="SPlayer-Next 音乐界面：CLANNAD 专辑封面、滚动歌词与 Noctalia 状态栏" />
+    </a>
+</p>
 
 <p align="center"><sub>实际桌面截图 · 点击图片查看原图</sub></p>
 
