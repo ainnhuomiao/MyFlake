@@ -20,6 +20,8 @@
           allowUnfree = true;
           allowBroken = true;
           allowUnsupportedSystem = true;
+          # gtk2 已被 nixpkgs 标为 broken，钉钉依赖的 gtkglext 仍需它，与 system/nix/nixpkgs.nix 保持一致
+          problems.handlers."gtk+".broken = "warn";
           # 钉钉自带 OpenSSL 1.1（EOL），与 system/nix/nixpkgs.nix 保持一致
           permittedInsecurePackages = [ "dingtalk-${import ../../pkgs/dingtalk/version.nix}" ];
         };
@@ -43,9 +45,7 @@
           ;
         disko = inputs.disko.packages.${system}.disko;
         noctalia = inputs.noctalia.packages.${system}.default;
-        hyprpicker = inputs.hyprpicker.packages.${system}.hyprpicker.override {
-          pcre = pkgs.pcre2;
-        };
+        hyprpicker = inputs.hyprpicker.packages.${system}.hyprpicker;
         linuxqq-wayland-fix = inputs.linuxqq-wayland-fix.packages.${system}.default;
         ncro = inputs.ncro.packages.${system}.default;
       };

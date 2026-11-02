@@ -133,6 +133,9 @@ in
   programs.neovim = {
     enable = true;
     defaultEditor = true;
+    # home.stateVersion < 26.05:显式保留旧默认,消除迁移告警
+    withRuby = true;
+    withPython3 = true;
   };
 
   programs.fish.shellAliases = {

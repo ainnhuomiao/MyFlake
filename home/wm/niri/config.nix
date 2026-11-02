@@ -93,9 +93,12 @@ in
         place-within-backdrop true
     }
 
+    // 应用与状态栏统一使用 10px 圆角,由 niri 裁剪窗口内容并保留现有阴影。
     window-rule {
         draw-border-with-background false
         open-maximized true
+        geometry-corner-radius 10
+        clip-to-geometry true
     }
     window-rule {
         match app-id="(?i)^(termfloat|mpv|nemo|ncmpcpp)$"
@@ -119,11 +122,14 @@ in
         border { off; }
         focus-ring { off; }
     }
+    // 截图覆盖层保持直角且不裁剪,避免边缘内容被全局圆角规则影响。
     window-rule {
         match app-id="(?i)^(flameshot|org\\.flameshot\\.Flameshot)$"
         open-floating true
         open-maximized false
         open-fullscreen true
+        geometry-corner-radius 0
+        clip-to-geometry false
         border { off; }
         focus-ring { off; }
         shadow { off; }

@@ -27,143 +27,212 @@ let
     rev = "233782933e999bc69aca1ac6bc1bb285b6b26a3e";
     hash = "sha256-d/eZuJ2MJ8Ugqzf4QAmIx19Sy/6101BdfI5F5FBp5+I=";
   };
+
+  # 歌词插件独立钉版(path source)；plugin_api = 3 与 v5.2.1 兼容。
+  lyricsPlugins = pkgs.fetchFromGitHub {
+    owner = "OHMCFXG";
+    repo = "noctalia-plugins";
+    rev = "83588236d5f7f0b4212249fa1d08bd4e44177a8c";
+    hash = "sha256-din8sm4TQCRQqdGg80O0pxsqc5gKK2GXmUndAzWW2KQ=";
+  };
 in
 {
   programs.noctalia = {
     enable = true;
     package = noctaliaPackage;
     settings = {
+      # 深色 Shell 使用高饱和壁纸取色，鲜艳颜色只作为强调，不把栏体洗白。
       theme = {
         mode = "dark";
+        shell_mode = "dark";
         source = "wallpaper";
-        wallpaper_scheme = "soft";
-        builtin = "Catppuccin";
+        wallpaper_scheme = "vibrant";
       };
-      # 三段式浮岛栏：栏间保持透明，仅胶囊请求背景模糊；胶囊与前景色跟随壁纸配对。
+      # 连续高对比浮岛栏：普通模块融入栏体，只有中央时钟保留强调色胶囊。
+      bar.order = [
+        "default"
+        "bottom"
+      ];
       bar.default = {
-        thickness = 40;
-        margin_ends = 12;
+        position = "top";
+        thickness = 38;
+        margin_ends = 160;
         margin_edge = 6;
-        padding = 8;
-        widget_spacing = 6;
-        radius = 12;
-        background_opacity = 0.0;
+        padding = 12;
+        widget_spacing = 10;
+        radius = 10;
+        background_opacity = 0.84;
         compositor_blur = true;
         concave_edge_corners = false;
         contact_shadow = true;
-        font_family = appearance.font.name;
-        capsule = true;
-        capsule_fill = "primary";
-        capsule_foreground = "on_primary";
-        capsule_opacity = 0.65;
-        capsule_padding = 8.0;
-        capsule_radius = 10.0;
-        capsule_border = "outline";
-        capsule_border_width = 0.6;
+        shadow = true;
+        font_family = "Noto Sans CJK SC";
+        font_weight = 500;
+        color = "on_surface";
+        capsule = false;
         start = [
           "launcher"
-          "group:g4"
           "workspaces"
-          "group:g2"
+          "active_window"
+          "group:wallpaper"
         ];
         center = [ "clock" ];
         end = [
-          "group:g1"
-          "group:g3"
-          "group:g5"
           "tray"
-          "notifications"
-          "session"
-          "control-center"
+          "group:status"
+          "group:actions"
         ];
         capsule_group = [
           {
-            id = "g1";
-            members = [
-              "network_tx"
-              "network_rx"
-              "network"
-              "bluetooth"
-            ];
-            accordion = true;
-            accordion_direction = "start";
-            fill = "primary";
-            foreground = "on_primary";
-            opacity = 0.65;
-            padding = 6.0;
-            border = "outline";
-            border_width = 0.6;
-          }
-          {
-            id = "g2";
-            members = [
-              "audio_visualizer"
-              "media"
-            ];
-            fill = "primary";
-            foreground = "on_primary";
-            opacity = 0.65;
-            padding = 6.0;
-            border = "outline";
-            border_width = 0.6;
-          }
-          {
-            id = "g3";
-            members = [
-              "battery"
-              "volume"
-            ];
-            fill = "primary";
-            foreground = "on_primary";
-            opacity = 0.65;
-            padding = 6.0;
-            border = "outline";
-            border_width = 0.6;
-          }
-          {
-            id = "g4";
+            id = "wallpaper";
             members = [
               "wallpaper"
               "mpvpaper"
             ];
             accordion = true;
             accordion_direction = "end";
-            fill = "primary";
-            foreground = "on_primary";
-            opacity = 0.65;
-            padding = 6.0;
-            border = "outline";
-            border_width = 0.6;
+            fill = "surface";
+            foreground = "on_surface";
+            opacity = 0.0;
+            padding = 0.0;
+            border = "";
           }
           {
-            id = "g5";
+            id = "status";
             members = [
-              "cpu"
-              "ram"
-              "brightness"
+              "network"
+              "bluetooth"
+              "volume"
+              "battery"
             ];
-            accordion = true;
-            accordion_direction = "start";
-            fill = "primary";
-            foreground = "on_primary";
-            opacity = 0.65;
-            padding = 6.0;
-            border = "outline";
-            border_width = 0.6;
+            fill = "surface";
+            foreground = "on_surface";
+            opacity = 0.0;
+            padding = 0.0;
+            border = "";
+          }
+          {
+            id = "actions";
+            members = [
+              "notifications"
+              "control-center"
+              "session"
+            ];
+            fill = "surface";
+            foreground = "on_surface";
+            opacity = 0.0;
+            padding = 0.0;
+            border = "";
           }
         ];
       };
+      # 底栏补充媒体、系统状态和少量工具，不重复顶栏信息。
+      bar.bottom = {
+        position = "bottom";
+        thickness = 28;
+        margin_ends = 320;
+        margin_edge = 6;
+        padding = 12;
+        widget_spacing = 10;
+        radius = 10;
+        background_opacity = 0.76;
+        compositor_blur = true;
+        concave_edge_corners = false;
+        contact_shadow = true;
+        shadow = true;
+        reserve_space = true;
+        font_family = "Noto Sans CJK SC";
+        font_weight = 500;
+        color = "on_surface";
+        capsule = false;
+        start = [
+          "audio_visualizer"
+          "media"
+        ];
+        center = [
+          "bottom_cpu"
+          "bottom_ram"
+          "bottom_net_rx"
+          "bottom_net_tx"
+        ];
+        end = [
+          "bottom_lyrics"
+          "caffeine"
+          "clipboard"
+          "settings"
+        ];
+      };
       widget = {
-        clock.font_weight = 700;
+        clock = {
+          font_weight = 600;
+          capsule = true;
+          capsule_fill = "primary";
+          capsule_foreground = "on_primary";
+          capsule_opacity = 0.92;
+          capsule_padding = 8.0;
+          capsule_radius = 10.0;
+        };
         audio_visualizer = {
-          color_1 = "on_primary";
-          color_2 = "on_primary";
+          width = 96;
+          bands = 24;
+          show_when_idle = false;
+          color_1 = "primary";
+          color_2 = "secondary";
         };
         media = {
-          hide_artist = true;
+          artist_first = true;
+          max_length = 240;
+          title_scroll = "on_hover";
           hide_when_no_media = true;
-          max_length = 40;
         };
+        bottom_lyrics = {
+          type = "0x1ce/mpris-lyrics:bar";
+          barMaxWidth = 280;
+          barWidthMode = "fixed";
+          textAlign = "right";
+          barHideWhenIdle = true;
+          showBarStatusDot = false;
+          showSecondaryLine = false;
+        };
+        bottom_cpu = {
+          type = "sysmon";
+          stat = "cpu_usage";
+          visualization = "none";
+          label_min_width = 48.0;
+        };
+        bottom_ram = {
+          type = "sysmon";
+          stat = "ram_used";
+          visualization = "none";
+          label_min_width = 56.0;
+        };
+        bottom_net_rx = {
+          type = "sysmon";
+          stat = "net_rx";
+          visualization = "none";
+          network_speed_compact = true;
+          label_min_width = 72.0;
+        };
+        bottom_net_tx = {
+          type = "sysmon";
+          stat = "net_tx";
+          visualization = "none";
+          network_speed_compact = true;
+          label_min_width = 72.0;
+        };
+      };
+      # 桌面保持留白，信息由上下栏与按需打开的面板承担。
+      desktop_widgets.enabled = false;
+      notification = {
+        background_opacity = 0.94;
+        border = true;
+        offset_y = 16;
+      };
+      osd = {
+        position = "bottom_center";
+        background_opacity = 0.9;
+        border = false;
+        offset_y = 24;
       };
       # 静态壁纸由 Noctalia 自带壁纸管理器渲染(background layer、
       # 选择器面板 panel-toggle wallpaper、IPC wallpaper-random/set)
@@ -177,7 +246,10 @@ in
       # 视频壁纸交给官方 mpvpaper 插件:插件按 output 托管 mpvpaper 进程,
       # 并在有视频的 output 上让 Noctalia 收起自己的壁纸层(setWallpaperEnabled)
       plugins = {
-        enabled = [ "noctalia/mpvpaper" ];
+        enabled = [
+          "noctalia/mpvpaper"
+          "0x1ce/mpris-lyrics"
+        ];
         # 插件来自钉版 path source(见下),不需要联网更新
         auto_update = "none";
         source = [
@@ -185,6 +257,12 @@ in
             name = "official";
             kind = "path";
             location = "${officialPlugins}";
+            enabled = true;
+          }
+          {
+            name = "personal";
+            kind = "path";
+            location = "${lyricsPlugins}";
             enabled = true;
           }
           {
@@ -209,6 +287,17 @@ in
         # 会与 wallpaper_random/default_wall 紧接着设置的壁纸竞争
         extract_last_frame = false;
       };
+      plugin_settings."0x1ce/mpris-lyrics" = {
+        primaryLyricsSource = "netease";
+        playerFilterMode = "blacklist";
+        playerFilterList = [
+          "firefox"
+          "chrome"
+          "zen"
+        ];
+        preferPlayerLyrics = false;
+        lyricAdvanceMs = 0;
+      };
       # 锁屏背景: 捕捉当前桌面(含 mpvpaper 视频壁纸那一帧)做模糊+着色,
       # 复刻旧 swaylock-blur 的模糊壁纸效果
       lockscreen = {
@@ -219,9 +308,31 @@ in
         key_source = "file";
         key_file = "${config.home.homeDirectory}/.config/noctalia/storage-key";
       };
-      # 中文界面 (系统 locale 是 en_US, 默认会是英文)
+      # 无衬线字体、附着的仪表盘与浮动工具面板形成统一、克制的层级。
       shell = {
         lang = "zh-Hans";
+        font_family = "Noto Sans CJK SC";
+        corner_radius_scale = 1.0;
+        animation = {
+          enabled = true;
+          speed = 1.0;
+        };
+        shadow = {
+          direction = "down";
+          alpha = 0.32;
+        };
+        panel = {
+          transparency_mode = "soft";
+          borders = true;
+          shadow = true;
+          launcher_placement = "floating";
+          clipboard_placement = "floating";
+          control_center_placement = "attached";
+          wallpaper_placement = "attached";
+          session_placement = "floating";
+          launcher_position = "center";
+          clipboard_position = "center";
+        };
       };
     };
     # 不启用 systemd service: 用合成器 autostart 自启, 避免在 wayland socket 就绪前启动

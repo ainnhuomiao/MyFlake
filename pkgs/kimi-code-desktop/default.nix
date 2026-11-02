@@ -9,11 +9,11 @@
 }:
 let
   pname = "kimi-code-desktop";
-  version = "1.1.4";
+  version = "1.2.0";
 
   src = fetchurl {
     url = "https://code.kimi.com/kimi-code/desktop/binaries/${version}/KimiCode-${version}-linux-x86_64.AppImage";
-    hash = "sha256-D005MlQ/aOoxLqE79zMawz3/NmS/yW9O1F4vuQF73n4=";
+    hash = "sha256-8aUaQEGyVyid0Y+BSPnSOlyydzYuE6k3cLtSWOXDvrE=";
   };
 
   appimageContents = appimageTools.extract {

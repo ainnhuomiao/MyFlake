@@ -21,6 +21,7 @@ in
     microsoft-edge
     thunderbird-bin
     gdu
+    openssl
     imv
     swayimg
     kooha
