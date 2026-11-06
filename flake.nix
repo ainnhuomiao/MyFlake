@@ -58,6 +58,11 @@
       # 跟随会丢 cache.numtide.com 缓存命中且随上游 nixpkgs 更新漂移
       url = "github:numtide/llm-agents.nix";
     };
+    oh-my-pi-cn = {
+      # can1357/oh-my-pi 的简体中文本地化分支, 上游提供 flake 包 (命令仍为 omp)
+      # 不 follows nixpkgs: 上游只对其钉的 nixpkgs-unstable 构建测试
+      url = "github:yequ172672/oh-my-pi-cn";
+    };
     noctalia = {
       # 必须跟随宿主 nixpkgs: 其 EGL vendor 运行时 dlopen /run/opengl-driver 的宿主 Mesa,
       # 自带旧 glibc 闭包会 GLIBC 版本不匹配导致 eglGetDisplay failed 启动即崩

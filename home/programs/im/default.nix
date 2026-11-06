@@ -31,7 +31,7 @@
           # 先按目标内容复制成普通文件, 替换 Exec 为 wrapped bin 后再移回
           cp -L $out/share/applications/qq.desktop $out/share/applications/qq.desktop.tmp
           substituteInPlace $out/share/applications/qq.desktop.tmp \
-            --replace-fail "${pkgs.qq}/bin/qq" "$out/bin/qq"
+            --replace-fail "Exec=qq" "Exec=$out/bin/qq"
           mv -f $out/share/applications/qq.desktop.tmp $out/share/applications/qq.desktop
         '';
       })

@@ -22,7 +22,7 @@ in
     [
       cc-switch
       herdr
-      llmAgents.omp
+      inputs.oh-my-pi-cn.packages.${system}.omp
       llmAgents.pi
       llmAgents.kimi-code
       llmAgents.opencode2
