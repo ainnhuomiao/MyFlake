@@ -16,11 +16,20 @@
       hostConfig = inputs.self.nixosConfigurations.nixos.config;
       installedPackages =
         hostConfig.environment.systemPackages ++ hostConfig.home-manager.users.huomiao.home.packages;
+      # 固定候选保留原属性名;系统/HM 按 derivation 去重,并剔除固定候选中已有的项。
+      # 每个 derivation 的全部输出都会构建。
+      derivationKey = package: builtins.unsafeDiscardStringContext package.drvPath;
+      fixedDerivations = map derivationKey (builtins.attrValues config.packages);
+      uniquePackages =
+        builtins.filter (package: !(builtins.elem (derivationKey package) fixedDerivations))
+          (
+            builtins.map builtins.head (builtins.attrValues (builtins.groupBy derivationKey installedPackages))
+          );
       installedPackageOutputs = builtins.listToAttrs (
         pkgs.lib.imap0 (index: package: {
           name = "installed-${toString index}";
           value = package;
-        }) installedPackages
+        }) uniquePackages
       );
     in
     {
