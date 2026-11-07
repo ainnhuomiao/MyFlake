@@ -130,11 +130,11 @@ sing-box-toggle [on|off|status]     # 控制透明代理
 
 Web 面板为 `http://127.0.0.1:9090/ui/`，认证密钥保存在 `/var/lib/sing-box-config/clash-api-secret`。
 
-Nix 下载统一经过本机 ncro（`127.0.0.1:5496`），在多个缓存上游之间自动选路。CI 只构建需要源码编译或固定版本的选定包，并推送到 Cachix 和自建 Attic；完整系统闭包仍需在本机用 `just build` 验证。
+Nix 下载统一经过本机 ncro（`127.0.0.1:5496`），在多个缓存上游之间自动选路。CI 将固定候选包与系统、Home Manager 直接安装的包合并，自动跳过已有缓存，只编译未命中项并推送到 Cachix 和自建 Attic；完整系统闭包仍需在本机用 `just build` 验证。
 
 ### 自定义包与 Flake 输出
 
-仓库自有包放在 `pkgs/`，nixpkgs 修补放在 `overlays/`。对外 `packages` 只保留 CI 预构建集合和 `disko`，实际清单以命令为准：
+仓库自有包放在 `pkgs/`，nixpkgs 修补放在 `overlays/`。对外 `packages` 只保留固定 CI 缓存候选和 `disko`，实际清单以命令为准：
 
 ```bash
 nix flake show

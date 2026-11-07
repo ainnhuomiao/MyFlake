@@ -1,12 +1,26 @@
 { inputs, ... }:
 {
   perSystem =
-    { pkgs, system, ... }:
+    {
+      config,
+      pkgs,
+      system,
+      ...
+    }:
     let
       # _module.args.pkgs 在 perSystem 模块定点求值早期就被严格需要, 此处若引用
       # inputs.self.overlays 会无限递归, 故把 overlays.nix 的组合直接展开复刻
       overlay = inputs.nixpkgs.lib.composeManyExtensions (
         [ (import ../../pkgs { inherit inputs; }).overlay ] ++ import ../../overlays
+      );
+      hostConfig = inputs.self.nixosConfigurations.nixos.config;
+      installedPackages =
+        hostConfig.environment.systemPackages ++ hostConfig.home-manager.users.huomiao.home.packages;
+      installedPackageOutputs = builtins.listToAttrs (
+        pkgs.lib.imap0 (index: package: {
+          name = "installed-${toString index}";
+          value = package;
+        }) installedPackages
       );
     in
     {
@@ -27,12 +41,8 @@
         };
       };
 
-      # 对外 packages 只含 CI 预构建、推 attic 的集合(见 .github/workflows/nix.yml): 上游无二进制缓存
-      # 或缓存暂未覆盖、需本机编译的包, 以及固定版本的 firefox-bin(钉死 154 的重打包产物, 同样推缓存), 外加 disko
-      # (lib/scripts/disko.sh 用 `nix run .#disko`)。
-      # `nix flake check` 求值所有输出并构建 checks, 不构建 packages; CI 按上述 workflow
-      # 的显式列表构建并上传缓存, 不构建完整系统。unfree 厂商包 / llm-agents / zen-browser 等
-      # 经 overlay 或模块直接引用进入 nixosConfigurations, 本机 `just build` 仍会构建完整系统闭包。
+      # packages 是需要确保进入 CI 缓存候选的固定集合, 外加 disko(lib/scripts/disko.sh 使用)。
+      # CI 还会合并系统与 Home Manager 直接安装的包, 自动跳过已有缓存, 不构建完整系统。
       packages = {
         inherit (pkgs)
           bili_tui
@@ -52,5 +62,7 @@
         ncro = inputs.ncro.packages.${system}.default;
         omp-cn = inputs.oh-my-pi-cn.packages.${system}.omp;
       };
+
+      legacyPackages.cacheOutputs = config.packages // installedPackageOutputs;
     };
 }

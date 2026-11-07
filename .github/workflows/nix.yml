@@ -43,62 +43,28 @@ jobs:
           name: ainnhuomiao
           skipPush: true
 
-      # 只构建「上游缓存没有或暂未覆盖、需要从源码编译」的包。
-      # 其余包都能直接替换,列进来只会重复下载 + 上传(lock 更新后全部重来):
-      #   - nixpkgs 自由软件      → 优先 cache.nixos.org;实际未命中的重型包也显式列入
-      #   - nixpkgs unfree 应用   → 厂商 CDN 的预编译包(discord/vscode/chrome/qq/...)
-      #   - llm-agents            → cache.numtide.com (omp/pi/antigravity-cli/kimi-code)
-      #   - noctalia / steam      → noctalia.cachix.org / nix-community.cachix.org
-      #   - zen-browser           → 自行下载的厂商预编译包(仅重打包,无编译, 不入 CI)
-      #   - firefox-bin           → 钉死 154.0 的厂商包重打包; 版本固定后入 CI, 命中 attic 避免每次重新拉取
-      # 复核某包是否该在这里:取 nix eval .#<pkg>.outPath 的 hash,查
-      # https://<cache>/<hash>.narinfo;全 404 且属于「编译」类才留下。
-      - name: Build cached packages
-        id: cached-packages
-        run: |
-          paths=$(nix build \
-            --no-link \
-            --print-build-logs \
-            --print-out-paths \
-            --accept-flake-config \
-            .#bili_tui \
-            .#cc-switch \
-            .#dingtalk \
-            .#firefox-bin \
-            .#flake-stats-mcp \
-            .#herdr \
-            .#hyprpicker \
-            .#linuxqq-wayland-fix \
-            .#mcp-nixos \
-            .#omp-cn \
-            .#rayburst \
-            .#noctalia \
-            .#ncro \
-            .#telegram-desktop)
-          echo "paths=${paths//$'\n'/ }" >> "$GITHUB_OUTPUT"
-
-      # check 放在两个 push 之前:失败时直接终止,避免 Cachix 与 Attic 内容分叉
+      # check 放在任何缓存上传之前:失败时直接终止,避免 Cachix 与 Attic 内容分叉。
       - name: Check flake
         run: nix flake check --print-build-logs
 
-      # 不在 CI 构建完整系统 toplevel: 系统闭包解包约 54 GiB(2026-10 实测), 远超标准 runner 的 14 GB 磁盘,
-      # 会因 No space left on device 失败。main 允许直推且 CI 不设门禁, 失败只能事后发现。
-      # eval 由 flake check 覆盖, 源码包由上方列表构建; 完整系统请在推送前用 `just build` 本机验证。
-
-      - name: Push cached packages
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: cachix/cachix-action@v17
-        with:
-          name: ainnhuomiao
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-          pathsToPush: ${{ steps.cached-packages.outputs.paths }}
-          skipAddingSubstituter: true
-
-      - name: Push to self-hosted attic
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      # 候选集 = packages + environment.systemPackages + home-manager.users.huomiao.home.packages。
+      # --skip-cached 查询全部已配置缓存,只构建未命中项;-j 1 避免多个重型包并发导致 OOM。
+      # main 推送时同时上传 Cachix 与 Attic;PR 只构建,不上传。完整系统 toplevel 不在候选集中,
+      # 避免拉取约 54 GiB 闭包撑爆标准 runner 的 14 GB 磁盘;完整系统仍需本机 `just build` 验证。
+      - name: Build uncached packages
         env:
           ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
+          CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
         run: |
-          nix profile install --inputs-from . nixpkgs#attic-client
-          attic login vps https://ainnhuomiao.qianyuanqing.asia/ "$ATTIC_TOKEN"
-          attic push ainnhuomiao ${{ steps.cached-packages.outputs.paths }}
+          nix profile install --inputs-from . nixpkgs#attic-client nixpkgs#nix-fast-build
+          args=(
+            --flake .#legacyPackages.x86_64-linux.cacheOutputs
+            --skip-cached
+            --max-jobs 1
+            --option accept-flake-config true
+          )
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            attic login vps https://ainnhuomiao.qianyuanqing.asia/ "$ATTIC_TOKEN"
+            args+=(--attic-cache ainnhuomiao --cachix-cache ainnhuomiao --push-build-closure)
+          fi
+          nix-fast-build "${args[@]}"
