@@ -28,7 +28,7 @@
       };
 
       # 对外 packages 只含 CI 预构建、推 attic 的集合(见 .github/workflows/nix.yml): 上游无二进制缓存
-      # 需本机编译的包, 以及固定版本的 firefox-bin(钉死 154 的重打包产物, 同样推缓存), 外加 disko
+      # 或缓存暂未覆盖、需本机编译的包, 以及固定版本的 firefox-bin(钉死 154 的重打包产物, 同样推缓存), 外加 disko
       # (lib/scripts/disko.sh 用 `nix run .#disko`)。
       # `nix flake check` 求值所有输出并构建 checks, 不构建 packages; CI 按上述 workflow
       # 的显式列表构建并上传缓存, 不构建完整系统。unfree 厂商包 / llm-agents / zen-browser 等
@@ -36,18 +36,21 @@
       packages = {
         inherit (pkgs)
           bili_tui
+          cc-switch
           dingtalk
           firefox-bin
           flake-stats-mcp
           herdr
           mcp-nixos
           rayburst
+          telegram-desktop
           ;
         disko = inputs.disko.packages.${system}.disko;
         noctalia = inputs.noctalia.packages.${system}.default;
         hyprpicker = inputs.hyprpicker.packages.${system}.hyprpicker;
         linuxqq-wayland-fix = inputs.linuxqq-wayland-fix.packages.${system}.default;
         ncro = inputs.ncro.packages.${system}.default;
+        omp-cn = inputs.oh-my-pi-cn.packages.${system}.omp;
       };
     };
 }
