@@ -42,22 +42,41 @@ jobs:
         run: nix flake check --print-build-logs
 
       # 候选集 = packages + environment.systemPackages + home-manager.users.huomiao.home.packages。
-      # --skip-cached 查询全部已配置缓存,只构建未命中项;-j 1 避免多个重型包并发导致 OOM。
-      # main 推送时上传 Attic;PR 只构建,不上传。完整系统 toplevel 不在候选集中,
+      # --skip-cached 查询全部已配置缓存,只构建未命中项;-j 2 允许适度并行,避免重型包无限并发 OOM。
+      # 构建与上传分离,结果文件用于仅收集本次实际构建的最终输出。完整系统 toplevel 不在候选集中,
       # 避免拉取约 54 GiB 闭包撑爆标准 runner 的 14 GB 磁盘;完整系统仍需本机 `just build` 验证。
       - name: Build uncached packages
+        run: |
+          nix profile install --inputs-from . nixpkgs#nix-fast-build
+          nix-fast-build \
+            --flake .#legacyPackages.x86_64-linux.cacheOutputs \
+            --skip-cached \
+            --max-jobs 2 \
+            --option accept-flake-config true \
+            --result-file "$RUNNER_TEMP/nix-fast-build-results.json"
+
+      # main 推送时上传 Attic;PR 只构建,不上传。上传最多 20 分钟并重试一次,避免网络阻塞拖住整个 CI。
+      - name: Push built packages to Attic
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
         run: |
-          nix profile install --inputs-from . nixpkgs#attic-client nixpkgs#nix-fast-build
-          args=(
-            --flake .#legacyPackages.x86_64-linux.cacheOutputs
-            --skip-cached
-            --max-jobs 1
-            --option accept-flake-config true
+          nix profile install --inputs-from . nixpkgs#attic-client nixpkgs#jq
+          attic login vps https://ainnhuomiao.qianyuanqing.asia/ "$ATTIC_TOKEN"
+          mapfile -t paths < <(
+            jq -r '.results[] | select(.type == "BUILD" and .success) | .outputs[]' \
+              "$RUNNER_TEMP/nix-fast-build-results.json" | sort -u
           )
-          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
-            attic login vps https://ainnhuomiao.qianyuanqing.asia/ "$ATTIC_TOKEN"
-            args+=(--attic-cache ainnhuomiao --push-build-closure)
+          if ((${#paths[@]} == 0)); then
+            echo "No packages were built; skipping Attic upload"
+            exit 0
           fi
-          nix-fast-build "${args[@]}"
+          for attempt in 1 2; do
+            if timeout 20m attic push ainnhuomiao "${paths[@]}"; then
+              exit 0
+            fi
+            if ((attempt == 2)); then
+              exit 1
+            fi
+            sleep 15
+          done
