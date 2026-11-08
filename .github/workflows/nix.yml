@@ -18,12 +18,19 @@ jobs:
   build:
     name: Build NixOS x86_64-linux
     runs-on: ubuntu-24.04
-    # GitHub 托管 Runner 单 Job 最长 6 小时;Telegram 等重型包可能单独编译两小时以上。
+    # GitHub 托管 Runner 单 Job 最长 6 小时。
     timeout-minutes: 360
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+
+      # Nix 构建不使用这些预装工具链,清理后给 store 和大型 C++ 包留出空间。
+      - name: Free runner disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/hostedtoolcache
+          df -h /
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
@@ -31,12 +38,14 @@ jobs:
           github_access_token: ${{ github.token }}
 
       # store 级缓存:空 store 启动时 unfree 包要从厂商 CDN 重新下载(约 1-2 GB),
-      # 命中后这些 FOD 直接秒过。primary-key 基于 flake.lock hash,miss 时按前缀兜底旧缓存
+      # 命中后这些 FOD 直接秒过。primary-key 基于 flake.lock hash,miss 时按前缀兜底旧缓存。
+      # 保存前限制 store 大小,避免恢复的缓存随更新不断膨胀、挤占构建空间。
       - name: Restore and save Nix store
         uses: nix-community/cache-nix-action@v7
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
+          gc-max-store-size-linux: 4G
 
       # check 放在 Attic 上传之前:失败时直接终止,避免上传未通过检查的产物。
       - name: Check flake
@@ -54,18 +63,28 @@ jobs:
       # --skip-cached 查询全部已配置缓存,只构建未命中项;-j 2 允许适度并行,避免重型包无限并发 OOM。
       # 完整系统 toplevel 不在候选集中,避免拉取约 54 GiB 闭包撑爆标准 runner 的 14 GB 磁盘;
       # 完整系统仍需本机 `just build` 验证。
-      # main 推送时边构建边上传 Attic(包括中间产物),超时或后续包失败也不会丢掉已完成的成果;
-      # PR 不配置 Attic 凭据,只构建不上传。
+      # main 推送时每个顶层包完成后立即上传其闭包;不逐个上传每个中间 derivation,避免上传队列积压。
+      # PR 不配置 Attic 凭据,只构建不上传。临时网络故障时重试一次,已在本机的产物会直接复用。
       - name: Build uncached packages
         run: |
           nix profile install --inputs-from . nixpkgs#nix-fast-build
           cache_options=()
           if [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/main ]]; then
-            cache_options=(--attic-cache ainnhuomiao --push-build-closure)
+            cache_options=(--attic-cache ainnhuomiao)
           fi
-          nix-fast-build \
-            --flake .#legacyPackages.x86_64-linux.cacheOutputs \
-            --skip-cached \
-            --max-jobs 2 \
-            --option accept-flake-config true \
-            "${cache_options[@]}"
+          trap 'df -h /' EXIT
+          for attempt in 1 2; do
+            if nix-fast-build \
+              --flake .#legacyPackages.x86_64-linux.cacheOutputs \
+              --skip-cached \
+              --max-jobs 2 \
+              --option accept-flake-config true \
+              "${cache_options[@]}"; then
+              exit 0
+            fi
+            if ((attempt == 2)); then
+              exit 1
+            fi
+            echo "Build or upload failed; retrying with existing store paths in 15 seconds"
+            sleep 15
+          done
