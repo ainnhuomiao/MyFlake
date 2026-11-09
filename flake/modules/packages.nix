@@ -61,6 +61,7 @@
           flake-stats-mcp
           herdr
           mcp-nixos
+          ncro
           rayburst
           telegram-desktop
           ;
@@ -68,7 +69,6 @@
         noctalia = inputs.noctalia.packages.${system}.default;
         hyprpicker = inputs.hyprpicker.packages.${system}.hyprpicker;
         linuxqq-wayland-fix = inputs.linuxqq-wayland-fix.packages.${system}.default;
-        ncro = inputs.ncro.packages.${system}.default;
         omp-cn = inputs.oh-my-pi-cn.packages.${system}.omp;
       };
 

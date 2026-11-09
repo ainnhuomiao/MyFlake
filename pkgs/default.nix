@@ -10,6 +10,10 @@
     };
     flake-stats-mcp = final.callPackage ./flake-stats-mcp { };
     herdr = inputs.herdr.packages.${final.stdenv.hostPlatform.system}.default;
+    # 显式传入上游包，避免 callPackage 解析到正在定义的 final.ncro
+    ncro = final.callPackage ./ncro.nix {
+      ncro = inputs.ncro.packages.${final.stdenv.hostPlatform.system}.default;
+    };
     kimi-code-desktop = final.callPackage ./kimi-code-desktop { };
     omp-provider = final.callPackage ./omp-provider { };
   };
