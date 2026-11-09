@@ -8,7 +8,8 @@
   system.stateVersion = "26.05";
 
   boot = {
-    kernelPackages = pkgs.linuxPackages_zen;
+    # xddxdd/nix-cachyos-kernel release; overlays.pinned 注入 cachyosKernels
+    kernelPackages = pkgs.cachyosKernels.linuxPackages-cachyos-latest-x86_64-v3;
     kernelParams = [
       "quiet"
       # Iris Xe (8086:a7a0) 改用新的 xe 驱动(本内核需 force_probe 才接管);

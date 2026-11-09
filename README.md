@@ -21,8 +21,8 @@
     <a href="https://nixos.org">
         <img src="https://img.shields.io/badge/NixOS-26.05-8caaee?style=for-the-badge&logo=nixos&logoColor=eff1f5&labelColor=303446" alt="NixOS 26.05" />
     </a>
-    <a href="https://github.com/zen-kernel/zen-kernel">
-        <img src="https://img.shields.io/badge/Kernel-Linux%20Zen-ca9ee6?style=for-the-badge&logoColor=eff1f5&labelColor=303446" alt="Linux Zen Kernel" />
+    <a href="https://github.com/xddxdd/nix-cachyos-kernel">
+        <img src="https://img.shields.io/badge/Kernel-CachyOS%20x86__64__v3-ca9ee6?style=for-the-badge&logoColor=eff1f5&labelColor=303446" alt="CachyOS Kernel" />
     </a>
     <a href="https://flake.parts">
         <img src="https://img.shields.io/badge/Built%20with-flake--parts-ef9f76?style=for-the-badge&logoColor=eff1f5&labelColor=303446" alt="flake-parts" />
@@ -56,21 +56,21 @@
 
 ## 配置概览
 
-| 项目       | 当前配置                                                      |
-| ---------- | ------------------------------------------------------------- |
-| Flake      | `flake-parts` + `nixos-unstable-small`                        |
-| 平台       | `x86_64-linux`，主机 `nixos`                                  |
-| 内核       | Linux Zen（`linuxPackages_zen`）                              |
-| 桌面       | niri + Noctalia `v5.2.1`，getty 自动登录，无显示管理器        |
-| 用户环境   | Home Manager，作为 NixOS 模块集成                             |
-| Shell      | Fish + Starship + Kitty                                       |
-| 外观       | Catppuccin Mocha；Noctalia 深色模式与壁纸取色                 |
-| 显卡       | Intel 核显负责桌面，雷电 RTX 3050 通过 PRIME offload 运行游戏 |
-| 音频与网络 | PipeWire + NetworkManager                                     |
-| 代理       | sing-box TUN + metacubexd，按需手动启动                       |
-| 二进制缓存 | ncro 统一调度 Attic、Cachix、国内镜像与官方缓存               |
-| 引导与磁盘 | GRUB EFI + Btrfs 子卷 + Swap                                  |
-| 容器       | Docker + Distrobox + Flatpak                                  |
+| 项目       | 当前配置                                                               |
+| ---------- | ---------------------------------------------------------------------- |
+| Flake      | `flake-parts` + `nixos-unstable-small`                                 |
+| 平台       | `x86_64-linux`，主机 `nixos`                                           |
+| 内核       | CachyOS latest `x86_64-v3`（`linuxPackages-cachyos-latest-x86_64-v3`） |
+| 桌面       | niri + Noctalia `v5.2.1`，getty 自动登录，无显示管理器                 |
+| 用户环境   | Home Manager，作为 NixOS 模块集成                                      |
+| Shell      | Fish + Starship + Kitty                                                |
+| 外观       | Catppuccin Mocha；Noctalia 深色模式与壁纸取色                          |
+| 显卡       | Intel 核显负责桌面，雷电 RTX 3050 通过 PRIME offload 运行游戏          |
+| 音频与网络 | PipeWire + NetworkManager                                              |
+| 代理       | sing-box TUN + metacubexd，按需手动启动                                |
+| 二进制缓存 | ncro 统一调度 Attic、Cachix、国内镜像与官方缓存                        |
+| 引导与磁盘 | GRUB EFI + Btrfs 子卷 + Swap                                           |
+| 容器       | Docker + Distrobox + Flatpak                                           |
 
 配置入口：
 

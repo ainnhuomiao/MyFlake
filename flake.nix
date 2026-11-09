@@ -70,6 +70,12 @@
       url = "github:noctalia-dev/noctalia/v5.2.1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nix-cachyos-kernel = {
+      # CachyOS 内核。release 在上游构建后才推进; 不 follows 宿主 nixpkgs,
+      # overlays.pinned 才能用这份 lock 里的 nixpkgs, 与上游 derivation 一致。
+      # 已入侵下线的 attic.xuyh0120.win/lantian 与旧公钥不恢复, substituters 不动。
+      url = "github:xddxdd/nix-cachyos-kernel/release";
+    };
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable-small";
     nix-index-database = {
       url = "github:Mic92/nix-index-database";
