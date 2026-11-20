@@ -52,6 +52,13 @@
       url = "github:SHORiN-KiWATA/linuxqq-wayland-fix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    magpie = {
+      # yetone/magpie 的 Nix 打包: 源码构建(GTK4/WebKitGTK6), 适配 Wayland;
+      # 自带 bun 并关闭应用内自动更新, 避免绕过 nix 的版本管理。
+      # 官方预编译二进制链接 WebKitGTK4.1, 本 nixpkgs 已移除该 ABI, 故走源码构建。
+      url = "github:xuanyayi/magpie-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     llm-agents = {
       # numtide/llm-agents.nix: AI coding agent 包集 (antigravity-cli/omp/pi/kimi-code)
       # 不 follows nixpkgs: 其包只对其钉的 nixpkgs-unstable 构建测试,
@@ -68,6 +75,13 @@
       # 自带旧 glibc 闭包会 GLIBC 版本不匹配导致 eglGetDisplay failed 启动即崩
       # (代价: 丢 noctalia.cachix 命中, 由本仓库 CI 构建进 attic)
       url = "github:noctalia-dev/noctalia/v5.2.1";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    niri = {
+      # 自维护 fork: v26.04 之后的上游 main, 另加 agent seat/自动化、pick-color 放大镜、
+      # 输入法接管等自定义补丁。由输入的 nixosModules.niri 用宿主 pkgs 构建,
+      # 保证与系统 glibc/图形驱动一致, 并注册其内置 screencast/screenshot portal。
+      url = "github:ainnhuomiao/niri";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable-small";
@@ -91,13 +105,19 @@
       url = "git+https://github.com/youwen5/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    workbuddy = {
+      # 腾讯 WorkBuddy 桌面客户端, YeFaDa/workbuddy-nix 由官方 deb 重打包
+      # (系统 electron 启动 + better-sqlite3 换 N-API 版)。需要 allowUnfree。
+      url = "github:YeFaDa/workbuddy-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   nixConfig = {
     fallback = true;
     http-connections = 16;
     extra-substituters = [
-      "https://ainnhuomiao.qianyuanqing.asia/ainnhuomiao"
+      "https://attic.hmiao.cc.cd/ainnhuomiao"
       "https://nix-community.cachix.org"
       "https://cache.numtide.com"
     ];

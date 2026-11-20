@@ -18,41 +18,41 @@ NC='\e[0m' # No Color
 info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 error() {
-  echo -e "${RED}[ERROR]${NC} $1"
-  exit 1
+	echo -e "${RED}[ERROR]${NC} $1"
+	exit 1
 }
 success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 
 check_deps() {
-  for cmd in nix jq nvim lsblk nixos-generate-config; do
-    if ! command -v "$cmd" &>/dev/null; then
-      error "Missing required command: $cmd"
-    fi
-  done
+	for cmd in nix jq nvim lsblk nixos-generate-config; do
+		if ! command -v "$cmd" &>/dev/null; then
+			error "Missing required command: $cmd"
+		fi
+	done
 }
 
 ask_edit() {
-  local file="$1"
-  while true; do
-    read -p "Would you like to edit this layout? (y/n): " choice
-    [[ $choice == "y" ]] && nvim "$file" && break
-    [[ $choice == "n" ]] && break
-    warn "Invalid input, please enter 'y' or 'n'."
-  done
+	local file="$1"
+	while true; do
+		read -p "Would you like to edit this layout? (y/n): " choice
+		[[ $choice == "y" ]] && nvim "$file" && break
+		[[ $choice == "n" ]] && break
+		warn "Invalid input, please enter 'y' or 'n'."
+	done
 }
 
 review_and_edit() {
-  local file="$1"
-  clear
-  echo -e "${GREEN}--- Reviewing Partition Layout: $(basename "$file") ---${NC}"
-  cat "$file" | less
+	local file="$1"
+	clear
+	echo -e "${GREEN}--- Reviewing Partition Layout: $(basename "$file") ---${NC}"
+	cat "$file" | less
 
-  while true; do
-    read -p "Edit this layout again? (y/n): " choice
-    [[ $choice == "y" ]] && nvim "$file" && break
-    [[ $choice == "n" ]] && break
-    warn "Invalid input."
-  done
+	while true; do
+		read -p "Edit this layout again? (y/n): " choice
+		[[ $choice == "y" ]] && nvim "$file" && break
+		[[ $choice == "n" ]] && break
+		warn "Invalid input."
+	done
 }
 
 # --- Execution Starts Here ---
@@ -61,17 +61,17 @@ check_deps
 # 1. Host Discovery
 info "Scanning for NixOS configurations..."
 if ! hosts_json=$(nix --extra-experimental-features "nix-command flakes" flake show --json 2>/dev/null); then
-  error "Failed to discover NixOS configurations. Ensure 'nix flake show' runs successfully."
+	error "Failed to discover NixOS configurations. Ensure 'nix flake show' runs successfully."
 fi
 hosts=($(echo "$hosts_json" | jq -r '.nixosConfigurations | keys[]'))
 
 if [ ${#hosts[@]} -eq 0 ]; then
-  error "No NixOS configurations found in flake or 'jq' failed to parse."
+	error "No NixOS configurations found in flake or 'jq' failed to parse."
 fi
 
 echo -e "${BLUE}Select the target host configuration:${NC}"
 for i in "${!hosts[@]}"; do
-  echo "$((i + 1)). ${hosts[$i]}"
+	echo "$((i + 1)). ${hosts[$i]}"
 done
 read -p "Choice (number): " host_idx
 [[ ! $host_idx =~ ^[0-9]+$ ]] || [ "$host_idx" -lt 1 ] || [ "$host_idx" -gt "${#hosts[@]}" ] && error "Invalid host choice."
@@ -80,19 +80,19 @@ selected_host="${hosts[$((host_idx - 1))]}"
 # 2. Layout Selection (shared with flake checks)
 info "Loading registered disk layouts from $LAYOUT_DIR..."
 if ! layouts_json=$(nix --extra-experimental-features "nix-command flakes" eval --json \
-  --file "$LAYOUT_DIR/default.nix" \
-  --apply 'layouts: builtins.map builtins.toString (builtins.attrValues layouts)'); then
-  error "Failed to evaluate the disk layout registry."
+	--file "$LAYOUT_DIR/default.nix" \
+	--apply 'layouts: builtins.map builtins.toString (builtins.attrValues layouts)'); then
+	error "Failed to evaluate the disk layout registry."
 fi
 mapfile -t layouts < <(jq -r '.[]' <<<"$layouts_json")
 
 if [ ${#layouts[@]} -eq 0 ]; then
-  error "No layout files found in $LAYOUT_DIR."
+	error "No layout files found in $LAYOUT_DIR."
 fi
 
 echo -e "${BLUE}Select a disk partition layout:${NC}"
 for i in "${!layouts[@]}"; do
-  echo "$((i + 1)). $(basename "${layouts[$i]}")"
+	echo "$((i + 1)). $(basename "${layouts[$i]}")"
 done
 read -p "Choice (number): " layout_idx
 [[ ! $layout_idx =~ ^[0-9]+$ ]] || [ "$layout_idx" -lt 1 ] || [ "$layout_idx" -gt "${#layouts[@]}" ] && error "Invalid layout choice."
@@ -100,22 +100,22 @@ partition_layout="${layouts[$((layout_idx - 1))]}"
 
 # 3. Handle LUKS if applicable
 if [[ "$(basename "$partition_layout")" == *"luks"* ]]; then
-  echo -e "${RED}LUKS encryption detected. Please set the disk encryption password:${NC}"
-  while true; do
-    read -s -p "Enter LUKS password: " luks_pass
-    echo
-    read -s -p "Confirm LUKS password: " luks_pass_confirm
-    echo
+	echo -e "${RED}LUKS encryption detected. Please set the disk encryption password:${NC}"
+	while true; do
+		read -s -p "Enter LUKS password: " luks_pass
+		echo
+		read -s -p "Confirm LUKS password: " luks_pass_confirm
+		echo
 
-    if [ "$luks_pass" != "$luks_pass_confirm" ]; then
-      warn "Passwords do not match. Please try again."
-    else
-      echo -n "$luks_pass" >"$LUKS_KEY_FILE"
-      chmod 600 "$LUKS_KEY_FILE"
-      success "LUKS key prepared and confirmed."
-      break
-    fi
-  done
+		if [ "$luks_pass" != "$luks_pass_confirm" ]; then
+			warn "Passwords do not match. Please try again."
+		else
+			echo -n "$luks_pass" >"$LUKS_KEY_FILE"
+			chmod 600 "$LUKS_KEY_FILE"
+			success "LUKS key prepared and confirmed."
+			break
+		fi
+	done
 fi
 
 # 4. Review & Final Confirmation
@@ -163,8 +163,8 @@ rsync -av --exclude='.git*' --exclude='result' --exclude='log' --exclude='.diren
 
 # Cleanup sensitive data
 if [ -f "$LUKS_KEY_FILE" ]; then
-  rm "$LUKS_KEY_FILE"
-  info "Cleaned up temporary LUKS key."
+	rm "$LUKS_KEY_FILE"
+	info "Cleaned up temporary LUKS key."
 fi
 
 lsblk
