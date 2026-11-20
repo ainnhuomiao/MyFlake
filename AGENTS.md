@@ -2,7 +2,7 @@
 
 Personal NixOS flake for one machine: host `nixos`, user `huomiao`, `x86_64-linux` only, built with flake-parts. This working copy is that live host, so switching affects it immediately.
 
-`README.md` is a Chinese user manual and is partly stale. For example, it pins Noctalia to v5.0.1 (`flake.nix` uses v5.2.1), and it documents `nix build .#omp-provider`, `.#omp`, and `.#pi`, which are not flake outputs. Trust `nix flake show` and the code.
+`README.md` is a Chinese user manual; if it ever disagrees with the flake outputs, trust `nix flake show` and the code.
 
 ## Commands
 
@@ -28,7 +28,7 @@ Run from the repo root. Typical loop: edit, `git add` new files, `just format`, 
 
 ## Live switch
 
-- `just rebuild-switch` is allowed only after `just check` passes. It activates this machine immediately, because sudo is passwordless (`system/core/security.nix`).
+- `just rebuild-switch` is allowed only after `just check` passes. It activates this machine immediately, because sudo is passwordless (`system/base/security.nix`).
 
 ## Gotchas
 
@@ -38,19 +38,21 @@ Run from the repo root. Typical loop: edit, `git add` new files, `just format`, 
 ## Architecture
 
 - `flake.nix` declares inputs and `nixConfig`. Outputs come from `flake/modules/` (packages, checks, dev shells, formatter, overlays) and `hosts/`.
-- `hosts/default.nix` builds `nixosConfigurations.nixos` from `hosts/nixos/`, `system/`, disko, ncro, and Home Manager profile `home/profiles/huomiao@nixos`.
-- `system/` holds NixOS modules and `home/` holds Home Manager modules. `home/programs/default.nix` aggregates per-program modules. Plain packages go in `home/programs/apps.nix`.
+- `flake/nixpkgs.nix` is the single source of truth for nixpkgs `config` and the shared overlay list (`pkgs/` + `overlays/`), imported directly by `system/nix/nixpkgs.nix`, `flake/modules/packages.nix`, and `flake/modules/overlays.nix` (`perSystem` cannot reference `inputs.self.overlays` without infinite recursion). NixOS adds `rust-overlay` in `system/nix/nixpkgs.nix`.
+- `hosts/default.nix` builds `nixosConfigurations.nixos` from `hosts/nixos/`, `system/`, disko, ncro, niri, and Home Manager (`home/`).
+- `hosts/nixos/` holds machine-specific hardware and tuning (`hardware-configuration.nix`, `hardware.nix`, `egpu.nix`, `tuning.nix`).
+- `system/` holds NixOS modules grouped by domain: `base/`, `desktop/` (`niri-session.nix`, `audio.nix`, `fonts.nix`, `packages.nix`), `network/` (`network.nix`, `proxy/` with `tools.nix`/`rules.nix`/scripts), `apps/`, and `nix/` (`cache.nix` combines substituters + ncro).
+- `home/` holds Home Manager modules grouped by domain (`shell/`, `cli/`, `desktop/`, `editors/`, `media/`, `apps/`, `network/`, `dev/`, `ai/`), imported directly by `home/default.nix`. Plain GUI/user packages go in `home/apps/apps.nix`. Single-file modules use `foo.nix`; multi-file or asset-bearing modules use `foo/default.nix`.
 - `me` (`me.nix`) and `appearance` (`lib/appearance.nix`) are specialArgs in all modules. Use them instead of importing `me.nix` or hardcoding colors and fonts.
-- `pkgs/` holds local packages (overlay in `pkgs/default.nix`). `overlays/` holds nixpkgs patches. `flake/modules/overlays.nix` combines both.
-- Flake outputs use their own nixpkgs instance (`flake/modules/packages.nix`) with only `pkgs/` and `overlays/`. It has no rust-overlay; NixOS adds that in `system/nix/nixpkgs.nix`. The nixpkgs `config` is duplicated in `flake/modules/packages.nix` and `system/nix/nixpkgs.nix`, so keep them in sync.
+- `pkgs/` holds local packages (`<name>/default.nix`, overlay in `pkgs/default.nix`). `overlays/` holds nixpkgs patches. `lib/` holds pure Nix helpers/data (`appearance.nix`, `disko-layout/`). `scripts/` holds helper shell scripts invoked by `justfile`.
 
 ## Deliberate choices, don't "clean up"
 
 - Input wiring is deliberate, and comments in `flake.nix` say why. `noctalia` follows host nixpkgs because a bundled older glibc crashes at startup. `emanote`, `herdr`, and `llm-agents` keep their own nixpkgs pins.
-- Bumping `noctalia` also means bumping `officialPlugins.rev` in `home/programs/noctalia/default.nix` and reviewing `patches/noctalia-transparent-bar-capsule-blur.patch`, which limits blur on transparent bars to their capsules and makes media fallback content inherit capsule foreground colors.
+- Bumping `noctalia` also means bumping `officialPlugins.rev` in `home/desktop/noctalia/default.nix`.
 - `packages` outputs are deliberately limited to the fixed CI cache candidates plus `disko`. Vendor apps belong in `home/` or overlays. `nix flake check` doesn't build `packages`; CI combines them with packages installed directly by NixOS and Home Manager in `legacyPackages.cacheOutputs`, deduplicates them by derivation, then uses `nix-fast-build --skip-cached` to build only cache misses.
 - To guarantee that a source-built package enters the Attic cache, add it to `flake/modules/packages.nix`. Packages already installed directly by NixOS or Home Manager are discovered automatically; the full system toplevel is deliberately excluded.
-- sing-box is not started at boot (`system/proxy/default.nix`, `wantedBy = []`). Manage it with `sing-box-toggle`.
+- sing-box is not started at boot (`system/network/proxy/default.nix`, `wantedBy = []`). Manage it with `sing-box-toggle`.
 - Read comments near pins and workarounds before changing them. They record why, usually a verified breakage.
 
 ## Maintenance and secrets

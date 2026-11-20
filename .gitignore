@@ -3,3 +3,7 @@ result-*
 /.vscode
 .direnv
 __pycache__/
+# 工具留下的临时目录(DSH_HOME 副本、pnpm/nix cache 等),不该被 treefmt 扫描
+.tmp/
+.just-build.log
+.alma-snapshots

@@ -80,24 +80,24 @@ flake.nix
     └── nixosConfigurations.nixos
         ├── hosts/nixos/
         ├── system/
-        └── home/profiles/nixos/
+        └── home/
 ```
 
 ### 桌面与外观
 
 - niri 使用滚动平铺，普通窗口默认满宽打开，`Super + f` 在满宽与半屏之间切换。
-- Noctalia 提供顶栏、底栏、启动器、通知、剪贴板、锁屏和电源菜单；透明栏模糊与圆角样式由仓库内补丁和配置统一维护。
+- Noctalia 提供单顶栏、启动器、通知、剪贴板、锁屏和电源菜单；栏体模糊与直角样式由配置统一维护。
 - 终端、编辑器与 GTK 使用 Catppuccin Mocha；Noctalia 使用深色壁纸取色，让状态栏和面板跟随当前壁纸。
 - 静态壁纸由 Noctalia 管理，视频壁纸由官方 mpvpaper 插件管理。资源位于 `assets/wallpapers/` 和 `assets/videos/`，并链接到 `~/Pictures/wallpapers` 与 `~/Videos/wallpapers`。
 - 常用应用包括 Firefox、Zen Browser、Chrome、SPlayer-Next、MPV、Obsidian、Nemo、Yazi，以及 Fcitx5 + Rime 中文输入。
 
-窗口规则、输出和完整键位集中在 `home/wm/niri/config.nix`，Noctalia 设置位于 `home/programs/noctalia/`。
+窗口规则、输出和完整键位集中在 `home/desktop/niri/config.nix`，Noctalia 设置位于 `home/desktop/noctalia/`。
 
 ### 开发与 AI
 
 - 编辑器：Neovim（AstroNvim v6）、VS Code、Helix。
 - 工具链：C/C++、Rust、Go、TypeScript/Node.js、Haskell，以及 Direnv、nixd、nixfmt、treefmt。
-- AI 工具：Codex、Claude Code、Kimi Code CLI/Desktop、OpenCode、Antigravity、Oh My Pi、Pi、Cursor Agent 与 Herdr。
+- AI 工具：Codex、Claude Code、Kimi Code CLI/Desktop、OpenCode、Antigravity、Oh My Pi、Pi、Cursor Agent、DSH、Alma、WorkBuddy、Magpie、CC-Switch 与 Herdr。
 - MCP：Context7、mcp-nixos、flake-stats-mcp 统一声明在 `home/ai/mcp.nix`，激活时合并到各客户端，保留本地其他配置。
 
 ```bash
@@ -117,16 +117,18 @@ nvidia-egpu %command%
 nvidia-egpu-off
 ```
 
-相关配置位于 `system/hardware/egpu.nix`。显卡坞通电期间不要合盖挂起。
+相关配置位于 `hosts/nixos/egpu.nix`。显卡坞通电期间不要合盖挂起。
 
 ### 代理与缓存
 
 sing-box 负责 TUN、DNS 和分流，不随开机启动；订阅只保存在 `/var/lib/sing-box-config/subscriptions.yaml`，不会进入 Nix store。
 
 ```bash
-sing-box-sub                       # 管理订阅
+sing-box-sub                       # 管理订阅和手动节点
 sing-box-toggle [on|off|status]     # 控制透明代理
 ```
+
+`sing-box-sub` 的「添加或替换手动节点」可直接粘贴分享链接（hysteria2/hy2、vless、vmess、trojan、ss、tuic、anytls），保存前会用 `sing-box check` 校验；链接只写入 `subscriptions.yaml`，不会进入 Nix store。
 
 Web 面板为 `http://127.0.0.1:9090/ui/`，认证密钥保存在 `/var/lib/sing-box-config/clash-api-secret`。
 
@@ -148,32 +150,38 @@ nix build .#nixosConfigurations.nixos.pkgs.omp-provider
 ```text
 .
 ├── assets/                  # 截图、静态壁纸与视频壁纸
-├── flake/modules/           # packages、checks、devShells、formatter 与 overlays
-├── home/                    # Home Manager 模块
-│   ├── ai/                  # AI CLI 与 MCP
-│   ├── dev/                 # 开发工具链
-│   ├── editors/             # Neovim 与 VS Code
-│   ├── profiles/            # 用户@主机配置组合
-│   ├── programs/            # 应用配置与纯安装应用
-│   ├── shell/               # Fish、Starship 与 Shell 工具
-│   ├── terminals/           # 终端配置
-│   ├── wall/                # 静态与视频壁纸
-│   └── wm/niri/             # niri 配置
-├── hosts/nixos/             # 当前物理机配置
+├── flake/
+│   ├── modules/             # packages、checks、devShells、formatter 与 overlays
+│   └── nixpkgs.nix          # 共享 nixpkgs config 与 overlay 列表
+├── home/                    # Home Manager 模块（按领域分组）
+│   ├── ai/                  # AI CLI、DSH 与 MCP
+│   ├── apps/                # 浏览器、IM、Emanote 与纯安装应用
+│   ├── cli/                 # Git、Yazi、搜索、监控与命令行工具
+│   ├── desktop/             # niri、Noctalia、壁纸、Fcitx5、GTK 与截图
+│   ├── dev/                 # 开发工具链与 direnv
+│   ├── editors/             # Neovim、Helix 与 VS Code
+│   ├── media/               # MPV、音乐、yt-dlp、Zathura 与 OBS
+│   ├── network/             # sing-box-toggle 等用户态网络脚本
+│   └── shell/               # Fish、Starship、Eza 与 Kitty
+├── hosts/nixos/             # 当前物理机硬件、eGPU 与机器参数调优
 ├── lib/
 │   ├── disko-layout/        # 普通单盘与 LUKS 单盘布局
-│   ├── proxy/               # sing-box 配置生成与管理脚本
-│   ├── scripts/             # 安装、重建等脚本
 │   └── appearance.nix       # 公共配色与外观数据
 ├── overlays/                # nixpkgs overlays
-├── pkgs/                    # 仓库自有包
-├── system/                  # NixOS 系统模块
+├── pkgs/                    # 仓库自有包（统一 <name>/default.nix）
+├── scripts/                 # 安装、重建与推送脚本（justfile 调用）
+├── system/                  # NixOS 系统模块（按领域分组）
+│   ├── apps/                # Steam、Linux QQ Wayland 修复与容器/虚拟化
+│   ├── base/                # 引导、控制台、本地化、用户、安全、nix-ld 与基础工具
+│   ├── desktop/             # niri 会话与 portal、PipeWire 音频、字体与 GUI 包
+│   ├── network/             # NetworkManager、防火墙与 sing-box 代理及脚本
+│   └── nix/                 # Nix 设置、nixpkgs 配置与 ncro/substituters 缓存
 ├── flake.nix                # inputs 与 Flake 入口
 ├── justfile                 # 常用命令
 └── me.nix                   # 用户名、Git 信息与初始密码哈希
 ```
 
-模块约定：主机无关的系统配置放在 `system/`，用户配置放在 `home/`；各目录的 `default.nix` 负责聚合同目录模块。`me.nix` 与 `lib/appearance.nix` 通过模块参数复用。
+模块约定：机器绑定的硬件与参数收拢在 `hosts/nixos/`，通用系统配置按领域放在 `system/`，用户配置按领域放在 `home/`；各领域目录的 `default.nix` 负责聚合，单文件模块用 `foo.nix`，带资源或多文件模块保留 `foo/default.nix`。`me.nix` 与 `lib/appearance.nix` 通过模块参数复用。
 
 ## 日常维护
 
@@ -206,7 +214,7 @@ just rebuild-switch
 
 ## 常用 niri 快捷键
 
-`Mod` 即 `Super`。完整配置见 `home/wm/niri/config.nix`，也可按 `Super + Shift + /` 查看桌面快捷键说明。
+`Mod` 即 `Super`。完整配置见 `home/desktop/niri/config.nix`，也可按 `Super + Shift + /` 查看桌面快捷键说明。
 
 | 按键                              | 功能                         |
 | --------------------------------- | ---------------------------- |

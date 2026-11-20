@@ -8,20 +8,17 @@
     let
       me = import ../me.nix;
       inherit (inputs.nixpkgs.lib) nixosSystem;
-      homeProfiles = import ../home/profiles;
       specialArgs = {
         inherit inputs self me;
         appearance = import ../lib/appearance.nix;
       };
-      mkHomeManager = hostName: {
+      mkHomeManager = {
         home-manager = {
           useGlobalPkgs = true;
           useUserPackages = true;
           backupFileExtension = "backup";
           extraSpecialArgs = specialArgs;
-          users.${me.userName}.imports =
-            homeProfiles."${me.userName}@${hostName}"
-              or (throw "no home profile for ${me.userName}@${hostName}");
+          users.${me.userName}.imports = [ ../home ];
         };
       };
     in
@@ -33,8 +30,11 @@
           ../system
           inputs.disko.nixosModules.disko
           inputs.ncro.nixosModules.ncro
+          # fork 的 NixOS 模块: 覆盖 programs.niri.package 为用宿主 pkgs 构建的 fork,
+          # 并把 niri 自带的 portal 加入 extraPortals。
+          inputs.niri.nixosModules.niri
           inputs.home-manager.nixosModules.home-manager
-          (mkHomeManager "nixos")
+          mkHomeManager
         ];
       };
     };

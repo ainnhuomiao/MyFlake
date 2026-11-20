@@ -14,6 +14,7 @@ in
 {
   imports = [
     ./agy-hud.nix
+    ./dsh
     ./mcp.nix
   ];
 
@@ -22,7 +23,11 @@ in
     [
       cc-switch
       herdr
+      alma
+      inputs.magpie.packages.${system}.default
+      pkgs.workbuddy
       inputs.oh-my-pi-cn.packages.${system}.omp
+      llmAgents.dsh
       llmAgents.pi
       llmAgents.kimi-code
       llmAgents.opencode2

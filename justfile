@@ -47,11 +47,11 @@ generations:
 
 # Validate, format, and switch via nh (nom output built in)
 rebuild-switch host="nixos": check format
-    NIX_CONFIG="experimental-features = nix-command flakes" bash ./lib/scripts/rebuild.sh {{host}}
+    NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/rebuild.sh {{host}}
 
 # Fast path: build and switch without pre-check or formatting
 rebuild-switch-fast host="nixos":
-    NIX_CONFIG="experimental-features = nix-command flakes" bash ./lib/scripts/rebuild.sh {{host}}
+    NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/rebuild.sh {{host}}
 
 # Explicit full validation before switching
 verify:
@@ -66,24 +66,24 @@ clean:
 
 # Partition and mount a target disk
 disko:
-    bash ./lib/scripts/disko.sh
+    bash ./scripts/disko.sh
 
 # Install NixOS on the mounted target
 install:
-    bash ./lib/scripts/install.sh
+    bash ./scripts/install.sh
 
 # 提交已暂存的改动并直推当前分支(通常 main;未暂存的 WIP 不会被提交)
 push msg *paths:
-    bash ./lib/scripts/push.sh "{{msg}}" {{paths}}
+    bash ./scripts/push.sh "{{msg}}" {{paths}}
 
 # 一键:git add -A(含未跟踪文件)后提交并直推 —— 会带上当时工作区的全部改动
 push-all msg:
-    bash ./lib/scripts/push.sh --all "{{msg}}"
+    bash ./scripts/push.sh --all "{{msg}}"
 
 # 可选 PR 流程:基于 origin/main 建分支、提交并创建 PR(需 gh)
 pr msg:
-    bash ./lib/scripts/push.sh --pr "{{msg}}"
+    bash ./scripts/push.sh --pr "{{msg}}"
 
 # 同上并立即合并(留一条 PR 记录)
 pr-merge msg:
-    bash ./lib/scripts/push.sh --pr --merge "{{msg}}"
+    bash ./scripts/push.sh --pr --merge "{{msg}}"

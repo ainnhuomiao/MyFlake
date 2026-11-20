@@ -6,6 +6,15 @@
 {
   imports = [
     inputs.nix-index-database.homeModules.nix-index
+    ./ai
+    ./apps
+    ./cli
+    ./desktop
+    ./dev
+    ./editors
+    ./media
+    ./network
+    ./shell
   ];
 
   home = {

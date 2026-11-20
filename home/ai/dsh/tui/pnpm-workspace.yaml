@@ -1,0 +1,8 @@
+packages:
+  - .
+
+# dsh 的 profile 解析器会优先使用 profile 本地的同名包，找不到才回退到
+# dsh 安装目录。这里必须关掉 peer 自动安装，否则 pnpm 会把 dsh-tui 的
+# peerDependencies（整条 dsh 引擎线）装进 profile，遮蔽宿主自带的引擎，
+# 造成 TUI 警告的“多版本混装”。官方 dsh profile 也是同样的设置。
+autoInstallPeers: false

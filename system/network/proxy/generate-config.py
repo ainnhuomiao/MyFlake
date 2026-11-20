@@ -1,0 +1,1054 @@
+#!/usr/bin/env python3
+
+import base64
+import binascii
+import copy
+import json
+import os
+import re
+import secrets
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+from urllib.parse import unquote, urlsplit
+
+import yaml
+
+CONFIG_DIR = Path(os.environ["SINGBOX_CONFIG_DIR"])
+SUBSCRIPTIONS_FILE = Path(os.environ["SINGBOX_SUBSCRIPTIONS_FILE"])
+CONFIG_FILE = Path(os.environ["SINGBOX_CONFIG_FILE"])
+PROVIDER_DIR = Path(os.environ["SINGBOX_PROVIDER_DIR"])
+API_SECRET_FILE = Path(os.environ["SINGBOX_CLASH_API_SECRET_FILE"])
+CHANGED_FILE = Path(os.environ["SINGBOX_CHANGED_FILE"])
+DIRECT_RULES = json.loads(os.environ["SINGBOX_DIRECT_RULES"])
+EXTRA_NIX_DOWNLOAD_DOMAINS = json.loads(os.environ.get("SINGBOX_NIX_DOWNLOAD_DOMAINS", "[]"))
+SING_BOX = os.environ["SINGBOX_BIN"]
+DASHBOARD_DIR = os.environ["SINGBOX_DASHBOARD_DIR"]
+GEOSITE_DIR = Path(os.environ["SINGBOX_GEOSITE_DIR"])
+GEOIP_DIR = Path(os.environ["SINGBOX_GEOIP_DIR"])
+STATE_DIR = Path(os.environ["SINGBOX_STATE_DIR"])
+CHECK_URL = "https://cp.cloudflare.com/generate_204"
+AUTO_ALL_TAG = "自动选择/全部"
+MANUAL_GROUP = "手动"
+NIX_DOWNLOAD_TAG = "Nix下载"
+NIX_DOWNLOAD_CHECK_URL = "https://cache.numtide.com/nix-cache-info"
+# GitHub 的 API、codeload、raw 与 release 重定向使用同一稳定下载出口。
+NIX_DOWNLOAD_DOMAINS = list(
+    dict.fromkeys(
+        [
+            *EXTRA_NIX_DOWNLOAD_DOMAINS,
+            "cache.nixos.org",
+            "cache.numtide.com",
+            "cachix.org",
+            "github.com",
+            "githubusercontent.com",
+        ]
+    )
+)
+AI_RULE_SETS = ["geosite-openai", "geosite-anthropic", "geosite-google-gemini"]
+EXCLUDE_NODE = re.compile(r"剩余流量|下次重置|套餐到期|套餐.*过期|续费|流量已耗尽|购买后|官网|Telegram|建议每天|如果很少节点|欢迎加入|IPv6", re.I)
+PORTAL_DOMAINS = [
+    "connectivity-check.ubuntu.com",
+    "nmcheck.gnome.org",
+    "www.msftconnecttest.com",
+    "dns.msftncsi.com",
+    "captive.apple.com",
+    "connectivitycheck.gstatic.com",
+    "clients3.google.com",
+    "detectportal.firefox.com",
+]
+
+
+class GenerateError(Exception):
+    pass
+
+
+def load_yaml(path):
+    with path.open("r", encoding="utf-8") as file:
+        return yaml.safe_load(file)
+
+
+def atomic_write(path, content, mode=0o600):
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    try:
+        temporary.write_text(content, encoding="utf-8")
+        temporary.chmod(mode)
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def clash_api_secret():
+    try:
+        secret = API_SECRET_FILE.read_text(encoding="utf-8").strip()
+    except FileNotFoundError:
+        secret = ""
+    if secret:
+        return secret
+    secret = secrets.token_hex(32)
+    atomic_write(API_SECRET_FILE, secret + "\n", mode=0o640)
+    return secret
+
+
+def prune_providers(active_names):
+    for cached in PROVIDER_DIR.glob("*.yaml"):
+        if cached.stem not in active_names:
+            cached.unlink()
+
+
+def subscriptions():
+    if not SUBSCRIPTIONS_FILE.exists() or SUBSCRIPTIONS_FILE.stat().st_size == 0:
+        return {}
+    data = load_yaml(SUBSCRIPTIONS_FILE) or {}
+    entries = data.get("subscriptions", {})
+    if not isinstance(entries, dict):
+        raise GenerateError("subscriptions 必须是映射")
+    result = {}
+    for name, entry in entries.items():
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", name):
+            raise GenerateError(f"订阅名称无效: {name}")
+        url = (entry or {}).get("url", "")
+        if not isinstance(url, str) or not url.startswith(("https://", "http://")):
+            raise GenerateError(f"订阅 URL 无效: {name}")
+        result[name] = url
+    return result
+
+
+def manual_nodes():
+    if not SUBSCRIPTIONS_FILE.exists() or SUBSCRIPTIONS_FILE.stat().st_size == 0:
+        return {}
+    data = load_yaml(SUBSCRIPTIONS_FILE) or {}
+    entries = data.get("nodes") or {}
+    if not isinstance(entries, dict):
+        raise GenerateError("nodes 必须是映射")
+    result = {}
+    for name, entry in entries.items():
+        name = str(name)
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", name):
+            raise GenerateError(f"节点名称无效: {name}")
+        link = entry.get("link", "") if isinstance(entry, dict) else ""
+        if not isinstance(link, str) or not link:
+            raise GenerateError(f"节点分享链接无效: {name}")
+        result[name] = link
+    return result
+
+
+def download(name, url):
+    temporary = PROVIDER_DIR / f".{name}.{os.getpid()}.download"
+    try:
+        subprocess.run(
+            [
+                "curl",
+                "--fail",
+                "--silent",
+                "--show-error",
+                "--location",
+                "--retry",
+                "2",
+                "--connect-timeout",
+                "10",
+                "--max-time",
+                "60",
+                "--user-agent",
+                "mihomo",
+                "--output",
+                str(temporary),
+                url,
+            ],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        data = subscription_document(temporary.read_text(encoding="utf-8"))
+        atomic_write(PROVIDER_DIR / f"{name}.yaml", yaml.safe_dump(data, allow_unicode=True, sort_keys=False))
+        return data["proxies"]
+    except (OSError, subprocess.CalledProcessError, GenerateError, yaml.YAMLError, UnicodeDecodeError):
+        cached = PROVIDER_DIR / f"{name}.yaml"
+        if cached.exists():
+            print(f"订阅更新失败，使用缓存: {name}", file=sys.stderr)
+            data = load_yaml(cached) or {}
+            if isinstance(data.get("proxies"), list):
+                return data["proxies"]
+        raise GenerateError(f"订阅下载失败且无可用缓存: {name}")
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def string_list(value):
+    if value is None:
+        return None
+    return [str(item) for item in (value if isinstance(value, list) else [value])]
+
+
+def ech_config(value):
+    text = "\n".join(string_list(value)).strip()
+    if text.startswith("-----BEGIN ECH CONFIGS-----"):
+        return text.splitlines()
+    encoded = "".join(text.split())
+    try:
+        decoded = base64.b64decode(encoded, validate=True)
+    except binascii.Error as error:
+        raise ValueError("invalid ECH config") from error
+    canonical = base64.b64encode(decoded).decode("ascii")
+    return ["-----BEGIN ECH CONFIGS-----", *(canonical[index : index + 64] for index in range(0, len(canonical), 64)), "-----END ECH CONFIGS-----"]
+
+
+def tls_config(proxy, force=False):
+    reality = proxy.get("reality-opts") or {}
+    ech = proxy.get("ech-opts") or {}
+    enabled = force or bool(proxy.get("tls")) or bool(reality) or bool(ech.get("enable"))
+    if not enabled:
+        return None
+    tls = {"enabled": True}
+    server_name = proxy.get("sni") or proxy.get("servername")
+    if not server_name:
+        headers = (proxy.get("ws-opts") or {}).get("headers") or {}
+        server_name = headers.get("Host") or headers.get("host")
+    if server_name:
+        tls["server_name"] = str(server_name)
+    if proxy.get("skip-cert-verify"):
+        tls["insecure"] = True
+    alpn = string_list(proxy.get("alpn"))
+    if alpn:
+        tls["alpn"] = alpn
+    fingerprint = proxy.get("client-fingerprint") or proxy.get("fingerprint")
+    if fingerprint:
+        tls["utls"] = {"enabled": True, "fingerprint": str(fingerprint)}
+    if ech.get("enable"):
+        tls["ech"] = {"enabled": True}
+        if ech.get("config"):
+            tls["ech"]["config"] = ech_config(ech["config"])
+        if ech.get("query-server-name"):
+            tls["ech"]["query_server_name"] = str(ech["query-server-name"])
+    if reality:
+        public_key = reality.get("public-key")
+        if not public_key:
+            raise ValueError("missing reality public key")
+        if "utls" not in tls:
+            tls["utls"] = {"enabled": True, "fingerprint": "chrome"}
+        tls["reality"] = {"enabled": True, "public_key": str(public_key)}
+        if reality.get("short-id") is not None:
+            tls["reality"]["short_id"] = str(reality["short-id"])
+    return tls
+
+
+def transport_config(proxy):
+    network = proxy.get("network", "tcp")
+    if network in (None, "tcp"):
+        return None
+    if network == "ws":
+        options = proxy.get("ws-opts") or {}
+        transport = {"type": "ws"}
+        if options.get("path"):
+            transport["path"] = str(options["path"])
+        headers = options.get("headers") or {}
+        host = headers.get("Host") or headers.get("host")
+        if host:
+            transport["headers"] = {"Host": str(host)}
+        if options.get("max-early-data") is not None:
+            transport["max_early_data"] = int(options["max-early-data"])
+        if options.get("early-data-header-name"):
+            transport["early_data_header_name"] = str(options["early-data-header-name"])
+        return transport
+    if network == "grpc":
+        options = proxy.get("grpc-opts") or {}
+        return {
+            "type": "grpc",
+            "service_name": str(options.get("grpc-service-name") or options.get("service-name") or ""),
+        }
+    if network in ("h2", "http"):
+        options = proxy.get("h2-opts") or proxy.get("http-opts") or {}
+        transport = {"type": "http"}
+        hosts = string_list(options.get("host"))
+        if hosts:
+            transport["host"] = hosts
+        paths = options.get("path")
+        if isinstance(paths, list):
+            paths = paths[0] if paths else None
+        if paths:
+            transport["path"] = str(paths)
+        return transport
+    if network == "httpupgrade":
+        options = proxy.get("httpupgrade-opts") or {}
+        transport = {"type": "httpupgrade"}
+        if options.get("path"):
+            transport["path"] = str(options["path"])
+        if options.get("host"):
+            transport["headers"] = {"Host": str(options["host"])}
+        return transport
+    raise ValueError("unsupported transport")
+
+
+def base_outbound(proxy, outbound_type):
+    server = proxy.get("server")
+    port = proxy.get("port")
+    if not server or port is None:
+        raise ValueError("missing server or port")
+    return {
+        "type": outbound_type,
+        "server": str(server),
+        "server_port": int(str(port).split("-")[0]),
+        "domain_resolver": "ali",
+    }
+
+
+def hysteria2_server_ports(value):
+    result = []
+    for item in str(value).split(","):
+        match = re.fullmatch(r"(\d+)(?:-(\d+))?", item.strip())
+        if not match:
+            raise ValueError("invalid hysteria2 ports")
+        start = int(match.group(1))
+        end = int(match.group(2) or start)
+        if not 1 <= start <= end <= 65535:
+            raise ValueError("invalid hysteria2 ports")
+        result.append(f"{start}:{end}")
+    if not result:
+        raise ValueError("invalid hysteria2 ports")
+    return result
+
+
+def hysteria2_hop_interval(value):
+    match = re.fullmatch(r"(\d+)(?:-(\d+))?", str(value).strip())
+    if not match:
+        raise ValueError("invalid hysteria2 hop interval")
+    start = int(match.group(1))
+    end = int(match.group(2) or start)
+    if start == 0:
+        return {}
+    start = max(start, 5)
+    end = max(end, start)
+    result = {"hop_interval": f"{start}s"}
+    if end > start:
+        result["hop_interval_max"] = f"{end}s"
+    return result
+
+
+def convert_proxy(proxy):
+    if not isinstance(proxy, dict):
+        raise ValueError("invalid proxy")
+    kind = str(proxy.get("type", "")).lower()
+    if kind == "ss":
+        result = base_outbound(proxy, "shadowsocks")
+        result.update({"method": str(proxy.get("cipher") or proxy.get("method") or ""), "password": str(proxy.get("password") or "")})
+        if proxy.get("udp-over-tcp"):
+            version = int(proxy.get("udp-over-tcp-version") or 1)
+            if version not in (1, 2):
+                raise ValueError("unsupported shadowsocks UDP over TCP version")
+            result["udp_over_tcp"] = {"enabled": True, "version": version}
+        plugin = proxy.get("plugin")
+        if plugin:
+            options = proxy.get("plugin-opts") or {}
+            if plugin == "obfs":
+                result["plugin"] = "obfs-local"
+                result["plugin_opts"] = f"obfs={options.get('mode', 'http')};obfs-host={options.get('host', 'bing.com')}"
+            elif plugin == "v2ray-plugin":
+                opts = [f"mode={options.get('mode', 'websocket')}"]
+                if options.get("tls"):
+                    opts.append("tls")
+                if options.get("host"):
+                    opts.append(f"host={options['host']}")
+                if options.get("path"):
+                    opts.append(f"path={options['path']}")
+                result["plugin"] = "v2ray-plugin"
+                result["plugin_opts"] = ";".join(opts)
+            else:
+                raise ValueError("unsupported shadowsocks plugin")
+        return result
+    if kind in ("socks", "socks5"):
+        result = base_outbound(proxy, "socks")
+        if proxy.get("username") is not None:
+            result["username"] = str(proxy["username"])
+        if proxy.get("password") is not None:
+            result["password"] = str(proxy["password"])
+        tls = tls_config(proxy)
+        if tls:
+            result["tls"] = tls
+        return result
+    if kind == "http":
+        result = base_outbound(proxy, "http")
+        if proxy.get("username") is not None:
+            result["username"] = str(proxy["username"])
+        if proxy.get("password") is not None:
+            result["password"] = str(proxy["password"])
+        tls = tls_config(proxy)
+        if tls:
+            result["tls"] = tls
+        return result
+    if kind in ("vmess", "vless"):
+        result = base_outbound(proxy, kind)
+        result["uuid"] = str(proxy.get("uuid") or "")
+        if kind == "vmess":
+            result["security"] = str(proxy.get("cipher") or "auto")
+            result["alter_id"] = int(proxy.get("alterId") or proxy.get("alter_id") or 0)
+        else:
+            if proxy.get("flow"):
+                result["flow"] = str(proxy["flow"])
+            if proxy.get("packet-encoding"):
+                result["packet_encoding"] = str(proxy["packet-encoding"])
+        tls = tls_config(proxy)
+        if tls:
+            result["tls"] = tls
+        transport = transport_config(proxy)
+        if transport:
+            result["transport"] = transport
+        return result
+    if kind == "trojan":
+        result = base_outbound(proxy, "trojan")
+        result["password"] = str(proxy.get("password") or "")
+        result["tls"] = tls_config(proxy, force=True)
+        transport = transport_config(proxy)
+        if transport:
+            result["transport"] = transport
+        return result
+    if kind in ("hysteria2", "hy2"):
+        result = base_outbound(proxy, "hysteria2")
+        result["password"] = str(proxy.get("password") or "")
+        result["tls"] = tls_config(proxy, force=True)
+        if proxy.get("ports"):
+            result["server_ports"] = hysteria2_server_ports(proxy["ports"])
+            if proxy.get("hop-interval") is not None:
+                result.update(hysteria2_hop_interval(proxy["hop-interval"]))
+        if proxy.get("obfs"):
+            result["obfs"] = {"type": str(proxy["obfs"]), "password": str(proxy.get("obfs-password") or "")}
+        for source, target in (("up", "up_mbps"), ("down", "down_mbps")):
+            if proxy.get(source) is not None:
+                result[target] = int(str(proxy[source]).split()[0])
+        return result
+    if kind == "tuic":
+        result = base_outbound(proxy, "tuic")
+        result["uuid"] = str(proxy.get("uuid") or "")
+        result["password"] = str(proxy.get("password") or "")
+        result["tls"] = tls_config(proxy, force=True)
+        if proxy.get("congestion-controller"):
+            result["congestion_control"] = str(proxy["congestion-controller"])
+        if proxy.get("udp-relay-mode"):
+            result["udp_relay_mode"] = str(proxy["udp-relay-mode"])
+        if proxy.get("reduce-rtt"):
+            result["zero_rtt_handshake"] = True
+        return result
+    if kind == "anytls":
+        result = base_outbound(proxy, "anytls")
+        result["password"] = str(proxy.get("password") or "")
+        result["tls"] = tls_config(proxy, force=True)
+        return result
+    raise ValueError("unsupported proxy type")
+
+
+def decode_base64(value):
+    text = "".join(value.split()).translate(str.maketrans("-_", "+/"))
+    text += "=" * (-len(text) % 4)
+    return base64.b64decode(text, validate=True).decode("utf-8")
+
+
+def parse_query(text):
+    query = {}
+    for item in text.split("&"):
+        if not item:
+            continue
+        key, _, value = item.partition("=")
+        query.setdefault(unquote(key), []).append(unquote(value))
+    return query
+
+
+def first(query, key, default=""):
+    values = query.get(key) or []
+    return values[0] if values and values[0] else default
+
+
+def enabled(query, key):
+    return first(query, key).lower() in ("1", "true")
+
+
+def valid_port(value):
+    port = int(value)
+    if not 1 <= port <= 65535:
+        raise ValueError("端口无效")
+    return port
+
+
+def share_base(parts):
+    if not parts.hostname:
+        raise ValueError("缺少服务器地址")
+    port = parts.port if parts.port is not None else 443
+    if not 1 <= port <= 65535:
+        raise ValueError("端口无效")
+    return {
+        "name": unquote(parts.fragment),
+        "server": parts.hostname,
+        "port": port,
+    }
+
+
+def share_userinfo(parts):
+    return unquote(parts.netloc.rpartition("@")[0])
+
+
+def apply_tls_query(proxy, query):
+    if first(query, "sni"):
+        proxy["servername"] = first(query, "sni")
+    if first(query, "alpn"):
+        proxy["alpn"] = first(query, "alpn").split(",")
+    if first(query, "fp"):
+        proxy["client-fingerprint"] = first(query, "fp")
+    if any(enabled(query, key) for key in ("allowInsecure", "allow_insecure", "insecure")):
+        proxy["skip-cert-verify"] = True
+
+
+def apply_transport_query(proxy, query, network):
+    network = {"": "tcp", "raw": "tcp"}.get(network.lower(), network.lower())
+    proxy["network"] = network
+    if network == "tcp":
+        header = first(query, "headerType").lower()
+        if header not in ("", "none"):
+            raise ValueError(f"不支持 TCP 伪装类型: {header}")
+    elif network == "ws":
+        proxy["ws-opts"] = {"path": first(query, "path", "/"), "headers": {"Host": first(query, "host")}}
+    elif network == "grpc":
+        proxy["grpc-opts"] = {"grpc-service-name": first(query, "serviceName")}
+    elif network in ("h2", "http"):
+        host = first(query, "host")
+        proxy["h2-opts"] = {"host": [host] if host else [], "path": first(query, "path", "/")}
+    elif network == "httpupgrade":
+        proxy["httpupgrade-opts"] = {"path": first(query, "path", "/"), "host": first(query, "host")}
+    else:
+        raise ValueError(f"不支持的传输方式: {network}")
+
+
+def parse_hysteria2(link):
+    parts = urlsplit(link)
+    query = parse_query(parts.query)
+    if first(query, "pinSHA256"):
+        raise ValueError("暂不支持证书指纹校验（pinSHA256），请给服务端配置正式证书")
+    proxy = share_base(parts) | {"type": "hysteria2", "password": share_userinfo(parts)}
+    apply_tls_query(proxy, query)
+    if first(query, "obfs"):
+        if first(query, "obfs") != "salamander" or not first(query, "obfs-password"):
+            raise ValueError("仅支持 salamander 混淆，且必须提供 obfs-password")
+        proxy["obfs"] = "salamander"
+        proxy["obfs-password"] = first(query, "obfs-password")
+    if first(query, "mport"):
+        proxy["ports"] = first(query, "mport")
+    return proxy
+
+
+def parse_vless(link):
+    parts = urlsplit(link)
+    query = parse_query(parts.query)
+    security = first(query, "security")
+    proxy = share_base(parts) | {"type": "vless", "uuid": share_userinfo(parts)}
+    if security in ("tls", "reality"):
+        proxy["tls"] = True
+        apply_tls_query(proxy, query)
+    if security == "reality":
+        proxy["reality-opts"] = {"public-key": first(query, "pbk"), "short-id": first(query, "sid")}
+    if first(query, "flow"):
+        proxy["flow"] = first(query, "flow")
+    apply_transport_query(proxy, query, first(query, "type", "tcp"))
+    return proxy
+
+
+def parse_trojan(link):
+    parts = urlsplit(link)
+    query = parse_query(parts.query)
+    if not first(query, "sni") and first(query, "peer"):
+        query["sni"] = [first(query, "peer")]
+    proxy = share_base(parts) | {"type": "trojan", "password": share_userinfo(parts)}
+    apply_tls_query(proxy, query)
+    apply_transport_query(proxy, query, first(query, "type", "tcp"))
+    return proxy
+
+
+def parse_vmess(link):
+    body = link[len("vmess://") :]
+    if "@" in body.partition("#")[0]:
+        parts = urlsplit(link)
+        query = parse_query(parts.query)
+        proxy = share_base(parts) | {
+            "type": "vmess",
+            "uuid": share_userinfo(parts),
+            "alterId": 0,
+            "cipher": first(query, "encryption", "auto"),
+        }
+        if first(query, "security") == "tls":
+            proxy["tls"] = True
+            apply_tls_query(proxy, query)
+        apply_transport_query(proxy, query, first(query, "type", "tcp"))
+        return proxy
+    payload = json.loads(decode_base64(body))
+    query = {
+        "sni": [str(payload.get("sni") or "")],
+        "alpn": [str(payload.get("alpn") or "")],
+        "fp": [str(payload.get("fp") or "")],
+        "host": [str(payload.get("host") or "")],
+        "path": [str(payload.get("path") or "")],
+        "serviceName": [str(payload.get("path") or "")],
+        "headerType": [str(payload.get("type") or "")],
+    }
+    proxy = {
+        "name": str(payload.get("ps") or ""),
+        "type": "vmess",
+        "server": str(payload["add"]),
+        "port": valid_port(payload["port"]),
+        "uuid": str(payload["id"]),
+        "alterId": int(payload.get("aid") or 0),
+        "cipher": str(payload.get("scy") or "auto"),
+    }
+    if payload.get("tls") == "tls":
+        proxy["tls"] = True
+        apply_tls_query(proxy, query)
+    apply_transport_query(proxy, query, str(payload.get("net") or "tcp"))
+    return proxy
+
+
+def parse_ss(link):
+    body, _, fragment = link[len("ss://") :].partition("#")
+    body, _, query_text = body.partition("?")
+    if first(parse_query(query_text), "plugin"):
+        raise ValueError("暂不支持 shadowsocks 插件")
+    body = body.rstrip("/")
+    if "@" in body:
+        userinfo_text, _, hostport = body.rpartition("@")
+        try:
+            method_password = decode_base64(userinfo_text)
+        except ValueError:
+            method_password = unquote(userinfo_text)
+    else:
+        method_password, _, hostport = decode_base64(body).rpartition("@")
+    method, _, password = method_password.partition(":")
+    netloc = urlsplit("//" + hostport)
+    if not netloc.hostname or netloc.port is None:
+        raise ValueError("缺少服务器地址或端口")
+    return {
+        "name": unquote(fragment),
+        "type": "ss",
+        "server": netloc.hostname,
+        "port": valid_port(netloc.port),
+        "cipher": method,
+        "password": password,
+    }
+
+
+def parse_tuic(link):
+    parts = urlsplit(link)
+    query = parse_query(parts.query)
+    uuid, _, password = share_userinfo(parts).partition(":")
+    proxy = share_base(parts) | {"type": "tuic", "uuid": uuid, "password": password}
+    apply_tls_query(proxy, query)
+    if first(query, "congestion_control"):
+        proxy["congestion-controller"] = first(query, "congestion_control")
+    if first(query, "udp_relay_mode"):
+        proxy["udp-relay-mode"] = first(query, "udp_relay_mode")
+    return proxy
+
+
+def parse_anytls(link):
+    parts = urlsplit(link)
+    query = parse_query(parts.query)
+    proxy = share_base(parts) | {"type": "anytls", "password": share_userinfo(parts)}
+    apply_tls_query(proxy, query)
+    return proxy
+
+
+SHARE_LINK_PARSERS = {
+    "hysteria2": parse_hysteria2,
+    "hy2": parse_hysteria2,
+    "vless": parse_vless,
+    "vmess": parse_vmess,
+    "trojan": parse_trojan,
+    "ss": parse_ss,
+    "tuic": parse_tuic,
+    "anytls": parse_anytls,
+}
+
+SHARE_LINK_REQUIRED = {
+    "hysteria2": ("password",),
+    "vless": ("uuid",),
+    "vmess": ("uuid",),
+    "trojan": ("password",),
+    "ss": ("cipher", "password"),
+    "tuic": ("uuid", "password"),
+    "anytls": ("password",),
+}
+
+
+def share_link_proxy(link):
+    link = link.strip()
+    scheme, separator, _ = link.partition("://")
+    parser = SHARE_LINK_PARSERS.get(scheme.lower()) if separator else None
+    if parser is None:
+        raise GenerateError("不支持的分享链接格式")
+    try:
+        proxy = parser(link)
+    except (KeyError, TypeError, ValueError) as error:
+        raise GenerateError(f"分享链接解析失败: {error}") from error
+    missing = [key for key in SHARE_LINK_REQUIRED.get(proxy["type"], ()) if not proxy.get(key)]
+    if missing:
+        raise GenerateError(f"分享链接缺少字段: {', '.join(missing)}")
+    proxy["name"] = proxy["name"] or f"{proxy['server']}:{proxy['port']}"
+    return proxy
+
+
+def share_text_proxies(text):
+    content = text.strip()
+    if not content.lower().startswith(tuple(f"{scheme}://" for scheme in SHARE_LINK_PARSERS)):
+        try:
+            content = decode_base64(content)
+        except ValueError:
+            return []
+    proxies = []
+    for line in content.splitlines():
+        if line.strip():
+            try:
+                proxies.append(share_link_proxy(line))
+            except GenerateError:
+                continue
+    return proxies
+
+
+def subscription_document(text):
+    try:
+        data = yaml.safe_load(text)
+    except yaml.YAMLError:
+        data = None
+    if isinstance(data, dict) and isinstance(data.get("proxies"), list):
+        return data
+    proxies = share_text_proxies(text)
+    if not proxies:
+        raise GenerateError("订阅不是 Clash/Mihomo YAML 或分享链接列表")
+    return {"proxies": proxies}
+
+
+def sing_box_check(config):
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "config.json"
+        path.write_text(json.dumps(config, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        return subprocess.run(
+            [SING_BOX, "check", "-c", str(path)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+
+
+def check_node():
+    try:
+        proxy = share_link_proxy(sys.stdin.read())
+        outbound = convert_proxy(proxy)
+    except (GenerateError, ValueError, TypeError) as error:
+        print(f"分享链接无效: {error}", file=sys.stderr)
+        sys.exit(1)
+    outbound["tag"] = unique_tag(f"[{MANUAL_GROUP}] {proxy['name']}", set())
+    result = sing_box_check(build_config([outbound], [(MANUAL_GROUP, [outbound["tag"]])]))
+    if result.returncode != 0:
+        print(f"分享链接无效: sing-box 校验未通过\n{result.stderr.strip()}", file=sys.stderr)
+        sys.exit(1)
+    print(f"已识别 {outbound['type']} 节点: {proxy['name']} ({outbound['server']}:{outbound['server_port']})")
+
+
+def unique_tag(base, used):
+    base = base.strip() or "unnamed"
+    if base in ("GLOBAL", "proxy", "direct", "dns-out", NIX_DOWNLOAD_TAG):
+        base = f"node-{base}"
+    tag = base
+    index = 2
+    while tag in used:
+        tag = f"{base} #{index}"
+        index += 1
+    used.add(tag)
+    return tag
+
+
+def build_config(node_outbounds, groups):
+    outbounds = []
+    group_tags = []
+    auto_group_tags = []
+    for name, tags in groups:
+        if not tags:
+            continue
+        tag = f"订阅/{name}"
+        auto_tag = f"自动选择/{name}"
+        outbounds.append(
+            {
+                "type": "urltest",
+                "tag": auto_tag,
+                "outbounds": tags,
+                "url": CHECK_URL,
+                "interval": "30m",
+                "tolerance": 100,
+                "idle_timeout": "30m",
+                "interrupt_exist_connections": False,
+            }
+        )
+        outbounds.append(
+            {
+                "type": "selector",
+                "tag": tag,
+                "outbounds": [auto_tag] + tags,
+                "default": auto_tag,
+                "interrupt_exist_connections": True,
+            }
+        )
+        group_tags.append(tag)
+        auto_group_tags.append(auto_tag)
+
+    node_tags = [item["tag"] for item in node_outbounds]
+    if auto_group_tags:
+        outbounds.append(
+            {
+                "type": "urltest",
+                "tag": AUTO_ALL_TAG,
+                "outbounds": auto_group_tags,
+                "url": CHECK_URL,
+                "interval": "30m",
+                "tolerance": 100,
+                "idle_timeout": "30m",
+                "interrupt_exist_connections": False,
+            }
+        )
+        outbounds.append(
+            {
+                "type": "selector",
+                "tag": "AI",
+                "outbounds": node_tags,
+                "default": node_tags[0],
+                "interrupt_exist_connections": True,
+            }
+        )
+
+    # urltest 历史按实际出站 tag 共享；复制出站以隔离下载与日常测速记录。
+    nix_node_outbounds = []
+    used_tags = set(node_tags + group_tags + auto_group_tags + [AUTO_ALL_TAG, "AI", "proxy", "GLOBAL", "direct", NIX_DOWNLOAD_TAG])
+    for node in node_outbounds:
+        nix_node = copy.deepcopy(node)
+        nix_node["tag"] = unique_tag(f"下载节点/{node['tag']}", used_tags)
+        nix_node_outbounds.append(nix_node)
+    outbounds.append(
+        {
+            "type": "urltest",
+            "tag": NIX_DOWNLOAD_TAG,
+            "outbounds": [node["tag"] for node in nix_node_outbounds] or ["direct"],
+            "url": NIX_DOWNLOAD_CHECK_URL,
+            "interval": "3m",
+            "tolerance": 100,
+            "idle_timeout": "30m",
+            "interrupt_exist_connections": False,
+        }
+    )
+
+    proxy_choices = ([AUTO_ALL_TAG] if auto_group_tags else []) + group_tags + ["direct"] + node_tags
+    outbounds.append(
+        {
+            "type": "selector",
+            "tag": "proxy",
+            "outbounds": proxy_choices,
+            "default": AUTO_ALL_TAG if auto_group_tags else "direct",
+            "interrupt_exist_connections": True,
+        }
+    )
+    global_choices = ["proxy", NIX_DOWNLOAD_TAG] + ([AUTO_ALL_TAG, "AI"] if auto_group_tags else []) + group_tags + ["direct"] + node_tags
+    outbounds.append(
+        {
+            "type": "selector",
+            "tag": "GLOBAL",
+            "outbounds": global_choices,
+            "default": "proxy",
+            "interrupt_exist_connections": True,
+        }
+    )
+    outbounds.append({"type": "direct", "tag": "direct"})
+    outbounds.extend(node_outbounds)
+    outbounds.extend(nix_node_outbounds)
+
+    direct_domains = DIRECT_RULES["domains"]
+    direct_ip_cidrs = DIRECT_RULES["ipCidrs"]
+    dns_rules = [
+        {"domain_suffix": [".lan", ".local", ".home.arpa"], "server": "dhcp"},
+        {"domain": PORTAL_DOMAINS, "server": "dhcp"},
+    ]
+    if direct_domains:
+        dns_rules.append({"domain": direct_domains, "server": "ali"})
+    dns_rules.append({"domain_suffix": NIX_DOWNLOAD_DOMAINS, "server": "nix-dns"})
+    if auto_group_tags:
+        dns_rules.append({"rule_set": AI_RULE_SETS, "server": "google"})
+    dns_rules.append({"rule_set": ["geosite-cn"], "server": "ali"})
+
+    route_rules = [
+        {"action": "sniff"},
+        {"protocol": "dns", "action": "hijack-dns"},
+        {"process_name": ["NetworkManager"], "action": "route", "outbound": "direct"},
+        {"ip_is_private": True, "action": "route", "outbound": "direct"},
+        {"ip_cidr": ["224.0.0.0/3", "ff00::/8"], "action": "route", "outbound": "direct"},
+        {"domain": PORTAL_DOMAINS, "action": "route", "outbound": "direct"},
+    ]
+    if direct_domains:
+        route_rules.append({"domain": direct_domains, "action": "route", "outbound": "direct"})
+    if direct_ip_cidrs:
+        route_rules.append({"ip_cidr": direct_ip_cidrs, "action": "route", "outbound": "direct"})
+    route_rules.extend(
+        [
+            {"domain": ["cm.bilibili.com", "data.bilibili.com", "dataflow.bilibili.com"], "action": "reject"},
+            {"domain_suffix": [".mcdn.bilivideo.cn"], "action": "reject"},
+            {"rule_set": ["geosite-category-ads-all"], "action": "reject"},
+        ]
+    )
+    if auto_group_tags:
+        route_rules.append({"rule_set": AI_RULE_SETS, "action": "route", "outbound": "AI"})
+    route_rules.append({"domain_suffix": NIX_DOWNLOAD_DOMAINS, "action": "route", "outbound": NIX_DOWNLOAD_TAG})
+    route_rules.append({"rule_set": ["geosite-cn", "geoip-cn"], "action": "route", "outbound": "direct"})
+
+    rule_sets = [
+        {"type": "local", "tag": "geosite-cn", "format": "binary", "path": str(GEOSITE_DIR / "geosite-cn.srs")},
+        {"type": "local", "tag": "geosite-category-ads-all", "format": "binary", "path": str(GEOSITE_DIR / "geosite-category-ads-all.srs")},
+        {"type": "local", "tag": "geoip-cn", "format": "binary", "path": str(GEOIP_DIR / "geoip-cn.srs")},
+    ]
+    if auto_group_tags:
+        rule_sets.extend(
+            {"type": "local", "tag": tag, "format": "binary", "path": str(GEOSITE_DIR / f"{tag}.srs")}
+            for tag in AI_RULE_SETS
+        )
+
+    return {
+        "log": {"level": "warn", "timestamp": True},
+        "dns": {
+            "servers": [
+                {
+                    "type": "https",
+                    "tag": "ali",
+                    "server": "223.5.5.5",
+                    "path": "/dns-query",
+                    "tls": {"enabled": True, "server_name": "dns.alidns.com"},
+                },
+                {
+                    "type": "https",
+                    "tag": "google",
+                    "server": "8.8.8.8",
+                    "path": "/dns-query",
+                    "tls": {"enabled": True, "server_name": "dns.google"},
+                    "detour": AUTO_ALL_TAG if auto_group_tags else "direct",
+                },
+                {
+                    "type": "https",
+                    "tag": "nix-dns",
+                    "server": "8.8.8.8",
+                    "path": "/dns-query",
+                    "tls": {"enabled": True, "server_name": "dns.google"},
+                    "detour": NIX_DOWNLOAD_TAG,
+                },
+                {"type": "dhcp", "tag": "dhcp"},
+            ],
+            "rules": dns_rules,
+            "final": "google",
+            "strategy": "prefer_ipv4",
+        },
+        "inbounds": [
+            {
+                "type": "tun",
+                "tag": "tun-in",
+                "interface_name": "singbox0",
+                "address": ["198.18.0.1/30", "fdfe:dcba:9876::1/126"],
+                "mtu": 9000,
+                "auto_route": True,
+                "auto_redirect": True,
+                "strict_route": True,
+                "route_exclude_address": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "fc00::/7"],
+                "dns_mode": "hijack",
+            },
+            {"type": "mixed", "tag": "mixed-in", "listen": "127.0.0.1", "listen_port": 7890},
+        ],
+        "outbounds": outbounds,
+        "route": {
+            "rules": route_rules,
+            "rule_set": rule_sets,
+            "final": "proxy",
+            "auto_detect_interface": True,
+            "default_domain_resolver": "ali",
+        },
+        "experimental": {
+            "cache_file": {"enabled": True, "path": str(STATE_DIR / "cache.db"), "store_fakeip": False},
+            "clash_api": {
+                "external_controller": "127.0.0.1:9090",
+                "external_ui": DASHBOARD_DIR,
+                "secret": clash_api_secret(),
+                "default_mode": "rule",
+                "access_control_allow_private_network": False,
+            },
+        },
+    }
+
+
+def main():
+    os.umask(0o077)
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    PROVIDER_DIR.mkdir(parents=True, exist_ok=True)
+    current_subscriptions = subscriptions()
+    prune_providers(current_subscriptions)
+    used_tags = set()
+    node_outbounds = []
+    groups = []
+    skipped = 0
+    for name, url in current_subscriptions.items():
+        tags = []
+        for proxy in download(name, url):
+            if not isinstance(proxy, dict) or EXCLUDE_NODE.search(str(proxy.get("name", ""))):
+                continue
+            try:
+                converted = convert_proxy(proxy)
+            except (ValueError, TypeError):
+                skipped += 1
+                continue
+            converted["tag"] = unique_tag(f"[{name}] {proxy.get('name', 'unnamed')}", used_tags)
+            node_outbounds.append(converted)
+            tags.append(converted["tag"])
+        groups.append((name, tags))
+    manual_tags = []
+    for name, link in manual_nodes().items():
+        try:
+            converted = convert_proxy(share_link_proxy(link))
+        except (GenerateError, ValueError, TypeError) as error:
+            print(f"已跳过手动节点: {name}: {error}", file=sys.stderr)
+            skipped += 1
+            continue
+        converted["tag"] = unique_tag(f"[{MANUAL_GROUP}] {name}", used_tags)
+        node_outbounds.append(converted)
+        manual_tags.append(converted["tag"])
+    if manual_tags:
+        groups.append((MANUAL_GROUP, manual_tags))
+    if skipped:
+        print(f"已跳过 {skipped} 个不支持或字段不完整的节点", file=sys.stderr)
+    config = build_config(node_outbounds, groups)
+    temporary = CONFIG_FILE.with_name(f".{CONFIG_FILE.name}.{os.getpid()}.tmp")
+    try:
+        temporary.write_text(json.dumps(config, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        temporary.chmod(0o640)
+        result = subprocess.run(
+            [SING_BOX, "check", "-c", str(temporary)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        if result.returncode != 0:
+            atomic_write(CONFIG_DIR / "check.log", result.stderr)
+            raise GenerateError("配置校验失败，已保留旧配置；详情见 check.log")
+        try:
+            unchanged = json.loads(CONFIG_FILE.read_text(encoding="utf-8")) == config
+        except (FileNotFoundError, json.JSONDecodeError):
+            unchanged = False
+        if not unchanged:
+            CHANGED_FILE.touch(mode=0o600)
+            os.replace(temporary, CONFIG_FILE)
+        (CONFIG_DIR / "check.log").unlink(missing_ok=True)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+if __name__ == "__main__":
+    try:
+        if sys.argv[1:] == ["--check-node"]:
+            check_node()
+        else:
+            main()
+    except (GenerateError, OSError, yaml.YAMLError) as error:
+        print(f"sing-box 配置生成失败: {error}", file=sys.stderr)
+        sys.exit(1)

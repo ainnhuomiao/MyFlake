@@ -1,0 +1,20 @@
+# nixpkgs 配置与自有 overlay 的单一来源，供 NixOS 系统配置与 flake perSystem 共用。
+{ inputs, ... }:
+{
+  config = {
+    allowBroken = true;
+    allowUnsupportedSystem = true;
+    allowUnfree = true;
+    # nixpkgs 已把 gtk2 标为 broken（计划 27.05 移除，见 #410814），而钉钉 8.x 依赖的
+    # gtkglext 仍硬依赖 gtk2，不放行会直接导致求值失败。上游迁移到 gtk3 之前只能降级为警告。
+    problems.handlers."gtk+".broken = "warn";
+    permittedInsecurePackages = [
+      # 钉钉客户端自带 OpenSSL 1.1（EOL），见 pkgs/dingtalk/default.nix; 版本号单一来源 pkgs/dingtalk/version.nix
+      "dingtalk-${import ../pkgs/dingtalk/version.nix}"
+      # nixpkgs 将 qutebrowser 3.7.0 标记为仍接受 eMudhra TLS 证书；仅精确放行当前版本
+      "qutebrowser-3.7.0"
+    ];
+  };
+
+  overlays = [ (import ../pkgs { inherit inputs; }).overlay ] ++ import ../overlays;
+}

@@ -1,10 +1,9 @@
 {
   imports = [
-    ./core
-    ./proxy
-    ./hardware
+    ./apps
+    ./base
+    ./desktop
+    ./network
     ./nix
-    ./programs
-    ./virtualisation.nix
   ];
 }

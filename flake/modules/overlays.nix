@@ -1,9 +1,7 @@
 { inputs, ... }:
 let
-  packages = import ../../pkgs { inherit inputs; };
+  nixpkgsCfg = import ../nixpkgs.nix { inherit inputs; };
 in
 {
-  flake.overlays.default = inputs.nixpkgs.lib.composeManyExtensions (
-    [ packages.overlay ] ++ import ../../overlays
-  );
+  flake.overlays.default = inputs.nixpkgs.lib.composeManyExtensions nixpkgsCfg.overlays;
 }

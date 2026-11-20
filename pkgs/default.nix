@@ -2,6 +2,7 @@
 {
   overlay = final: prev: {
     agy-hud = final.callPackage ./agy-hud { };
+    alma = final.callPackage ./alma { };
     bili_tui = final.callPackage ./bili_tui { };
     dingtalk = final.callPackage ./dingtalk { };
     # 参数名与包名相同: 显式传入 prev(nixpkgs) 版本, 否则 callPackage 会解析到 final 自身造成无限递归
@@ -10,7 +11,14 @@
     };
     flake-stats-mcp = final.callPackage ./flake-stats-mcp { };
     herdr = inputs.herdr.packages.${final.stdenv.hostPlatform.system}.default;
+    # 显式传入上游包，避免 callPackage 解析到正在定义的 final.ncro
+    ncro = final.callPackage ./ncro {
+      ncro = inputs.ncro.packages.${final.stdenv.hostPlatform.system}.default;
+    };
     kimi-code-desktop = final.callPackage ./kimi-code-desktop { };
     omp-provider = final.callPackage ./omp-provider { };
+    workbuddy = final.callPackage ./workbuddy {
+      workbuddy = inputs.workbuddy.packages.${final.stdenv.hostPlatform.system}.default;
+    };
   };
 }

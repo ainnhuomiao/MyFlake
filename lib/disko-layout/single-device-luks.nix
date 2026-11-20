@@ -43,7 +43,7 @@ in
             content = {
               type = "luks";
               name = "crypted";
-              # lib/scripts/disko.sh 在选中 *luks* 布局时写入此文件
+              # scripts/disko.sh 在选中 *luks* 布局时写入此文件
               passwordFile = "/tmp/secret.key";
               settings.allowDiscards = true;
               content = {

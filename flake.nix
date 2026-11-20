@@ -24,7 +24,7 @@
     };
     nixpkgs-emanote.url = "github:nixos/nixpkgs/6b4955211758ba47fac850c040a27f23b9b4008f";
     disko = {
-      # lib/scripts/disko.sh 全新安装流程使用, 布局见 lib/disko-layout/
+      # scripts/disko.sh 全新安装流程使用, 布局见 lib/disko-layout/
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
@@ -41,10 +41,6 @@
     herdr = {
       # 保留上游锁定工具链,避免宿主 nixpkgs 的 Zig 更新破坏 Ghostty 链接。
       url = "github:ogulcancelik/herdr";
-    };
-    hyprpicker = {
-      url = "github:hyprwm/hyprpicker";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
     linuxqq-wayland-fix = {
       # 修复 Linux QQ 在 Wayland 下的屏幕共享/剪贴板/截图 (nixosModules.default)
@@ -127,6 +123,6 @@
       "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
     ];
     # trusted-users 放在 flake nixConfig 里无效(对未信任用户被忽略, 对已信任用户无意义),
-    # 实际设置在 system/nix/substituters.nix
+    # 实际设置在 system/nix/cache.nix
   };
 }

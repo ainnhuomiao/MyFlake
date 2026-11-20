@@ -13,6 +13,11 @@
           "*.png"
           "*secrets.yaml"
           "justfile"
+          # pnpm 自己写 lockfile,prettier 重排会改变其内容,导致 pnpmDeps 哈希失配。
+          "**/pnpm-lock.yaml"
+          # 依赖树和工具临时目录永远不该被格式化;否则生成式 profile 一落地就会让 nix fmt 失败。
+          "**/node_modules/**"
+          ".tmp/**"
         ];
 
         programs = {

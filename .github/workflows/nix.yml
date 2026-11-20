@@ -57,7 +57,7 @@ jobs:
           ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
         run: |
           nix profile install --inputs-from . nixpkgs#attic-client
-          attic login vps https://ainnhuomiao.qianyuanqing.asia/ "$ATTIC_TOKEN"
+          attic login vps https://attic.hmiao.cc.cd/ "$ATTIC_TOKEN"
 
       # 候选集 = packages + environment.systemPackages + home-manager.users.huomiao.home.packages。
       # --skip-cached 查询全部已配置缓存,只构建未命中项;-j 2 允许适度并行,避免重型包无限并发 OOM。
