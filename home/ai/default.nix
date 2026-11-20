@@ -21,7 +21,6 @@ in
   home.packages =
     with pkgs;
     [
-      cc-switch
       herdr
       alma
       inputs.magpie.packages.${system}.default
