@@ -97,7 +97,7 @@ flake.nix
 
 - 编辑器：Neovim（AstroNvim v6）、VS Code、Helix。
 - 工具链：C/C++、Rust、Go、TypeScript/Node.js、Haskell，以及 Direnv、nixd、nixfmt、treefmt。
-- AI 工具：Codex、Claude Code、Kimi Code CLI/Desktop、OpenCode、Antigravity、Oh My Pi、Pi、Cursor Agent、DSH、Alma、WorkBuddy、Magpie、CC-Switch 与 Herdr。
+- AI 工具：Codex、Claude Code、Kimi Code CLI/Desktop、OpenCode、Antigravity、Oh My Pi、Pi、Cursor Agent、DSH、WorkBuddy、Magpie、CC-Switch 与 Herdr。
 - MCP：Context7、mcp-nixos、flake-stats-mcp 统一声明在 `home/ai/mcp.nix`，激活时合并到各客户端，保留本地其他配置。
 
 ```bash

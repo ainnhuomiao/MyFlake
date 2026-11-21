@@ -22,7 +22,6 @@ in
     with pkgs;
     [
       herdr
-      alma
       inputs.magpie.packages.${system}.default
       pkgs.workbuddy
       inputs.oh-my-pi-cn.packages.${system}.omp
