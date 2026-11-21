@@ -64,7 +64,8 @@ jobs:
       # 完整系统 toplevel 不在候选集中,避免拉取约 54 GiB 闭包撑爆标准 runner 的 14 GB 磁盘;
       # 完整系统仍需本机 `just build` 验证。
       # main 推送时每个顶层包完成后立即上传其闭包;不逐个上传每个中间 derivation,避免上传队列积压。
-      # PR 不配置 Attic 凭据,只构建不上传。临时网络故障时重试一次,已在本机的产物会直接复用。
+      # PR 不配置 Attic 凭据,只构建不上传。临时网络故障时最多重试两次,
+      # 已在本机或 Attic 的产物会直接复用;逐步退避,给厂商 CDN 恢复时间。
       - name: Build uncached packages
         run: |
           nix profile install --inputs-from . nixpkgs#nix-fast-build
@@ -73,7 +74,7 @@ jobs:
             cache_options=(--attic-cache ainnhuomiao)
           fi
           trap 'df -h /' EXIT
-          for attempt in 1 2; do
+          for attempt in 1 2 3; do
             if nix-fast-build \
               --flake .#legacyPackages.x86_64-linux.cacheOutputs \
               --skip-cached \
@@ -82,9 +83,10 @@ jobs:
               "${cache_options[@]}"; then
               exit 0
             fi
-            if ((attempt == 2)); then
+            if ((attempt == 3)); then
               exit 1
             fi
-            echo "Build or upload failed; retrying with existing store paths in 15 seconds"
-            sleep 15
+            delay=$((attempt * 30))
+            echo "Build or upload failed; retrying with existing store paths in ${delay} seconds"
+            sleep "$delay"
           done
