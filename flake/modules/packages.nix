@@ -11,9 +11,12 @@
       # _module.args.pkgs 在 perSystem 模块定点求值早期就被严格需要, 此处若引用
       # inputs.self.overlays 会无限递归, 故直接 import flake/nixpkgs.nix。
       nixpkgsCfg = import ../nixpkgs.nix { inherit inputs; };
-      hostConfig = inputs.self.nixosConfigurations.nixos.config;
-      installedPackages =
-        hostConfig.environment.systemPackages ++ hostConfig.home-manager.users.huomiao.home.packages;
+      me = import ../../me.nix;
+      allHostConfigs = map (cfg: cfg.config) (builtins.attrValues inputs.self.nixosConfigurations);
+      installedPackages = builtins.concatMap (
+        hostConfig:
+        hostConfig.environment.systemPackages ++ hostConfig.home-manager.users.${me.userName}.home.packages
+      ) allHostConfigs;
       # 固定候选保留原属性名;系统/HM 按 derivation 去重,并剔除固定候选中已有的项。
       # 每个 derivation 的全部输出都会构建。
       derivationKey = package: builtins.unsafeDiscardStringContext package.drvPath;
@@ -54,6 +57,7 @@
           telegram-desktop
           ;
         disko = inputs.disko.packages.${system}.disko;
+        nixos-wsl-utils = inputs.self.nixosConfigurations.nixos-wsl.config.system.build.nativeUtils;
         noctalia = inputs.noctalia.packages.${system}.default;
         linuxqq-wayland-fix = inputs.linuxqq-wayland-fix.packages.${system}.default;
         omp-cn = inputs.oh-my-pi-cn.packages.${system}.omp;

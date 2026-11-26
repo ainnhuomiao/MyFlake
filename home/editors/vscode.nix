@@ -26,6 +26,7 @@ in
         pkgs.vscode-extensions.golang.go
         pkgs.vscode-extensions.arrterian.nix-env-selector
         pkgs.vscode-extensions.mkhl.direnv
+        pkgs.vscode-extensions.saoudrizwan.claude-dev
         pkgs.vscode-extensions.illixion.vscode-vibrancy-continued
         kimi-code
       ];

@@ -85,6 +85,11 @@
       url = "github:Mic92/nix-index-database";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nixos-wsl = {
+      # WSL2 NixOS 模块 (nixosConfigurations.nixos-wsl 使用)
+      url = "github:nix-community/NixOS-WSL";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -111,7 +116,7 @@
 
   nixConfig = {
     fallback = true;
-    http-connections = 16;
+    http-connections = 8;
     extra-substituters = [
       "https://attic.hmiao.cc.cd/ainnhuomiao"
       "https://nix-community.cachix.org"

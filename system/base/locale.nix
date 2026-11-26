@@ -14,7 +14,4 @@
       "zh_TW.UTF-8/UTF-8"
     ];
   };
-
-  services.xserver.xkb.options = "caps:escape";
-  console.useXkbConfig = true;
 }

@@ -1,7 +1,6 @@
 { pkgs, ... }:
 {
   environment = {
-    binsh = "${pkgs.dash}/bin/dash";
     shells = [ pkgs.fish ];
     systemPackages = with pkgs; [
       android-tools

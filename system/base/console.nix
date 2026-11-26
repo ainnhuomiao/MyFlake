@@ -68,6 +68,10 @@ in
   # 由 console.colors 生成 vt.default_red/grn/blu 内核参数
   console.colors = ttyPalette;
 
+  # 物理机键位映射（CapsLock -> Escape），并同步到虚拟控制台
+  services.xserver.xkb.options = "caps:escape";
+  console.useXkbConfig = true;
+
   # ly 已移除; tty1 保留真实 getty 并 autologin(fish loginShellInit 守卫 niri-session),
   # 直接启动进 niri; kmscon 仍接管 VTs 2–6 渲染中文 TTY
   systemd.suppressedSystemUnits = lib.mkForce [ ];

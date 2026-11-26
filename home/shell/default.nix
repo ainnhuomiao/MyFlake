@@ -1,10 +1,6 @@
-{ pkgs, ... }:
 {
   imports = [
-    ./fish
-    ./starship.nix
-    ./eza.nix
+    ./common.nix
     ./kitty.nix
   ];
-  home.packages = [ pkgs.tree ];
 }

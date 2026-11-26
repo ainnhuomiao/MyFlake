@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-    面向 <code>x86_64-linux</code> 主机 <code>nixos</code> 的个人 Flake，统一管理系统、桌面、开发环境、AI CLI、透明代理与自定义包。
+    面向 <code>x86_64-linux</code> 的个人 Flake（物理机 <code>nixos</code> 与 Windows WSL2 <code>nixos-wsl</code>），统一管理系统、桌面、开发环境、AI CLI、透明代理与自定义包。
 </p>
 
 <div align="center">
@@ -38,6 +38,7 @@
     <a href="#目录结构">目录结构</a> ·
     <a href="#日常维护">日常维护</a> ·
     <a href="#常用-niri-快捷键">快捷键</a> ·
+    <a href="#wsl2-配置与导入">WSL2</a> ·
     <a href="#全新安装">全新安装</a>
 </p>
 
@@ -59,7 +60,7 @@
 | 项目       | 当前配置                                                      |
 | ---------- | ------------------------------------------------------------- |
 | Flake      | `flake-parts` + `nixos-unstable-small`                        |
-| 平台       | `x86_64-linux`，主机 `nixos`                                  |
+| 平台       | `x86_64-linux`，主机 `nixos`（物理机）与 `nixos-wsl`（WSL2）  |
 | 内核       | Linux Zen（`linuxPackages_zen`）                              |
 | 桌面       | niri + Noctalia `v5.2.1`，getty 自动登录，无显示管理器        |
 | 用户环境   | Home Manager，作为 NixOS 模块集成                             |
@@ -77,10 +78,14 @@
 ```text
 flake.nix
 └── hosts/default.nix
-    └── nixosConfigurations.nixos
-        ├── hosts/nixos/
-        ├── system/
-        └── home/
+    ├── nixosConfigurations.nixos
+    │   ├── hosts/nixos/
+    │   ├── system/
+    │   └── home/
+    └── nixosConfigurations.nixos-wsl
+        ├── hosts/nixos-wsl/
+        ├── system/base/common.nix + system/nix/
+        └── home/wsl.nix
 ```
 
 ### 桌面与外观
@@ -163,7 +168,9 @@ nix build .#nixosConfigurations.nixos.pkgs.omp-provider
 │   ├── media/               # MPV、音乐、yt-dlp、Zathura 与 OBS
 │   ├── network/             # sing-box-toggle 等用户态网络脚本
 │   └── shell/               # Fish、Starship、Eza 与 Kitty
-├── hosts/nixos/             # 当前物理机硬件、eGPU 与机器参数调优
+├── hosts/
+│   ├── nixos/               # 物理机硬件、eGPU 与机器参数调优
+│   └── nixos-wsl/           # Windows WSL2 配置（GPU/WSLg 透传、字体与互操作）
 ├── lib/
 │   ├── disko-layout/        # 普通单盘与 LUKS 单盘布局
 │   └── appearance.nix       # 公共配色与外观数据
@@ -185,18 +192,20 @@ nix build .#nixosConfigurations.nixos.pkgs.omp-provider
 
 ## 日常维护
 
-| 命令                         | 作用                                          |
-| ---------------------------- | --------------------------------------------- |
-| `just`                       | 列出全部命令                                  |
-| `just update`                | 更新所有 Flake inputs                         |
-| `just update-input <name>`   | 更新单个 input                                |
-| `just format`                | 格式化仓库                                    |
-| `just check`                 | 执行 `nix flake check --fallback`             |
-| `just build [host]`          | 构建完整系统，不激活；默认 `nixos`            |
-| `just verify`                | 依次执行格式化与检查                          |
-| `just rebuild-switch [host]` | 检查、格式化、构建并切换到新系统              |
-| `just generations`           | 查看 NixOS generations                        |
-| `just clean`                 | 清理旧 generations 与 gcroots，保留 3 代/7 天 |
+| 命令                         | 作用                                                                                                                    |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `just`                       | 列出全部命令                                                                                                            |
+| `just update`                | 更新所有 Flake inputs                                                                                                   |
+| `just update-input <name>`   | 更新单个 input                                                                                                          |
+| `just format`                | 格式化仓库                                                                                                              |
+| `just check`                 | 执行 `nix flake check --fallback`                                                                                       |
+| `just build [host]`          | 构建完整系统，不激活；默认按主机名选 `nixos` / `nixos-wsl`                                                              |
+| `just fix-hashes [args...]`  | 自动检测并替换本仓库 `.nix` 中失配的固定输出哈希（支持 `--dry-run` 或指定单包如 `.#dingtalk`；不改动上游 nixpkgs 哈希） |
+| `just wsl-tarball [out]`     | 构建可直接导入 Windows 的 `.wsl` 镜像（默认 `nixos-wsl.wsl`）                                                           |
+| `just verify`                | 依次执行格式化与检查                                                                                                    |
+| `just rebuild-switch [host]` | 检查、格式化、构建并切换到新系统（默认按主机名选择；遇到本地哈希失配会自动修复并重切）                                  |
+| `just generations`           | 查看 NixOS generations                                                                                                  |
+| `just clean`                 | 清理旧 generations 与 gcroots，保留 3 代/7 天                                                                           |
 
 常规验证与切换：
 
@@ -210,7 +219,7 @@ just rebuild-switch
 > [!WARNING]
 > `just clean` 会不可逆地删除旧 generations 与 gcroots，之后无法回滚到这些版本。`just rebuild-switch` 会立即切换当前机器；内核更新后还需重启。
 
-推送 `main` 会触发 CI。依赖更新后应在本地完成上述验证，再按需提交并推送 `flake.lock`。
+推送 `main` 会触发 CI。依赖更新后应在本地完成上述验证，再按需提交并推送 `flake.lock`。`just rebuild-switch`（及 `rebuild-switch-fast`）在遇到本仓库 `.nix` 的固定输出哈希失配时会自动调用 `scripts/fix-hashes.py` 更新并重新切换（仍跳过上游 nixpkgs 哈希；设 `AUTO_FIX_HASHES=0` 可禁用）。
 
 ## 常用 niri 快捷键
 
@@ -241,6 +250,43 @@ just rebuild-switch
 | `Super + [` / `Super + a`         | niri 交互截图，保存并复制    |
 | `Super + ]`                       | Grimshot 区域截图，仅复制    |
 | 媒体/亮度键                       | 播放、音量、麦克风与亮度控制 |
+
+## WSL2 配置与导入
+
+`nixosConfigurations.nixos-wsl` 基于 [NixOS-WSL](https://github.com/nix-community/NixOS-WSL)，复用完整 CLI、Fish + Starship、Neovim/Helix、全套开发工具链、AI CLI + MCP 总线与 `ncro` 缓存，并开启 `wsl.useWindowsDriver`（CUDA / WSLg 硬件加速）、`nix-ld`（直接兼容 Windows VS Code Remote-WSL 与未打补丁的动态二进制）、WSLg 字体/剪贴板与 `wsl-open`。不含 Linux 桌面环境、Docker 与 `sing-box` 透明代理（网络与代理直接走 Windows 宿主机）。
+
+### 方式一：在当前双系统 NixOS 上直接打包 `.wsl`（推荐）
+
+可复用本机 `/nix/store` 缓存，导入 Windows 后即已包含完整环境与默认用户 `huomiao`：
+
+```bash
+just wsl-tarball nixos-wsl.wsl
+```
+
+将生成的 `nixos-wsl.wsl` 复制到 Windows 后，在 PowerShell 执行（或直接双击 `.wsl` 文件）：
+
+```powershell
+wsl --install --from-file nixos-wsl.wsl --name NixOS
+```
+
+### 方式二：从官方镜像切到本 Flake
+
+若已通过官方 `nixos.wsl` 导入，首次从默认用户 `nixos` 切换到 `huomiao` 时需用 `boot` 而非 `switch`：
+
+```bash
+sudo nixos-rebuild boot --flake github:ainnhuomiao/MyFlake#nixos-wsl
+```
+
+随后在 Windows PowerShell 重启实例以完成用户迁移：
+
+```powershell
+wsl -t NixOS
+wsl -d NixOS --user root exit
+wsl -t NixOS
+wsl -d NixOS
+```
+
+日常更新在 WSL 内进入仓库直接执行 `just rebuild-switch`（会自动识别主机名 `nixos-wsl`）。
 
 ## 全新安装
 

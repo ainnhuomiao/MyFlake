@@ -4,9 +4,6 @@
   ...
 }:
 {
-  # Boot straight into niri via tty1 getty autologin (ly removed)
-  services.getty.autologinUser = me.userName;
-
   # Set to true so passwords can be changed with `passwd`
   users.mutableUsers = true;
   users.users.root = {
@@ -19,9 +16,6 @@
     isNormalUser = true;
     extraGroups = [
       "wheel"
-      "video"
-      "audio"
-      "kvm"
     ];
   };
 }

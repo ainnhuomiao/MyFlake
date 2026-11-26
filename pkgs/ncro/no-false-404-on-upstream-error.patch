@@ -1,0 +1,54 @@
+--- a/crates/router/src/lib.rs
++++ b/crates/router/src/lib.rs
+@@ -678,6 +678,7 @@ impl Router {
+     };
+ 
+     let filtered = self.cooldown_filtered_candidates(candidates);
++    let skipped_by_cooldown = !filtered.is_empty() && filtered.len() < candidates.len();
+     let effective_candidates = if filtered.is_empty() {
+       candidates.to_vec()
+     } else {
+@@ -699,6 +700,7 @@ impl Router {
+     }
+ 
+     let mut any_not_found = false;
++    let mut any_unreachable = skipped_by_cooldown;
+     let mut attempts_total = 0_u32;
+     for (_priority, group) in groups {
+       let mut group_candidates = group;
+@@ -724,6 +726,7 @@ impl Router {
+               Err(err) if commit_error_is_retryable(&err) => {
+                 if commit_error_is_network_like(&err) {
+                   self.mark_cooldown(&winner_url);
++                  any_unreachable = true;
+                 } else {
+                   any_not_found = true;
+                 }
+@@ -744,20 +747,24 @@ impl Router {
+           },
+           // Try the next priority group on network error; those upstreams were
+           // unreachable so we cannot conclude the path is absent.
+-          Err(RaceGroupError::NetworkError | RaceGroupError::Timeout) => break,
++          Err(RaceGroupError::NetworkError | RaceGroupError::Timeout) => {
++            any_unreachable = true;
++            break;
++          },
+         }
+       }
+     }
++    let resolved_not_found = any_not_found && !any_unreachable;
+     ncro_metrics::get()
+       .narinfo_upstream_attempts_per_resolve
+-      .with_label_values(&[if any_not_found {
++      .with_label_values(&[if resolved_not_found {
+         "not_found"
+       } else {
+         "unavailable"
+       }])
+       .observe(f64::from(attempts_total));
+ 
+-    if any_not_found {
++    if resolved_not_found {
+       Err(RouterError::NotFound)
+     } else {
+       Err(RouterError::UpstreamUnavailable)

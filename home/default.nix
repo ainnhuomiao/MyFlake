@@ -1,11 +1,6 @@
 {
-  inputs,
-  me,
-  ...
-}:
-{
   imports = [
-    inputs.nix-index-database.homeModules.nix-index
+    ./base.nix
     ./ai
     ./apps
     ./cli
@@ -16,23 +11,4 @@
     ./network
     ./shell
   ];
-
-  home = {
-    username = me.userName;
-    homeDirectory = "/home/${me.userName}";
-    language.base = "en_US.UTF-8";
-    shell = {
-      enableFishIntegration = true;
-      enableBashIntegration = true;
-    };
-    sessionVariables = {
-      NIX_AUTO_RUN = "1";
-    };
-  };
-  programs = {
-    home-manager.enable = true;
-  };
-
-  home.enableNixpkgsReleaseCheck = false;
-  home.stateVersion = "25.11";
 }

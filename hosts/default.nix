@@ -12,13 +12,13 @@
         inherit inputs self me;
         appearance = import ../lib/appearance.nix;
       };
-      mkHomeManager = {
+      mkHomeManager = homeModule: {
         home-manager = {
           useGlobalPkgs = true;
           useUserPackages = true;
           backupFileExtension = "backup";
           extraSpecialArgs = specialArgs;
-          users.${me.userName}.imports = [ ../home ];
+          users.${me.userName}.imports = [ homeModule ];
         };
       };
     in
@@ -34,7 +34,20 @@
           # 并把 niri 自带的 portal 加入 extraPortals。
           inputs.niri.nixosModules.niri
           inputs.home-manager.nixosModules.home-manager
-          mkHomeManager
+          (mkHomeManager ../home)
+        ];
+      };
+
+      nixos-wsl = nixosSystem {
+        specialArgs = specialArgs;
+        modules = [
+          ./nixos-wsl
+          ../system/base/common.nix
+          ../system/nix
+          inputs.ncro.nixosModules.ncro
+          inputs.nixos-wsl.nixosModules.default
+          inputs.home-manager.nixosModules.home-manager
+          (mkHomeManager ../home/wsl.nix)
         ];
       };
     };

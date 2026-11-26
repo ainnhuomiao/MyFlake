@@ -1,5 +1,8 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
+# 按当前主机名自动选择默认配置 (nixos / nixos-wsl), 其余环境回退到 nixos
+default_host := `h=$(hostname 2>/dev/null || echo nixos); case "$h" in nixos|nixos-wsl) echo "$h" ;; *) echo nixos ;; esac`
+
 # List available recipes
 [default]
 help:
@@ -28,8 +31,16 @@ format:
     nix fmt
 
 # Build a NixOS configuration without activating it (nom output built in)
-build host="nixos":
+build host=default_host:
     nh os build . -H {{host}}
+
+# 自动检测并替换本仓库 .nix 中失配的固定输出哈希 (默认目标: 当前主机系统闭包)
+fix-hashes *args:
+    python3 ./scripts/fix-hashes.py {{args}}
+
+# Build an importable NixOS-WSL tarball (.wsl) for Windows
+wsl-tarball out="nixos-wsl.wsl":
+    sudo nix run .#nixosConfigurations.nixos-wsl.config.system.build.tarballBuilder -- "{{out}}"
 
 # Show all flake outputs
 show:
@@ -46,11 +57,11 @@ generations:
     nh os info
 
 # Validate, format, and switch via nh (nom output built in)
-rebuild-switch host="nixos": check format
+rebuild-switch host=default_host: check format
     NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/rebuild.sh {{host}}
 
 # Fast path: build and switch without pre-check or formatting
-rebuild-switch-fast host="nixos":
+rebuild-switch-fast host=default_host:
     NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/rebuild.sh {{host}}
 
 # Explicit full validation before switching

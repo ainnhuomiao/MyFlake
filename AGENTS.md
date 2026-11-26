@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Personal NixOS flake for one machine: host `nixos`, user `huomiao`, `x86_64-linux` only, built with flake-parts. This working copy is that live host, so switching affects it immediately.
+Personal NixOS flake for one dual-boot machine: bare-metal host `nixos` and Windows WSL2 host `nixos-wsl`, user `huomiao`, `x86_64-linux` only, built with flake-parts. This working copy is the live `nixos` host, so switching `nixos` affects it immediately.
 
 `README.md` is a Chinese user manual; if it ever disagrees with the flake outputs, trust `nix flake show` and the code.
 
@@ -10,7 +10,9 @@ Run from the repo root. Typical loop: edit, `git add` new files, `just format`, 
 
 - `just format`: `nix fmt` (treefmt: nixfmt, prettier for Markdown/YAML/JSON, shfmt, stylua). Rewrites files in place across the repo.
 - `just check`: `nix flake check --fallback`. Evaluates every output, including the NixOS config, and builds the `treefmt` and `disko-layouts` checks. It does not build `packages`.
-- `just build`: builds the `nixos` system without activating it. CI never builds the system closure, so this is the only full system check.
+- `just build [host]`: builds a NixOS system without activating it (defaults to `nixos` or `nixos-wsl` based on hostname). CI never builds the system closure, so this is the only full system check.
+- `just fix-hashes [args...]`: runs `scripts/fix-hashes.py` to auto-replace mismatched fixed-output hashes in git-tracked `.nix` files (skips upstream/nixpkgs hashes; supports `--dry-run` and custom targets such as `.#dingtalk`).
+- `just wsl-tarball [out]`: builds an importable `.wsl` tarball for `nixos-wsl` using `NixOS-WSL`'s `tarballBuilder`.
 - Single check: `nix build --no-link .#checks.x86_64-linux.treefmt` (formatting) or `.#checks.x86_64-linux.disko-layouts` (pure eval of `lib/disko-layout/`).
 - Single package: `nix build --no-link .#<name>` for names in `nix flake show`. Overlay-only packages such as `omp-provider` build via `.#nixosConfigurations.nixos.pkgs.omp-provider`.
 - Eval one option without building: `nix eval .#nixosConfigurations.nixos.config.<path>`.
@@ -39,8 +41,8 @@ Run from the repo root. Typical loop: edit, `git add` new files, `just format`, 
 
 - `flake.nix` declares inputs and `nixConfig`. Outputs come from `flake/modules/` (packages, checks, dev shells, formatter, overlays) and `hosts/`.
 - `flake/nixpkgs.nix` is the single source of truth for nixpkgs `config` and the shared overlay list (`pkgs/` + `overlays/`), imported directly by `system/nix/nixpkgs.nix`, `flake/modules/packages.nix`, and `flake/modules/overlays.nix` (`perSystem` cannot reference `inputs.self.overlays` without infinite recursion). NixOS adds `rust-overlay` in `system/nix/nixpkgs.nix`.
-- `hosts/default.nix` builds `nixosConfigurations.nixos` from `hosts/nixos/`, `system/`, disko, ncro, niri, and Home Manager (`home/`).
-- `hosts/nixos/` holds machine-specific hardware and tuning (`hardware-configuration.nix`, `hardware.nix`, `egpu.nix`, `tuning.nix`).
+- `hosts/default.nix` builds `nixosConfigurations.nixos` (from `hosts/nixos/`, `system/`, disko, ncro, niri, and `home/`) and `nixosConfigurations.nixos-wsl` (from `hosts/nixos-wsl/`, `system/base/common.nix`, `system/nix/`, ncro, `nixos-wsl`, and `home/wsl.nix`).
+- `hosts/nixos/` holds machine-specific hardware and tuning (`hardware-configuration.nix`, `hardware.nix`, `egpu.nix`, `tuning.nix`). `hosts/nixos-wsl/` holds WSL2-specific config (`useWindowsDriver`, WSLg fonts/clipboard, `nix-ld` GPU libs, `wsl-open`).
 - `system/` holds NixOS modules grouped by domain: `base/`, `desktop/` (`niri-session.nix`, `audio.nix`, `fonts.nix`, `packages.nix`), `network/` (`network.nix`, `proxy/` with `tools.nix`/`rules.nix`/scripts), `apps/`, and `nix/` (`cache.nix` combines substituters + ncro).
 - `home/` holds Home Manager modules grouped by domain (`shell/`, `cli/`, `desktop/`, `editors/`, `media/`, `apps/`, `network/`, `dev/`, `ai/`), imported directly by `home/default.nix`. Plain GUI/user packages go in `home/apps/apps.nix`. Single-file modules use `foo.nix`; multi-file or asset-bearing modules use `foo/default.nix`.
 - `me` (`me.nix`) and `appearance` (`lib/appearance.nix`) are specialArgs in all modules. Use them instead of importing `me.nix` or hardcoding colors and fonts.
@@ -58,7 +60,7 @@ Run from the repo root. Typical loop: edit, `git add` new files, `just format`, 
 ## Maintenance and secrets
 
 - After `just update`, run `just format`, `just check`, and `just build`. Pushing `flake.lock` (only when asked) is what makes CI rebuild and upload the source-built packages to Attic.
-- The kimi-code VS Code extension in `home/editors/vscode.nix` is pinned by hash. On a fixed-output hash mismatch, update that hash.
+- The kimi-code VS Code extension in `home/editors/vscode.nix` is pinned by hash. On a fixed-output hash mismatch, `just rebuild-switch` / `just rebuild-switch-fast` (`scripts/rebuild.sh`) automatically run `scripts/fix-hashes.py --from-log` to update local fixed-output hashes and retry switching (still skipping upstream/nixpkgs hashes; disable with `AUTO_FIX_HASHES=0`). You can also invoke `just fix-hashes` directly.
 - Edit MCP servers in `home/ai/mcp.nix` (`programs.mcp.servers`). Activation merges them into each tool's config, so don't hand-edit `~/.codex/config.toml` or `~/.kimi-code/mcp.json`.
 - Never put tokens or subscription URLs in Nix files; they end up in the world-readable store. sing-box subscriptions live in `/var/lib/sing-box-config/subscriptions.yaml`. The Obsidian API key is read at activation.
 
