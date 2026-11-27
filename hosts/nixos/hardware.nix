@@ -1,5 +1,9 @@
 { pkgs, ... }:
 {
+  # Windows 双系统共享主板硬件时钟 (RTC): 按本地时间 (Asia/Shanghai) 读写 RTC,
+  # 避免 NixOS 写入 UTC 后切回 Windows 出现时间慢 8 小时的问题 (国内无夏令时)。
+  time.hardwareClockInLocalTime = true;
+
   boot = {
     kernelPackages = pkgs.linuxPackages_zen;
     kernelParams = [
