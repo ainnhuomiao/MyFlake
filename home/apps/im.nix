@@ -45,9 +45,6 @@
       # wrapper 强制 QT_QPA_PLATFORM=xcb (走 XWayland), 1.25 缩放下不如 wayland 原生清晰
       dingtalk
       vesktop
-      (element-desktop.override {
-        commandLineArgs = "--enable-features=UseOzonePlatform --ozone-platform=x11";
-      })
     ];
   };
 }

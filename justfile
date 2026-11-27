@@ -3,20 +3,20 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 # 按当前主机名自动选择默认配置 (nixos / nixos-wsl), 其余环境回退到 nixos
 default_host := `h=$(hostname 2>/dev/null || echo nixos); case "$h" in nixos|nixos-wsl) echo "$h" ;; *) echo nixos ;; esac`
 
-# List available recipes
+# 列出可用命令
 [default]
 help:
     @just --list
 
-# Update all flake inputs
-update:
-    nix flake update
+# 更新全部或指定 flake inputs
+update *inputs:
+    nix flake update {{inputs}}
 
-# 更新单个 flake input
-update-input name:
-    nix flake lock --update-input {{name}}
+# 格式化仓库
+fmt:
+    nix fmt
 
-# Check all flake outputs with nix-output-monitor
+# 使用 nix-output-monitor 检查全部 flake 输出
 check:
     #!/usr/bin/env bash
     set -uo pipefail
@@ -26,75 +26,26 @@ check:
     nix flake check --fallback --log-format internal-json -v 2>&1 | nom --json
     exit "${PIPESTATUS[0]}"
 
-# Format the repository
-format:
-    nix fmt
-
-# Build a NixOS configuration without activating it (nom output built in)
+# 构建 NixOS 配置但不激活（内置 nom 输出）
 build host=default_host:
     nh os build . -H {{host}}
 
-# 自动检测并替换本仓库 .nix 中失配的固定输出哈希 (默认目标: 当前主机系统闭包)
-fix-hashes *args:
-    python3 ./scripts/fix-hashes.py {{args}}
-
-# Build an importable NixOS-WSL tarball (.wsl) for Windows
-wsl-tarball out="nixos-wsl.wsl":
-    sudo nix run .#nixosConfigurations.nixos-wsl.config.system.build.tarballBuilder -- "{{out}}"
-
-# Show all flake outputs
-show:
-    nix flake show
-
-# Enter the default development shell with nix-output-monitor
-develop:
-    nom develop
-
-# List NixOS system generations
-# nh os info shows generation list from the system profile
-# (replace the old `nixos-rebuild list-generations`)
-generations:
-    nh os info
-
-# Validate, format, and switch via nh (nom output built in)
-rebuild-switch host=default_host: check format
+# 格式化、检查并使用 nh 切换系统（内置 nom 输出）
+switch host=default_host: fmt check
     NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/rebuild.sh {{host}}
 
-# Fast path: build and switch without pre-check or formatting
-rebuild-switch-fast host=default_host:
-    NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/rebuild.sh {{host}}
-
-# Explicit full validation before switching
-verify:
-    just format
-    just check
-
-# Delete old generations and gcroots, keeping 3 generations and 7 days of history
-# nh clean all extends nix-collect-garbage with gcroot cleanup
-# (replace the old `nix-collect-garbage --delete-old`)
+# 清理旧 generations 与 gcroots，保留最近 3 代与 7 天
 clean:
     nh clean all --keep 3 --keep-since 7d
 
-# Partition and mount a target disk
+# 构建可直接导入 Windows 的 NixOS-WSL 镜像 (.wsl)
+wsl-tarball out="nixos-wsl.wsl":
+    sudo nix run .#nixosConfigurations.nixos-wsl.config.system.build.tarballBuilder -- "{{out}}"
+
+# 对目标磁盘分区并挂载
 disko:
     bash ./scripts/disko.sh
 
-# Install NixOS on the mounted target
+# 在已挂载的目标磁盘上安装 NixOS
 install:
     bash ./scripts/install.sh
-
-# 提交已暂存的改动并直推当前分支(通常 main;未暂存的 WIP 不会被提交)
-push msg *paths:
-    bash ./scripts/push.sh "{{msg}}" {{paths}}
-
-# 一键:git add -A(含未跟踪文件)后提交并直推 —— 会带上当时工作区的全部改动
-push-all msg:
-    bash ./scripts/push.sh --all "{{msg}}"
-
-# 可选 PR 流程:基于 origin/main 建分支、提交并创建 PR(需 gh)
-pr msg:
-    bash ./scripts/push.sh --pr "{{msg}}"
-
-# 同上并立即合并(留一条 PR 记录)
-pr-merge msg:
-    bash ./scripts/push.sh --pr --merge "{{msg}}"

@@ -16,13 +16,6 @@
   inputs = {
     # update single input: `nix flake lock --update-input <name>`
     # update all inputs: `nix flake update`
-    emanote = {
-      url = "github:srid/emanote";
-      # emanote 的 Haskell 依赖 fsnotify-0.4.1.0 要求 text < 2.1.2，
-      # 故锁在 nixpkgs-emanote（6b49552），顶层 nixpkgs 可自由更新
-      inputs.nixpkgs.follows = "nixpkgs-emanote";
-    };
-    nixpkgs-emanote.url = "github:nixos/nixpkgs/6b4955211758ba47fac850c040a27f23b9b4008f";
     disko = {
       # scripts/disko.sh 全新安装流程使用, 布局见 lib/disko-layout/
       url = "github:nix-community/disko";
@@ -81,10 +74,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable-small";
-    nix-index-database = {
-      url = "github:Mic92/nix-index-database";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     nixos-wsl = {
       # WSL2 NixOS 模块 (nixosConfigurations.nixos-wsl 使用)
       url = "github:nix-community/NixOS-WSL";
@@ -93,6 +82,11 @@
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+    superpowers = {
+      # obra/superpowers: Antigravity 官方合作工程工作流插件 (brainstorming/planning/TDD/debugging/review)
+      url = "github:obra/superpowers";
+      flake = false;
     };
     ncro = {
       url = "github:feel-co/ncro";

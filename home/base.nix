@@ -1,14 +1,9 @@
 # 物理机与 WSL 共用的 Home Manager 基础设置
 {
-  inputs,
   me,
   ...
 }:
 {
-  imports = [
-    inputs.nix-index-database.homeModules.nix-index
-  ];
-
   home = {
     username = me.userName;
     homeDirectory = "/home/${me.userName}";

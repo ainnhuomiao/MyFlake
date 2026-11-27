@@ -122,19 +122,6 @@ in
         border { off; }
         focus-ring { off; }
     }
-    // 截图覆盖层保持直角且不裁剪,避免边缘内容被全局圆角规则影响。
-    window-rule {
-        match app-id="(?i)^(flameshot|org\\.flameshot\\.Flameshot)$"
-        open-floating true
-        open-maximized false
-        open-fullscreen true
-        geometry-corner-radius 0
-        clip-to-geometry false
-        border { off; }
-        focus-ring { off; }
-        shadow { off; }
-    }
-
     // 单独保留 Alt-Tab;Super-Tab 用于概览,不与 recent-windows 默认键冲突。
     recent-windows {
         binds {
@@ -155,7 +142,6 @@ in
         Mod+Shift+P hotkey-overlay-title="打开电源与会话菜单" { spawn "${noctalia}" "msg" "panel-toggle" "session"; }
         Mod+Shift+X allow-inhibiting=false hotkey-overlay-title="锁定屏幕" { spawn "${noctalia}" "msg" "session" "lock"; }
 
-        Print hotkey-overlay-title="截图并标注（Flameshot）" { spawn "flameshot" "gui"; }
         Mod+BracketLeft hotkey-overlay-title="交互截图：保存并复制（也可按 Super+A）" { spawn "grimshot-savecopy"; }
         // 26.04 的交互 screenshot 没有 write-to-disk 参数,仅复制走 Grimshot area。
         Mod+BracketRight hotkey-overlay-title="交互截图：仅复制" { spawn "grimshot" "--notify" "copy" "area"; }
@@ -164,7 +150,6 @@ in
         Mod+Return hotkey-overlay-title="打开终端（Kitty）" { spawn "kitty"; }
         Mod+Shift+Return hotkey-overlay-title="打开浮动终端（Kitty）" { spawn "kitty" "--class" "termfloat"; }
         Mod+Shift+B hotkey-overlay-title="打开 Firefox 浏览器" { spawn "firefox"; }
-        Mod+Shift+Y hotkey-overlay-title="打开 Qutebrowser 浏览器" { spawn "qutebrowser"; }
         Mod+Shift+T hotkey-overlay-title="打开 Telegram" { spawn "Telegram"; }
         Mod+Shift+Q hotkey-overlay-title="打开 QQ" { spawn "linuxqq-wayland-fix"; }
         Alt+Shift+S hotkey-overlay-title="打开音乐播放器（SPlayer）" { spawn "SPlayer-Next"; }

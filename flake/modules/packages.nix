@@ -45,8 +45,6 @@
       # CI 还会合并系统与 Home Manager 直接安装的包, 自动跳过已有缓存, 不构建完整系统。
       packages = {
         inherit (pkgs)
-          bili_tui
-          cc-switch
           dingtalk
           firefox-bin
           flake-stats-mcp

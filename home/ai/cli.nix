@@ -15,6 +15,7 @@ in
 {
   imports = [
     ./agy-hud.nix
+    ./agy-plugins
     ./dsh
     ./mcp.nix
   ];
@@ -24,11 +25,9 @@ in
     [
       inputs.oh-my-pi-cn.packages.${system}.omp
       llmAgents.dsh
-      llmAgents.pi
       llmAgents.kimi-code
       llmAgents.opencode2
       llmAgents.grok-bot
-      llmAgents.cursor-agent
       llmAgents.chatgpt
       pkgs.omp-provider
     ]

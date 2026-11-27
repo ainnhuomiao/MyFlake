@@ -5,7 +5,6 @@
 }:
 let
   system = pkgs.stdenv.hostPlatform.system;
-  llmAgents = inputs.llm-agents.packages.${system};
 in
 {
   imports = [
@@ -17,6 +16,5 @@ in
     herdr
     inputs.magpie.packages.${system}.default
     pkgs.workbuddy
-    llmAgents.opencode2-desktop
   ];
 }

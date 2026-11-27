@@ -71,7 +71,7 @@
 | 代理       | sing-box TUN + metacubexd，按需手动启动                       |
 | 二进制缓存 | ncro 统一调度 Attic、Cachix、国内镜像与官方缓存               |
 | 引导与磁盘 | GRUB EFI + Btrfs 子卷 + Swap                                  |
-| 容器       | Docker + Distrobox + Flatpak                                  |
+| 容器       | Docker + Distrobox                                            |
 
 配置入口：
 
@@ -101,8 +101,8 @@ flake.nix
 ### 开发与 AI
 
 - 编辑器：Neovim（AstroNvim v6）、VS Code、Helix。
-- 工具链：C/C++、Rust、Go、TypeScript/Node.js、Haskell，以及 Direnv、nixd、nixfmt、treefmt。
-- AI 工具：Codex、Claude Code、Kimi Code CLI/Desktop、OpenCode、Antigravity、Oh My Pi、Pi、Cursor Agent、DSH、WorkBuddy、Magpie、CC-Switch 与 Herdr。
+- 工具链：C/C++、Rust、Go、TypeScript/Node.js，以及 nixd、nixfmt、treefmt。
+- AI 工具：Codex、Claude Code、Kimi Code、OpenCode2、Antigravity（含 superpowers / rtk / safety-guard 插件）、Oh My Pi、DSH、WorkBuddy、Magpie 与 Herdr。
 - MCP：Context7、mcp-nixos、flake-stats-mcp 统一声明在 `home/ai/mcp.nix`，激活时合并到各客户端，保留本地其他配置。
 
 ```bash
@@ -160,12 +160,12 @@ nix build .#nixosConfigurations.nixos.pkgs.omp-provider
 │   └── nixpkgs.nix          # 共享 nixpkgs config 与 overlay 列表
 ├── home/                    # Home Manager 模块（按领域分组）
 │   ├── ai/                  # AI CLI、DSH 与 MCP
-│   ├── apps/                # 浏览器、IM、Emanote 与纯安装应用
+│   ├── apps/                # 浏览器、IM 与纯安装应用
 │   ├── cli/                 # Git、Yazi、搜索、监控与命令行工具
 │   ├── desktop/             # niri、Noctalia、壁纸、Fcitx5、GTK 与截图
-│   ├── dev/                 # 开发工具链与 direnv
+│   ├── dev/                 # 开发工具链
 │   ├── editors/             # Neovim、Helix 与 VS Code
-│   ├── media/               # MPV、音乐、yt-dlp、Zathura 与 OBS
+│   ├── media/               # MPV、音乐与 yt-dlp
 │   ├── network/             # sing-box-toggle 等用户态网络脚本
 │   └── shell/               # Fish、Starship、Eza 与 Kitty
 ├── hosts/
@@ -176,7 +176,7 @@ nix build .#nixosConfigurations.nixos.pkgs.omp-provider
 │   └── appearance.nix       # 公共配色与外观数据
 ├── overlays/                # nixpkgs overlays
 ├── pkgs/                    # 仓库自有包（统一 <name>/default.nix）
-├── scripts/                 # 安装、重建与推送脚本（justfile 调用）
+├── scripts/                 # 安装、重建与哈希修复脚本（justfile 调用）
 ├── system/                  # NixOS 系统模块（按领域分组）
 │   ├── apps/                # Steam、Linux QQ Wayland 修复与容器/虚拟化
 │   ├── base/                # 引导、控制台、本地化、用户、安全、nix-ld 与基础工具
@@ -192,34 +192,30 @@ nix build .#nixosConfigurations.nixos.pkgs.omp-provider
 
 ## 日常维护
 
-| 命令                         | 作用                                                                                                                    |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `just`                       | 列出全部命令                                                                                                            |
-| `just update`                | 更新所有 Flake inputs                                                                                                   |
-| `just update-input <name>`   | 更新单个 input                                                                                                          |
-| `just format`                | 格式化仓库                                                                                                              |
-| `just check`                 | 执行 `nix flake check --fallback`                                                                                       |
-| `just build [host]`          | 构建完整系统，不激活；默认按主机名选 `nixos` / `nixos-wsl`                                                              |
-| `just fix-hashes [args...]`  | 自动检测并替换本仓库 `.nix` 中失配的固定输出哈希（支持 `--dry-run` 或指定单包如 `.#dingtalk`；不改动上游 nixpkgs 哈希） |
-| `just wsl-tarball [out]`     | 构建可直接导入 Windows 的 `.wsl` 镜像（默认 `nixos-wsl.wsl`）                                                           |
-| `just verify`                | 依次执行格式化与检查                                                                                                    |
-| `just rebuild-switch [host]` | 检查、格式化、构建并切换到新系统（默认按主机名选择；遇到本地哈希失配会自动修复并重切）                                  |
-| `just generations`           | 查看 NixOS generations                                                                                                  |
-| `just clean`                 | 清理旧 generations 与 gcroots，保留 3 代/7 天                                                                           |
+| 命令                      | 作用                                                                                   |
+| ------------------------- | -------------------------------------------------------------------------------------- |
+| `just`                    | 列出全部命令                                                                           |
+| `just update [inputs...]` | 更新全部或指定 Flake inputs（如 `just update nixpkgs`）                                |
+| `just fmt`                | 格式化仓库                                                                             |
+| `just check`              | 执行 `nix flake check --fallback`                                                      |
+| `just build [host]`       | 构建完整系统，不激活；默认按主机名选 `nixos` / `nixos-wsl`                             |
+| `just switch [host]`      | 格式化、检查、构建并切换到新系统（默认按主机名选择；遇到本地哈希失配会自动修复并重切） |
+| `just clean`              | 清理旧 generations 与 gcroots，保留 3 代/7 天                                          |
+| `just wsl-tarball [out]`  | 构建可直接导入 Windows 的 `.wsl` 镜像（默认 `nixos-wsl.wsl`）                          |
 
 常规验证与切换：
 
 ```bash
-just format
+just fmt
 just check
 just build
-just rebuild-switch
+just switch
 ```
 
 > [!WARNING]
-> `just clean` 会不可逆地删除旧 generations 与 gcroots，之后无法回滚到这些版本。`just rebuild-switch` 会立即切换当前机器；内核更新后还需重启。
+> `just clean` 会不可逆地删除旧 generations 与 gcroots，之后无法回滚到这些版本。`just switch` 会立即切换当前机器；内核更新后还需重启。
 
-推送 `main` 会触发 CI。依赖更新后应在本地完成上述验证，再按需提交并推送 `flake.lock`。`just rebuild-switch`（及 `rebuild-switch-fast`）在遇到本仓库 `.nix` 的固定输出哈希失配时会自动调用 `scripts/fix-hashes.py` 更新并重新切换（仍跳过上游 nixpkgs 哈希；设 `AUTO_FIX_HASHES=0` 可禁用）。
+推送 `main` 会触发 CI。依赖更新后应在本地完成上述验证，再按需提交并推送 `flake.lock`。`just switch` 在遇到本仓库 `.nix` 的固定输出哈希失配时会自动调用 `scripts/fix-hashes.py` 更新并重新切换（仍跳过上游 nixpkgs 哈希；设 `AUTO_FIX_HASHES=0` 可禁用）。
 
 ## 常用 niri 快捷键
 
@@ -246,7 +242,6 @@ just rebuild-switch
 | `Super + Ctrl + 方向键`           | 切换显示器焦点               |
 | `Super + Shift + x`               | 锁屏                         |
 | `Super + Shift + p`               | 电源与会话菜单               |
-| `Print`                           | Flameshot 截图与标注         |
 | `Super + [` / `Super + a`         | niri 交互截图，保存并复制    |
 | `Super + ]`                       | Grimshot 区域截图，仅复制    |
 | 媒体/亮度键                       | 播放、音量、麦克风与亮度控制 |
@@ -286,7 +281,7 @@ wsl -t NixOS
 wsl -d NixOS
 ```
 
-日常更新在 WSL 内进入仓库直接执行 `just rebuild-switch`（会自动识别主机名 `nixos-wsl`）。
+日常更新在 WSL 内进入仓库直接执行 `just switch`（会自动识别主机名 `nixos-wsl`）。
 
 ## 全新安装
 

@@ -6,12 +6,12 @@ Personal NixOS flake for one dual-boot machine: bare-metal host `nixos` and Wind
 
 ## Commands
 
-Run from the repo root. Typical loop: edit, `git add` new files, `just format`, `just check`.
+Run from the repo root. Typical loop: edit, `git add` new files, `just fmt`, `just check`.
 
-- `just format`: `nix fmt` (treefmt: nixfmt, prettier for Markdown/YAML/JSON, shfmt, stylua). Rewrites files in place across the repo.
+- `just fmt`: `nix fmt` (treefmt: nixfmt, prettier for Markdown/YAML/JSON, shfmt, stylua). Rewrites files in place across the repo.
 - `just check`: `nix flake check --fallback`. Evaluates every output, including the NixOS config, and builds the `treefmt` and `disko-layouts` checks. It does not build `packages`.
 - `just build [host]`: builds a NixOS system without activating it (defaults to `nixos` or `nixos-wsl` based on hostname). CI never builds the system closure, so this is the only full system check.
-- `just fix-hashes [args...]`: runs `scripts/fix-hashes.py` to auto-replace mismatched fixed-output hashes in git-tracked `.nix` files (skips upstream/nixpkgs hashes; supports `--dry-run` and custom targets such as `.#dingtalk`).
+- `python3 scripts/fix-hashes.py [args...]`: auto-replaces mismatched fixed-output hashes in git-tracked `.nix` files (skips upstream/nixpkgs hashes; supports `--dry-run` and custom targets such as `.#dingtalk`).
 - `just wsl-tarball [out]`: builds an importable `.wsl` tarball for `nixos-wsl` using `NixOS-WSL`'s `tarballBuilder`.
 - Single check: `nix build --no-link .#checks.x86_64-linux.treefmt` (formatting) or `.#checks.x86_64-linux.disko-layouts` (pure eval of `lib/disko-layout/`).
 - Single package: `nix build --no-link .#<name>` for names in `nix flake show`. Overlay-only packages such as `omp-provider` build via `.#nixosConfigurations.nixos.pkgs.omp-provider`.
@@ -19,23 +19,22 @@ Run from the repo root. Typical loop: edit, `git add` new files, `just format`, 
 - There is no test suite. Verification is the checks above.
 - `just build` can run for a long time because it builds the whole system closure. Use a long timeout or run it in the background.
 - Substituter errors in `just check` output, such as an unreachable substituter, are logged and ignored because of `--fallback`. Trust the exit code.
-- Run `just format` before `just check`. `just verify` follows this order; `just rebuild-switch` runs check first, so unformatted files fail it.
+- Run `just fmt` before `just check`. `just switch` runs `fmt` then `check` before switching.
 
 ## Requires explicit user request
 
-- Committing or pushing. `just push`, `push-all`, `pr`, and `pr-merge` push to `origin`. Pushes to `main` trigger CI, which uploads to Attic. `push-all` also stages untracked files.
+- Committing or pushing. Pushes to `main` trigger CI, which uploads to Attic.
 - `just disko` and `just install`: destructive installer steps.
 - `just clean`: irreversibly deletes old generations and GC roots.
-- `just rebuild-switch-fast`: skips checks.
 
 ## Live switch
 
-- `just rebuild-switch` is allowed only after `just check` passes. It activates this machine immediately, because sudo is passwordless (`system/base/security.nix`).
+- `just switch` is allowed only after `just check` passes. It activates this machine immediately, because sudo is passwordless (`system/base/security.nix`).
 
 ## Gotchas
 
 - Flakes see only git-tracked files. A new file that isn't `git add`ed (or at least `git add -N`) makes evaluation fail with a missing-path error.
-- `just format` rewrites any unformatted file in the repo, including unrelated WIP. Check `git status` and `git diff` afterwards.
+- `just fmt` rewrites any unformatted file in the repo, including unrelated WIP. Check `git status` and `git diff` afterwards.
 
 ## Architecture
 
@@ -50,7 +49,7 @@ Run from the repo root. Typical loop: edit, `git add` new files, `just format`, 
 
 ## Deliberate choices, don't "clean up"
 
-- Input wiring is deliberate, and comments in `flake.nix` say why. `noctalia` follows host nixpkgs because a bundled older glibc crashes at startup. `emanote`, `herdr`, and `llm-agents` keep their own nixpkgs pins.
+- Input wiring is deliberate, and comments in `flake.nix` say why. `noctalia` follows host nixpkgs because a bundled older glibc crashes at startup. `herdr` and `llm-agents` keep their own nixpkgs pins.
 - Bumping `noctalia` also means bumping `officialPlugins.rev` in `home/desktop/noctalia/default.nix`.
 - `packages` outputs are deliberately limited to the fixed CI cache candidates plus `disko`. Vendor apps belong in `home/` or overlays. `nix flake check` doesn't build `packages`; CI combines them with packages installed directly by NixOS and Home Manager in `legacyPackages.cacheOutputs`, deduplicates them by derivation, then uses `nix-fast-build --skip-cached` to build only cache misses.
 - To guarantee that a source-built package enters the Attic cache, add it to `flake/modules/packages.nix`. Packages already installed directly by NixOS or Home Manager are discovered automatically; the full system toplevel is deliberately excluded.
@@ -59,8 +58,8 @@ Run from the repo root. Typical loop: edit, `git add` new files, `just format`, 
 
 ## Maintenance and secrets
 
-- After `just update`, run `just format`, `just check`, and `just build`. Pushing `flake.lock` (only when asked) is what makes CI rebuild and upload the source-built packages to Attic.
-- The kimi-code VS Code extension in `home/editors/vscode.nix` is pinned by hash. On a fixed-output hash mismatch, `just rebuild-switch` / `just rebuild-switch-fast` (`scripts/rebuild.sh`) automatically run `scripts/fix-hashes.py --from-log` to update local fixed-output hashes and retry switching (still skipping upstream/nixpkgs hashes; disable with `AUTO_FIX_HASHES=0`). You can also invoke `just fix-hashes` directly.
+- After `just update`, run `just fmt`, `just check`, and `just build`. Pushing `flake.lock` (only when asked) is what makes CI rebuild and upload the source-built packages to Attic.
+- The kimi-code VS Code extension in `home/editors/vscode.nix` is pinned by hash. On a fixed-output hash mismatch, `just switch` (`scripts/rebuild.sh`) automatically runs `scripts/fix-hashes.py --from-log` to update local fixed-output hashes and retry switching (still skipping upstream/nixpkgs hashes; disable with `AUTO_FIX_HASHES=0`). You can also run `python3 scripts/fix-hashes.py` directly.
 - Edit MCP servers in `home/ai/mcp.nix` (`programs.mcp.servers`). Activation merges them into each tool's config, so don't hand-edit `~/.codex/config.toml` or `~/.kimi-code/mcp.json`.
 - Never put tokens or subscription URLs in Nix files; they end up in the world-readable store. sing-box subscriptions live in `/var/lib/sing-box-config/subscriptions.yaml`. The Obsidian API key is read at activation.
 

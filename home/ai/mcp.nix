@@ -46,13 +46,6 @@ in
     enableMcpIntegration = true;
   };
 
-  programs.opencode = {
-    enable = true;
-    package = pkgs.opencode;
-    mutableSettings = true;
-    enableMcpIntegration = true;
-  };
-
   programs.antigravity-cli = {
     enable = true;
     package = inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.antigravity-cli;
@@ -69,24 +62,8 @@ in
 
   # activation 只处理 HM 管不了的特例:
   # - Obsidian:apiKey 运行时从 vault 插件 data.json 读取,不能声明进 store
-  # - cc-switch:SQLite 里的 context7 / codex backup,无程序私有 DB
   # - Kimi:尚无 programs.* MCP 集成,仍写用户级 ~/.kimi-code/mcp.json
   # - omp:同上,合并进 ~/.omp/agent/mcp.json
-  # cursor-agent:HM 没有 enableMcpIntegration,读 ~/.cursor/mcp.json。
-  # 把 programs.mcp 生成的 ~/.config/mcp/mcp.json 合并进去,保留用户自己加的 server。
-  home.activation.configureCursorAgentMcp = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    if [[ -z "''${DRY_RUN:-}" ]]; then
-      bus="''${XDG_CONFIG_HOME:-$HOME/.config}/mcp/mcp.json"
-      target="$HOME/.cursor/mcp.json"
-      if [[ -f "$bus" ]]; then
-        mkdir -p "$HOME/.cursor"
-        [[ -f "$target" ]] || echo '{"mcpServers":{}}' > "$target"
-        tmp="$(mktemp)"
-        ${pkgs.jq}/bin/jq -s '.[0] * {mcpServers: ((.[0].mcpServers // {}) + .[1].mcpServers)}' \
-          "$target" "$bus" > "$tmp" && mv "$tmp" "$target"
-      fi
-    fi
-  '';
 
   home.activation.configureMcpSpecials = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     if [[ -z "''${DRY_RUN:-}" ]]; then
@@ -145,27 +122,6 @@ in
       else
         ${pkgs.coreutils}/bin/chmod --reference="$codex_config" "$codex_tmp"
         ${pkgs.coreutils}/bin/mv "$codex_tmp" "$codex_config"
-      fi
-
-      # cc-switch:私有 SQLite,保持与旧脚本相同的 context7 + codex backup 同步
-      cc_switch_db="$HOME/.cc-switch/cc-switch.db"
-      if [[ -f "$cc_switch_db" ]]; then
-        ${pkgs.sqlite}/bin/sqlite3 -cmd '.timeout 5000' "$cc_switch_db" \
-          "UPDATE mcp_servers
-           SET server_config = json_object(
-             'type',
-             'http',
-             'url',
-             '${context7Url}'
-           )
-           WHERE id = 'context7';
-           UPDATE proxy_live_backup
-           SET original_config = json_set(
-             original_config,
-             '$.config',
-             CAST(readfile('$codex_config') AS TEXT)
-           )
-           WHERE app_type = 'codex';"
       fi
 
       # Antigravity:只合并 obsidian(serverUrl + 可选 Bearer);
